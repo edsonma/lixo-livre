@@ -9,6 +9,9 @@ module Api
       rescue_from ActiveRecord::RecordNotFound do
         head :not_found
       end
+      rescue_from ActionController::ParameterMissing do |e|
+        render json: { errors: { e.param => ["is required"] } }, status: :bad_request
+      end
 
       private
 

@@ -3,6 +3,15 @@ class Trash < ApplicationRecord
   TYPES = %w[plastic paper glass metal organic construction_debris
              electronics bulky_items textile hazardous mixed other].freeze
 
+  PHOTO_CONTENT_TYPES = %w[image/jpeg image/png image/webp image/heic image/heif].freeze
+  MAX_PHOTO_BYTES = 15.megabytes
+
+  # A photo whose EXIF position is farther than this from the reported spot, or whose EXIF time
+  # differs from the reported time by more than this, goes to human review.
+  # (EXIF has no time zone, so the time tolerance must cover any zone offset.)
+  MAX_EXIF_DISTANCE_M = 1_000
+  MAX_EXIF_TIME_SKEW = 2.days
+
   belongs_to :device
   belongs_to :user, optional: true
   has_many :flags, dependent: :destroy
@@ -18,14 +27,17 @@ class Trash < ApplicationRecord
   validates :photo, :lonlat, :taken_at, presence: true
   validates :severity, inclusion: { in: 1..5 }, allow_nil: true
   validate :trash_types_are_known
+  validate :photo_is_acceptable
 
   before_validation :set_h3_index, if: -> { lonlat.present? }
 
-  after_create_commit { ValidateTrashJob.perform_later(id) }
+  # Step 1 of the pipeline. SanitizePhotoJob enqueues ValidateTrashJob when it is done.
+  after_create_commit { SanitizePhotoJob.perform_later(id) }
   after_commit :refresh_heat_cell, if: :affects_heatmap?
 
   scope :visible, -> { where(hidden_at: nil) }
-  scope :for_heatmap, -> { validated.visible }
+  # The only reports that may be shown publicly or counted on the map.
+  scope :for_heatmap, -> { validated.visible.where.not(sanitized_at: nil) }
   scope :near, ->(lng, lat, meters) {
     where(
       "ST_DWithin(lonlat, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)",
@@ -42,6 +54,26 @@ class Trash < ApplicationRecord
     update!(hidden_at: Time.current)
   end
 
+  # Used when the pipeline cannot finish: keeps the report private until a human looks at it.
+  def hold_for_review!(reason)
+    update_columns(
+      ai_status: "needs_review",
+      ai_payload: (ai_payload || {}).merge("hold_reason" => reason),
+      updated_at: Time.current
+    )
+  end
+
+  # True when the EXIF data read at upload contradicts the report (see the constants above).
+  def metadata_suspicious?
+    distance = photo_meta["exif_distance_m"]
+    return true if distance && distance > MAX_EXIF_DISTANCE_M
+
+    exif_time = photo_meta["exif_taken_at"]
+    return false unless exif_time
+
+    (Time.zone.parse(exif_time) - taken_at).abs > MAX_EXIF_TIME_SKEW.to_i
+  end
+
   private
 
   def set_h3_index
@@ -52,6 +84,15 @@ class Trash < ApplicationRecord
   def trash_types_are_known
     unknown = trash_types - TYPES
     errors.add(:trash_types, "unknown: #{unknown.join(', ')}") if unknown.any?
+  end
+
+  def photo_is_acceptable
+    return unless photo.attached?
+
+    unless PHOTO_CONTENT_TYPES.include?(photo.content_type)
+      errors.add(:photo, "must be a JPEG, PNG, WebP or HEIC image")
+    end
+    errors.add(:photo, "is too large (max #{MAX_PHOTO_BYTES / 1.megabyte} MB)") if photo.byte_size > MAX_PHOTO_BYTES
   end
 
   # Re-score the cell when a report enters or leaves the heatmap

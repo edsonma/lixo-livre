@@ -60,7 +60,12 @@ lixo-livre/
 
 ## Run it
 
-Needs Ruby 3.3+ and PostgreSQL with PostGIS installed.
+Needs Ruby 3.3+, PostgreSQL with PostGIS, and libvips (photo processing):
+
+```fish
+brew install postgis vips                                     # macOS
+sudo apt install postgresql-16-postgis-3 libvips42            # Ubuntu
+```
 
 ```fish
 ./setup.fish
@@ -69,18 +74,62 @@ bin/rails server
 ```
 
 `setup.fish` runs `rails new api --api -d postgresql`, switches the adapter to `postgis`,
-adds the gems (`activerecord-postgis-adapter`, `h3`, `rack-cors`, `rack-attack`, `image_processing`),
+adds the gems (`activerecord-postgis-adapter`, `h3`, `rack-cors`, `rack-attack`, `image_processing`, `ruby-vips`),
 installs Active Storage, copies `api-overlay/` on top, then runs `db:create db:migrate`.
 If `h3` fails to build, install `cmake` and retry.
 
 ## Data flow
 
 1. Mobile creates an anonymous device (`POST /devices`) and keeps the token.
-2. Mobile uploads a photo with GPS and `taken_at` (`POST /trashes`). It starts as `pending`.
-3. `ValidateTrashJob` calls the AI (`app/services/trash_vision.rb`), which decides if it is trash,
-   sets `severity` (1-5) and `trash_types`, or sends it to `needs_review`.
-4. Validated reports re-score their H3 cell (`RefreshHeatCellJob`). A nightly job applies time decay.
-5. Web reads `GET /heatmap` for the colored layer and `GET /trashes` for the photos of a clicked spot.
+2. Mobile uploads a photo with GPS and `taken_at` (`POST /trashes`). It starts as `pending` and is not public.
+3. `SanitizePhotoJob` makes the photo safe (see [Photo privacy](#photo-privacy)) and deletes the original.
+4. `ValidateTrashJob` shows the sanitized photo to the AI (`app/services/trash_vision.rb`), which decides if
+   it is trash and sets `severity` (1-5) and `trash_types`, or sends it to `needs_review`.
+5. Validated reports re-score their H3 cell (`RefreshHeatCellJob`). A nightly job applies time decay.
+6. Web reads `GET /heatmap` for the colored layer and `GET /trashes` for the photos of a clicked spot.
+
+## Photo privacy
+
+Photos carry personal data: GPS and camera info in the EXIF block, faces and license plates in the pixels.
+Every upload goes through `SanitizePhotoJob` before the AI, the map or the mobile feed can see it:
+
+- **EXIF stripped.** The photo is decoded, rotated upright, converted to sRGB, shrunk to 2048 px and re-encoded
+  as a new JPEG, so nothing from the original file can survive in it (EXIF, GPS, XMP, IPTC, thumbnails).
+- **Faces and plates blurred.** A detector (`PrivacyDetector`) returns regions; each becomes a 6x6 mosaic
+  (padded 20% so box edges are covered). The detector only receives the already-stripped pixels, so no GPS or
+  device info reaches a third party.
+- **Original deleted.** The stored file is replaced; the old blob is purged.
+- **Fail closed.** If sanitizing cannot finish (detector down, ...) the report goes to `needs_review` and stays
+  private. An unsanitized photo is never shown, never sent to the AI, and `/me/trashes` does not link it.
+- **EXIF is checked, then discarded.** Before stripping, we read the capture time and GPS and keep only the
+  comparison (`photo_meta`: `exif_taken_at`, `exif_distance_m`, `redactions`). A photo whose EXIF position is
+  over 1 km from the reported spot, or whose capture time is over 2 days off, goes to `needs_review` instead of
+  the map (no AI cost).
+- Uploads must be JPEG, PNG, WebP or HEIC and at most 15 MB; unreadable files are rejected and deleted.
+
+### Plugging in a face and plate detector
+
+`PrivacyDetector.provider` is a callable. It gets JPEG bytes and returns regions in normalized
+coordinates (0.0-1.0, origin top-left):
+
+```ruby
+# config/initializers/privacy_detector.rb
+PrivacyDetector.provider = lambda do |jpeg_bytes|
+  # Call your detector here: AWS Rekognition (DetectFaces + DetectText for plates),
+  # Google Cloud Vision (face detection + object localization), or a self-hosted model.
+  [
+    { kind: "face",          x: 0.40, y: 0.10, width: 0.08, height: 0.12 },
+    { kind: "license_plate", x: 0.55, y: 0.70, width: 0.10, height: 0.04 }
+  ]
+end
+```
+
+Return `[]` only when the detector looked and found nothing. If it cannot answer, **raise**: the report is
+held for review instead of being published unblurred. In development and test the default detects nothing;
+anywhere else it raises until you configure a provider, so a fresh deployment cannot publish photos by accident.
+
+Detectors miss things (small, angled or partly hidden faces and plates). Treat the blur as a strong default, not
+a guarantee: keep the flag button, and show moderators only sanitized photos (`sanitized_at` present).
 
 ## API
 
@@ -100,7 +149,31 @@ anonymous history moves to the account.
 ## Before real users
 
 - `TrashVision.analyze` returns fake data in development and test and raises elsewhere: wire in your AI provider.
+- Set `PrivacyDetector.provider` (see above). Without it, production holds every photo for review.
 - Configure Active Storage for S3 or R2 in `config/storage.yml`.
-- Strip EXIF (GPS, device info) from stored photos, and blur faces and license plates.
 - Add a moderator screen for `needs_review` reports and pending flags.
 - A moderator or admin role exists on `User` but nothing enforces it yet.
+
+## Tests
+
+Minitest, run from the generated app (needs PostgreSQL with PostGIS and libvips):
+
+```fish
+cd api
+bin/rails test                                    # everything
+bin/rails test test/services/photo_sanitizer_test.rb   # one file
+bin/rails test test/integration                   # API + end-to-end privacy pipeline
+```
+
+| Folder | Covers |
+|---|---|
+| `test/services` | `PhotoSanitizer` (EXIF gone, rotation, resize, alpha, mosaic where asked and nowhere else), `PhotoMetadata` (both byte orders, truncated and fuzzed input), `PrivacyRegion`, `PrivacyDetector`, `TrashVision`, `Geo` |
+| `test/models` | validations, scopes, EXIF cross-check, flag auto-hide, heat score and decay, device claiming |
+| `test/jobs` | `SanitizePhotoJob` (original deleted, retries, fail-closed), `ValidateTrashJob`, heat cell jobs |
+| `test/integration` | every endpoint, plus `photo_privacy_pipeline_test.rb`: upload a photo with GPS in its EXIF and follow it to the map |
+
+The AI and detector are replaced by fakes in `test/test_helper.rb` (`TrashVision.provider`,
+`PrivacyDetector.provider`), so tests need no network and no API keys.
+
+Image fixtures live in `test/fixtures/files` and are committed. To regenerate them (needs Pillow and numpy):
+`python3 tools/generate_test_fixtures.py`.
