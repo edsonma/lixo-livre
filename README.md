@@ -1,6 +1,54 @@
 # Lixo Livre
 
+*Cidades mais limpas, com a força da comunidade.* (Cleaner cities, powered by the community.)
+
 Heatmap of how dirty each neighborhood is, built from photos people take of trash.
+
+![Lixo Livre concept board](docs/concept.png)
+
+## Product concept
+
+The board above is the product vision. The mobile app has three main views:
+
+- **Map (home):** heatmap from *Limpo* (green) to *Muito sujo* (red), a place search box, photo pins on hotspots,
+  and a big **+** button to report trash. Bottom tabs: Mapa, Explorar, Alertas, Perfil.
+- **Camera / AI analysis:** take a photo and the AI breaks it down by trash type with percentages
+  (for example household waste 65%, plastic 20%, paper/cardboard 10%, other 5%).
+- **Social feed:** tabs *Recentes*, *Mais sujos*, *Seguindo*. Each post has the photo, location, a
+  dirtiness badge with a score out of 100 (for example 82/100), a description, likes, comments and share,
+  and a *Resolvido* (cleaned up) status.
+
+Brand colors: two greens, amber, red, and dark slate (green to red also drives the heatmap ramp).
+
+### Board architecture vs. this repo
+
+| Board | In this repo |
+|---|---|
+| App mobile (iOS / Android) | `mobile/` placeholder (React Native + Expo) |
+| API backend (Rails) | `api-overlay/` (done) |
+| Image analysis service (AI / computer vision) | `TrashVision` + `ValidateTrashJob` (stub, fake data in dev) |
+| Processing queue (RabbitMQ / Sidekiq) | Active Job with Solid Queue (Rails 8 default) |
+| Database (PostgreSQL + PostGIS) | done |
+| Photo storage (S3 / Cloud Storage) | Active Storage, configure S3 or R2 |
+| Map / heat map | `HeatCell` + `GET /heatmap` (done), web map later |
+| Social feed, score calculation, notifications, admin panel | not built yet, see roadmap |
+
+### Roadmap from the board
+
+These appear on the board but are not in the data model yet:
+
+- **Score out of 100:** the API uses severity 1-5 and a recency-weighted heat score. Either map severity to
+  a 0-100 score for display, or let the AI return 0-100 directly. Decide before building the UI.
+- **Trash type percentages:** `trash_types` is a list of labels. Add a `trash_breakdown` jsonb
+  (type to percent) if the camera screen should show the split.
+- **Resolved status:** a `Cleanup` record (or `resolved_at` on `Trash`) so cleaned spots stop heating the map.
+- **Likes, comments, follows:** `Like`, `Comment`, `Follow` models, and a feed endpoint with *Recentes* and *Mais sujos* ordering.
+- **Notifications (Alertas):** push tokens on `Device`, plus notification jobs.
+- **Place search and Explorar:** geocoding for the search box.
+- **Admin panel:** moderation of `needs_review` reports and pending flags.
+- **Login:** the social features need real accounts, so `Device#claim_by!` moves the anonymous history over.
+
+## Repository layout
 
 ```
 lixo-livre/
