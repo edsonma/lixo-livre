@@ -67,3 +67,19 @@ yarn-debug.log*
 /storage/*
 !/storage/.keep
 /public/uploads
+
+# Lixo Livre additions
+.DS_Store
+.env.*
+!.env.example
+
+# Rails app lives in api/ (the rules above are anchored to the repo root)
+/api/log/*
+/api/tmp/*
+!/api/log/.keep
+!/api/tmp/.keep
+/api/storage/*
+!/api/storage/.keep
+/api/.bundle
+/api/config/master.key
+/api/config/credentials/*.key
