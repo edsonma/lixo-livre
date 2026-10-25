@@ -52,8 +52,30 @@ class CheckDatabaseUrlTest < ActiveSupport::TestCase
       "postgres://postgres:abc@:5432/lixo_livre",
       "postgres://postgres:abc@postgis.railway.internal:5432",
       "http://postgres:abc@postgis.railway.internal:5432/lixo_livre",
+      "postgres://postgres:abc@postgis.railway.internal:99999/lixo_livre",
       ""
     ].each { |url| assert_not check(url).last, url.inspect }
+  end
+
+  test "a URL without // after the scheme is explained, not a crash" do
+    ["postgres:postgres:abc@postgis.railway.internal:5432/lixo_livre", "postgres:abc", "postgres:", "mailto:a@b.c"].each do |url|
+      out, err, ok = check(url)
+
+      assert_not ok, url
+      assert_empty out
+      assert_not_includes err, "NoMethodError"
+      assert_not_includes err, "abc@" if url.include?("abc@")
+    end
+    assert_includes check("postgres:postgres:abc@host:5432/db")[1], "//"
+  end
+
+  test "garbage in never makes the script crash" do
+    ["", " ", "\n", "://", "postgres://", "postgres://@", "postgres://:@/", "%%%", "a b c", "postgres://[::1", "postgres://user:pw@host:99999999/db", "\u00e9\u00e8"].each do |url|
+      _out, err, _ok = check(url)
+
+      assert_not_includes err, "Error)", url.inspect # no Ruby backtrace
+      assert_not_includes err, "from bin/check_database_url"
+    end
   end
 
   test "the error always suggests the PG* variables as the way out" do

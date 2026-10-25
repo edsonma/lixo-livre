@@ -9,8 +9,15 @@ url = raw.strip
 url = url[1..-2].strip if url.match?(/\A(["']).*\1\z/m) # a value pasted with quotes around it
 
 # Never print the password, even when it contains @ or other characters that confuse parsing.
+# Only what is clearly safe is shown. A value that does not look like a URL is not shown at all.
 def hide_password(text)
-  text.sub(%r{\A([a-z][a-z0-9+.-]*://[^:/@]*:).*@}i, '\1***@')
+  masked = text.sub(%r{\A([a-z][a-z0-9+.-]*:(?://)?[^:/@]*:).*@}i, '\1***@')
+  return masked unless masked == text # a password was found and hidden
+
+  return text if !text.include?("@") && text.match?(%r{\A[a-z][a-z0-9+.-]*://}i) # no user part, nothing secret
+
+  scheme = text[/\A[a-z][a-z0-9+.-]*:/i]
+  scheme ? "#{scheme}***" : "(not shown: it does not look like a URL)"
 end
 
 problems = []
@@ -24,13 +31,22 @@ else
   begin
     uri = URI.parse(url)
     problems << "the scheme should be postgres:// or postgresql:// (it is #{uri.scheme.inspect})" unless %w[postgres postgresql postgis].include?(uri.scheme)
-    problems << "there is no host after the @" if uri.host.to_s.empty?
-    problems << "there is text after a # (an unencoded # in the password cuts the URL short)" unless uri.fragment.nil?
-    problems << "the database name after the last / is missing or has extra parts (path is #{uri.path.inspect})" unless uri.path.match?(%r{\A/[^/?]+\z})
-    problems << "the port is not a number" if uri.port.nil? && url.match?(%r{@[^/]*:[^/]*/})
+    if uri.opaque
+      # No // right after the scheme, so there is no host, user or path to look at.
+      problems << "there must be // right after the scheme: postgres://USER:PASSWORD@HOST:PORT/DATABASE"
+    else
+      problems << "there is no host after the @" if uri.host.to_s.empty?
+      problems << "there is text after a # (an unencoded # in the password cuts the URL short)" unless uri.fragment.nil?
+      problems << "the database name after the last / is missing or has extra parts (path is #{uri.path.to_s.inspect})" unless uri.path.to_s.match?(%r{\A/[^/?]+\z})
+      problems << "the port is not a number" if uri.port.nil? && url.match?(%r{@[^/]*:[^/]*/})
+      problems << "the port must be between 1 and 65535 (it is #{uri.port})" if uri.port && !uri.port.between?(1, 65_535)
+    end
   rescue URI::InvalidURIError
     # Not e.message: Ruby quotes part of the URL in it, and that part can contain the password.
     problems << "it cannot be parsed as a URL. Check the host name and the password for @ # / : ? % or spaces"
+  rescue StandardError => e
+    # Whatever else goes wrong, say so instead of crashing. The class only: the message may quote the URL.
+    problems << "it could not be checked (#{e.class})"
   end
 end
 
