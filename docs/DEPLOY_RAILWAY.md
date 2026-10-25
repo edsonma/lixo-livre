@@ -13,7 +13,7 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
 1. **New project** → *Deploy from GitHub repo* → pick `lixo-livre`. Railway finds the `Dockerfile` through `railway.toml`.
 2. **Add a database with PostGIS.** Railway's default PostgreSQL does not include the extension, and a PostGIS template may not be in the catalogue, so run the official image as its own service:
    1. *New* → *Docker Image* → `postgis/postgis:16-3.4`.
-   2. In that service's variables: `POSTGRES_PASSWORD` (strong password), `POSTGRES_DB=lixo_livre`, and `PGDATA=/var/lib/postgresql/data/pgdata` (a Railway volume contains `lost+found`, which makes Postgres refuse to start without this).
+   2. In that service's variables: `POSTGRES_PASSWORD` (use only letters and digits, for example the output of `openssl rand -hex 16`: characters like `@ # / :` break a URL), `POSTGRES_DB=lixo_livre`, and `PGDATA=/var/lib/postgresql/data/pgdata` (a Railway volume contains `lost+found`, which makes Postgres refuse to start without this).
    3. Add a volume mounted at `/var/lib/postgresql/data`.
    4. Do not generate a public domain: the API reaches it over the private network.
    5. If your catalogue does list a PostGIS template, you can use that instead.
@@ -71,6 +71,8 @@ Note: if the photo carries GPS in its EXIF and it is far from `lat`/`lng`, the r
 |---|---|
 | Deploy fails at `CREATE EXTENSION postgis` | The database is plain PostgreSQL. Use the `postgis/postgis` image. |
 | `could not translate host name` | The service name in `DATABASE_URL` does not match the database service. |
+| `DATABASE_URL still contains a Railway reference` | The `${{...}}` part was not filled in: the service name inside it does not match the database service. |
+| `DATABASE_URL is not a valid URL`, or `connection_url_resolver.rb` in the error | A special character in the password, or a broken reference. Use a letters-and-digits password, or delete `DATABASE_URL` and set `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` instead: the app builds and encodes the URL itself. |
 | Database service crashes on start with a `lost+found` message | `PGDATA` is not set to a subfolder of the volume. |
 | `SECRET_KEY_BASE is not set` in the logs | Add the variable. |
 | `PG::ConnectionBad` / adapter errors | `DATABASE_URL` missing or not referencing the database service. |

@@ -7,8 +7,40 @@ if [ -z "${SECRET_KEY_BASE:-}" ]; then
   echo "SECRET_KEY_BASE is not set. Generate one with:  openssl rand -hex 64" >&2
   exit 1
 fi
+# No DATABASE_URL but the standard PG* variables are there: build the URL from them. The user and
+# password are percent-encoded, so a password with @ # / : or spaces cannot break the URL.
+if [ -z "${DATABASE_URL:-}" ] && [ -n "${PGHOST:-}" ]; then
+  DATABASE_URL=$(ruby -ruri -e '
+    userinfo = [ENV.fetch("PGUSER", "postgres"), ENV.fetch("PGPASSWORD", "")].map { |part| URI.encode_uri_component(part) }.join(":")
+    puts "postgres://#{userinfo}@#{ENV.fetch("PGHOST")}:#{ENV.fetch("PGPORT", "5432")}/#{ENV.fetch("PGDATABASE", "postgres")}"
+  ')
+  export DATABASE_URL
+fi
+
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "DATABASE_URL is not set. Add a PostGIS database and reference its connection URL." >&2
+  echo "DATABASE_URL is not set. Add a PostGIS database and reference its connection URL" >&2
+  echo "(or set PGHOST, PGPORT, PGUSER, PGPASSWORD and PGDATABASE)." >&2
+  exit 1
+fi
+
+# Catch a broken URL here, with a useful message, instead of a stack trace from inside Rails.
+case "$DATABASE_URL" in
+  *'${{'*|*'}}'*)
+    echo "DATABASE_URL still contains a Railway reference that was not filled in:" >&2
+    echo "  ${DATABASE_URL%%@*}@..." >&2
+    echo "The service name inside \${{...}} must match the database service exactly (see its name on the canvas)." >&2
+    exit 1
+    ;;
+esac
+# Valid means: parses, has a host, a database name, and nothing after a # (an unencoded # in the password
+# would silently turn the rest of the URL into a fragment and point Rails at the wrong host).
+if ! ruby -ruri -e '
+  uri = URI.parse(ENV.fetch("DATABASE_URL"))
+  ok = uri.host.to_s != "" && uri.fragment.nil? && uri.path.match?(%r{\A/[^/?]+\z})
+  exit(ok ? 0 : 1)' 2>/dev/null; then
+  echo "DATABASE_URL is not a valid URL. Most often the password has a special character (@ # / : ? %)." >&2
+  echo "Use a password with only letters and digits (openssl rand -hex 16), or leave DATABASE_URL unset and" >&2
+  echo "set PGHOST, PGPORT, PGUSER, PGPASSWORD and PGDATABASE, which are encoded for you." >&2
   exit 1
 fi
 
