@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# Checks ENV["DATABASE_URL"] before Rails boots. On success prints the cleaned URL (stray spaces and
+# surrounding quotes removed) and exits 0. On failure prints what is wrong, with the password hidden,
+# and exits 1. Used by bin/railway-start.
+require "uri"
+
+raw = ENV.fetch("DATABASE_URL", "")
+url = raw.strip
+url = url[1..-2].strip if url.match?(/\A(["']).*\1\z/m) # a value pasted with quotes around it
+
+# Never print the password, even when it contains @ or other characters that confuse parsing.
+def hide_password(text)
+  text.sub(%r{\A([a-z][a-z0-9+.-]*://[^:/@]*:).*@}i, '\1***@')
+end
+
+problems = []
+if url.empty?
+  problems << "it is empty"
+elsif url.include?("${{") || url.include?("}}")
+  found = url.scan(/\$\{\{[^}]*\}\}/).uniq.join(", ")
+  problems << "it still contains a Railway reference that was not filled in (#{found}). The service name inside " \
+              "${{...}} must match the database service exactly, including case (check its name on the canvas)"
+else
+  begin
+    uri = URI.parse(url)
+    problems << "the scheme should be postgres:// or postgresql:// (it is #{uri.scheme.inspect})" unless %w[postgres postgresql postgis].include?(uri.scheme)
+    problems << "there is no host after the @" if uri.host.to_s.empty?
+    problems << "there is text after a # (an unencoded # in the password cuts the URL short)" unless uri.fragment.nil?
+    problems << "the database name after the last / is missing or has extra parts (path is #{uri.path.inspect})" unless uri.path.match?(%r{\A/[^/?]+\z})
+    problems << "the port is not a number" if uri.port.nil? && url.match?(%r{@[^/]*:[^/]*/})
+  rescue URI::InvalidURIError
+    # Not e.message: Ruby quotes part of the URL in it, and that part can contain the password.
+    problems << "it cannot be parsed as a URL. Check the host name and the password for @ # / : ? % or spaces"
+  end
+end
+
+if problems.empty?
+  puts url
+else
+  warn "DATABASE_URL is not valid (password hidden): #{hide_password(url).inspect}"
+  problems.each { |problem| warn "  - #{problem}" }
+  warn "Fix it, or remove DATABASE_URL and set PGHOST, PGPORT, PGUSER, PGPASSWORD and PGDATABASE instead:"
+  warn "those are encoded for you, so any password works."
+  exit 1
+end

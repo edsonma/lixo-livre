@@ -23,26 +23,10 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-# Catch a broken URL here, with a useful message, instead of a stack trace from inside Rails.
-case "$DATABASE_URL" in
-  *'${{'*|*'}}'*)
-    echo "DATABASE_URL still contains a Railway reference that was not filled in:" >&2
-    echo "  ${DATABASE_URL%%@*}@..." >&2
-    echo "The service name inside \${{...}} must match the database service exactly (see its name on the canvas)." >&2
-    exit 1
-    ;;
-esac
-# Valid means: parses, has a host, a database name, and nothing after a # (an unencoded # in the password
-# would silently turn the rest of the URL into a fragment and point Rails at the wrong host).
-if ! ruby -ruri -e '
-  uri = URI.parse(ENV.fetch("DATABASE_URL"))
-  ok = uri.host.to_s != "" && uri.fragment.nil? && uri.path.match?(%r{\A/[^/?]+\z})
-  exit(ok ? 0 : 1)' 2>/dev/null; then
-  echo "DATABASE_URL is not a valid URL. Most often the password has a special character (@ # / : ? %)." >&2
-  echo "Use a password with only letters and digits (openssl rand -hex 16), or leave DATABASE_URL unset and" >&2
-  echo "set PGHOST, PGPORT, PGUSER, PGPASSWORD and PGDATABASE, which are encoded for you." >&2
-  exit 1
-fi
+# Validate it (and clean stray spaces or quotes) before Rails boots, so a bad value gets a clear message
+# instead of a stack trace from inside Rails.
+DATABASE_URL=$(ruby bin/check_database_url) || exit 1
+export DATABASE_URL
 
 echo "==> Preparing the database (migrations)"
 bin/rails db:prepare
