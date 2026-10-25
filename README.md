@@ -8,11 +8,17 @@ Heatmap of how dirty each neighborhood is, built from photos people take of tras
 
 ![Lixo Livre app flow: map, community feed, camera, AI analysis, follow-up](docs/concept-app-flow.png)
 
-The app flow in five steps: **1. Map** (real-time heat map of urban cleanliness), **2. Community feed** (see, like,
-comment and follow reports from your neighborhood), **3. Report** (take a photo of the trash), **4. AI analysis**
-(the AI identifies the type and amount of trash and gives a dirtiness level) and **5. Follow-up** (see how a spot
-changes over time and compare photos). In this repo the severity scale is 0-100 (the mock-ups show 8.5/10); see
-[Severity scale](#severity-scale).
+The top of the board shows the five app screens, the bottom strip shows how it works. The screens:
+**1. Map** (real-time heat map of urban cleanliness), **2. Community feed** (see, like, comment and follow
+reports from your neighborhood), **3. Report** (take a photo of the trash), **4. AI analysis** (the AI identifies
+the type and amount of trash and gives a dirtiness level) and **5. Follow-up** (see how a spot changes over
+time and compare photos).
+
+How it works: **you report** (a photo plus the location) → **the AI analyzes** (trash types and a dirtiness
+level) → **the map updates** (the spot adds to the urban heat map) → **the community takes part** (like, comment,
+follow the improvements) → **cleaner cities**.
+
+In this repo the severity scale is 0-100 (the mock-ups show 8.5/10); see [Severity scale](#severity-scale).
 
 ## Product concept
 
