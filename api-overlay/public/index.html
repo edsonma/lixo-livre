@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lixo Livre</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .box { position: absolute; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.3); padding: 10px 12px; font-size: 13px; }
+  #legend { left: 12px; bottom: 28px; }
+  #legend .ramp { height: 10px; width: 160px; border-radius: 5px; margin: 6px 0 2px; background: linear-gradient(90deg, #2e9e4f, #f2d43d, #d92b2b); }
+  #legend .ends { display: flex; justify-content: space-between; font-size: 11px; color: #555; }
+  #demo { top: 12px; left: 12px; background: #fff3cd; color: #7a5b00; display: none; }
+  #panel { top: 12px; right: 12px; width: 280px; max-height: calc(100% - 40px); overflow: auto; display: none; }
+  #panel h2 { margin: 0 0 8px; font-size: 14px; }
+  #panel .close { position: absolute; top: 6px; right: 10px; cursor: pointer; border: 0; background: none; font-size: 18px; }
+  .item { border-top: 1px solid #eee; padding: 8px 0; }
+  .item img { width: 100%; border-radius: 6px; display: block; margin-bottom: 4px; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="demo" class="box">Modo demonstração: dados fictícios</div>
+<div id="legend" class="box"><strong>Sujeira</strong><div class="ramp"></div><div class="ends"><span>baixa</span><span>alta</span></div></div>
+<div id="panel" class="box"><button class="close" id="close" aria-label="Fechar">×</button><h2 id="title"></h2><div id="items"></div></div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+(async function () {
+  var LABELS = { 1: "Muito leve", 2: "Leve", 3: "Moderada", 4: "Grave", 5: "Muito grave" };
+  var status = { center: { lat: -15.7942, lng: -47.8825 }, demo_mode: false };
+  try { status = await (await fetch("/api/v1/status")).json(); } catch (e) {}
+
+  document.getElementById("demo").style.display = status.demo_mode ? "block" : "none";
+
+  var map = new maplibregl.Map({
+    container: "map",
+    center: [status.center.lng, status.center.lat],
+    zoom: 12,
+    style: {
+      version: 8,
+      sources: { osm: { type: "raster", tileSize: 256, attribution: "© OpenStreetMap contributors",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"] } },
+      layers: [{ id: "osm", type: "raster", source: "osm" }]
+    }
+  });
+  map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+
+  var EMPTY = { type: "FeatureCollection", features: [] };
+
+  async function loadHeat() {
+    var b = map.getBounds();
+    var bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
+    try {
+      var data = await (await fetch("/api/v1/heatmap?bbox=" + bbox)).json();
+      map.getSource("heat").setData(data);
+    } catch (e) {}
+  }
+
+  map.on("load", function () {
+    map.addSource("heat", { type: "geojson", data: EMPTY });
+    map.addLayer({
+      id: "heat", type: "heatmap", source: "heat",
+      paint: {
+        "heatmap-weight": ["interpolate", ["linear"], ["get", "score"], 0, 0, 5, 1],
+        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 8, 15, 14, 45],
+        "heatmap-opacity": 0.8,
+        "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
+          0, "rgba(46,158,79,0)", 0.2, "#2e9e4f", 0.5, "#f2d43d", 1, "#d92b2b"]
+      }
+    });
+    map.on("moveend", loadHeat);
+    loadHeat();
+  });
+
+  // Meters per pixel at this zoom, times ~40px: clicking selects roughly that area.
+  function radiusFor() {
+    var lat = map.getCenter().lat * Math.PI / 180;
+    var mpp = 156543.03 * Math.cos(lat) / Math.pow(2, map.getZoom());
+    return Math.max(10, Math.min(500, Math.round(mpp * 40)));
+  }
+
+  function el(tag, text, cls) {
+    var n = document.createElement(tag);
+    if (text != null) n.textContent = text;
+    if (cls) n.className = cls;
+    return n;
+  }
+
+  map.on("click", async function (e) {
+    var panel = document.getElementById("panel"), items = document.getElementById("items");
+    var url = "/api/v1/trashes?lat=" + e.lngLat.lat + "&lng=" + e.lngLat.lng + "&radius=" + radiusFor();
+    var list = [];
+    try { list = await (await fetch(url)).json(); } catch (err) {}
+    items.replaceChildren();
+    document.getElementById("title").textContent = list.length ? list.length + " registro(s) aqui" : "Nenhum registro aqui";
+    list.forEach(function (t) {
+      var item = el("div", null, "item");
+      var img = document.createElement("img");
+      img.loading = "lazy"; img.alt = "Foto do lixo";
+      try { img.src = new URL(t.photo_url, location.href).pathname; } catch (err) {}
+      item.appendChild(img);
+      item.appendChild(el("div", (LABELS[t.severity] || "Gravidade " + t.severity) + " · " + new Date(t.taken_at).toLocaleDateString("pt-BR")));
+      if (t.trash_types && t.trash_types.length) item.appendChild(el("div", t.trash_types.join(", "), "muted"));
+      if (t.extra_info) item.appendChild(el("div", t.extra_info, "muted"));
+      item.appendChild(el("div", "Enviado por " + (t.uploader ? t.uploader.name : "Anônimo"), "muted"));
+      items.appendChild(item);
+    });
+    panel.style.display = "block";
+  });
+
+  document.getElementById("close").onclick = function () { document.getElementById("panel").style.display = "none"; };
+})();
+</script>
+</body>
+</html>

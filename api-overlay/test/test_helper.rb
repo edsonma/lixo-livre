@@ -55,6 +55,15 @@ module TrashTestHelpers
     trash
   end
 
+  # Runs the block with environment variables set (nil removes one), then puts them back.
+  def with_env(vars)
+    saved = vars.keys.to_h { |key| [key, ENV[key]] }
+    vars.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+    yield
+  ensure
+    saved.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
   # --- image helpers (need libvips) ---
 
   def decode(bytes)

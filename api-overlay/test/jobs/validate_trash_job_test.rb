@@ -113,6 +113,30 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
     assert_match(/validation_failed: RuntimeError/, trash.ai_payload["hold_reason"])
   end
 
+  test "a garbled answer from the provider holds the report for review and never publishes it" do
+    TrashVision.provider = ->(_photo) { { is_trash: true, severity: 9, confidence: 0.99 } }
+    trash = sanitized_trash
+
+    perform_enqueued_jobs { ValidateTrashJob.perform_later(trash.id) }
+
+    trash.reload
+    assert_predicate trash, :needs_review?
+    assert_nil trash.severity
+    assert_match(/validation_failed: TrashVision::InvalidResponse/, trash.ai_payload["hold_reason"])
+  end
+
+  test "a provider that answers with a plain hash works" do
+    TrashVision.provider = ->(_photo) { { "is_trash" => true, "severity" => 2, "types" => ["glass"], "confidence" => 0.8 } }
+    trash = sanitized_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    trash.reload
+    assert_predicate trash, :validated?
+    assert_equal 2, trash.severity
+    assert_equal %w[glass], trash.trash_types
+  end
+
   test "ignores a report that no longer exists" do
     assert_nothing_raised { ValidateTrashJob.perform_now(0) }
   end

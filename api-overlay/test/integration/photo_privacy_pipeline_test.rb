@@ -51,7 +51,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
     travel_to NOW do
       PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       seen = nil
-      TrashVision.provider = ->(photo) { seen = photo.download; vision_result }
+      TrashVision.provider = ->(photo) { seen = photo.bytes; vision_result }
 
       perform_enqueued_jobs { upload_exif_photo }
 

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Container start command: prepares the database, optionally loads demo data, starts the server.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [ -z "${SECRET_KEY_BASE:-}" ]; then
+  echo "SECRET_KEY_BASE is not set. Generate one with:  openssl rand -hex 64" >&2
+  exit 1
+fi
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "DATABASE_URL is not set. Add a PostGIS database and reference its connection URL." >&2
+  exit 1
+fi
+
+echo "==> Preparing the database (migrations)"
+bin/rails db:prepare
+
+if [ "${SEED_DEMO_DATA:-}" = "true" ]; then
+  echo "==> Loading demo data (skipped if there are already reports)"
+  bin/rails demo:seed
+fi
+
+if [ "${DEMO_MODE:-}" = "true" ]; then
+  echo "==> DEMO MODE: fake AI, no face/plate detection. Do not use with real users."
+fi
+
+echo "==> Starting the server on port ${PORT:-3000}"
+exec bin/rails server -b 0.0.0.0 -p "${PORT:-3000}"

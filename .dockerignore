@@ -1,0 +1,12 @@
+.git
+.github
+docs
+web
+mobile
+*.zip
+node_modules
+api/log/*
+api/tmp/*
+api/storage/*
+api/.bundle
+api/config/master.key

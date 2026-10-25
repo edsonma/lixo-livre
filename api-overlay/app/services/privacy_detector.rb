@@ -29,13 +29,14 @@ class PrivacyDetector
       @provider = nil
     end
 
-    # Development and test detect nothing so the pipeline runs end to end. Anywhere else it
-    # refuses to run, so a deployment without a real detector never publishes unblurred photos.
-    def default_provider(local: Rails.env.local?)
+    # Development, test and DEMO_MODE detect nothing so the pipeline runs end to end. Anywhere else
+    # it refuses to run, so a deployment without a real detector never publishes unblurred photos.
+    def default_provider(local: DemoMode.fakes_allowed?)
       return ->(_bytes) { [] } if local
 
       lambda do |_bytes|
-        raise NotConfigured, "Set PrivacyDetector.provider to a face and license plate detector"
+        raise NotConfigured, "Set PrivacyDetector.provider to a face and license plate detector " \
+                             "(or DEMO_MODE=true to skip detection, which blurs nothing)"
       end
     end
 

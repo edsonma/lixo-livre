@@ -1,0 +1,31 @@
+# Local PostgreSQL with PostGIS, so you do not have to install it on your machine.
+#   docker compose up -d db
+# Then, after ./setup.fish, point Rails at it:
+#   set -Ux DATABASE_URL postgis://postgres:postgres@localhost:5432/lixo_livre_development
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lixo_livre_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Optional: the whole API in a container, the way Railway runs it, with fake data.
+  #   docker compose up --build
+  api:
+    build: .
+    profiles: ["full"]
+    depends_on: [db]
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/lixo_livre_development
+      SECRET_KEY_BASE: local-only-not-a-secret-local-only-not-a-secret-local-only-not-a-secret-0123456789
+      DEMO_MODE: "true"
+      SEED_DEMO_DATA: "true"
+
+volumes:
+  pgdata:
