@@ -29,7 +29,28 @@ DATABASE_URL=$(ruby bin/check_database_url) || exit 1
 export DATABASE_URL
 
 echo "==> Preparing the database (migrations)"
-bin/rails db:prepare
+if ! bin/rails db:prepare; then
+  target=$(ruby -ruri -e 'u = URI.parse(ENV.fetch("DATABASE_URL")); print "#{u.host}:#{u.port}"')
+  {
+    echo ""
+    echo "==> Could not prepare the database at $target"
+    case "$target" in
+      *.up.railway.app*|*.proxy.rlwy.net*|*.rlwy.net*)
+        echo "That is a PUBLIC Railway address. Postgres does not answer on a public domain, and a TCP proxy"
+        echo "uses its own port, not 5432. Inside Railway, use the private address of the database service:"
+        echo "  host: <database-service-name>.railway.internal   port: 5432"
+        ;;
+      *)
+        echo "Checklist:"
+        echo "  - the host is the database service's private name (<service>.railway.internal), spelled exactly"
+        echo "  - the database service is running (green) and in the same project and environment"
+        echo "  - the port is 5432, the user and password match what the database was first created with"
+        echo "  - the database service has a volume with PGDATA=/var/lib/postgresql/data/pgdata"
+        ;;
+    esac
+  } >&2
+  exit 1
+fi
 
 if [ "${SEED_DEMO_DATA:-}" = "true" ]; then
   echo "==> Loading demo data (skipped if there are already reports)"
