@@ -10,7 +10,7 @@ class HeatCell < ApplicationRecord
     )
   }
 
-  # severity * 0.5^(age_days / half_life)
+  # severity (0-100) * 0.5^(age_days / half_life); a cell's score is the sum over its reports
   def self.weight(severity, taken_at, now: Time.current)
     age_days = [(now - taken_at) / 1.day, 0].max
     severity * (0.5**(age_days / HALF_LIFE_DAYS))

@@ -19,18 +19,18 @@ class HeatCellTest < ActiveSupport::TestCase
   end
 
   test "recompute! adds up the published reports in the cell" do
-    a = create_published_trash(severity: 4)
-    create_published_trash(severity: 2)
-    create_published_trash(severity: 5).hide!                                         # hidden
+    a = create_published_trash(severity: 80)
+    create_published_trash(severity: 40)
+    create_published_trash(severity: 100).hide!                                         # hidden
     create_trash                                                                      # pending
-    create_published_trash(severity: 5, lat: -15.7492)                                # another cell, 5 km away
+    create_published_trash(severity: 100, lat: -15.7492)                                # another cell, 5 km away
 
     cell = cell_for(a)
     cell.recompute!
 
     assert_predicate cell, :persisted?
     assert_equal 2, cell.reports_count
-    assert_in_delta 6.0, cell.score, 0.1 # a little decay for the hour of age
+    assert_in_delta 120.0, cell.score, 2 # 80 + 40, a little decay for the hour of age
     assert_equal Trash::H3_RESOLUTION, cell.resolution
     assert_not_nil cell.computed_at
   end
@@ -56,7 +56,7 @@ class HeatCellTest < ActiveSupport::TestCase
   end
 
   test "scores decay on their own as time passes" do
-    trash = create_published_trash(severity: 4, taken_at: Time.current)
+    trash = create_published_trash(severity: 80, taken_at: Time.current)
     cell = cell_for(trash)
     cell.recompute!
     fresh = cell.score
@@ -65,7 +65,7 @@ class HeatCellTest < ActiveSupport::TestCase
       cell.recompute!
     end
 
-    assert_in_delta fresh / 2, cell.score, 0.05
+    assert_in_delta fresh / 2, cell.score, 1
   end
 
   test "in_bbox returns only cells inside the box" do

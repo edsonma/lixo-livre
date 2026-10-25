@@ -145,13 +145,13 @@ class TrashesApiTest < ActionDispatch::IntegrationTest
   # --- GET /trashes/:id ---
 
   test "GET show returns one published report" do
-    trash = create_published_trash(severity: 4)
+    trash = create_published_trash(severity: 80)
 
     get "/api/v1/trashes/#{trash.id}"
 
     assert_response :success
     assert_equal trash.id, response.parsed_body["id"]
-    assert_equal 4, response.parsed_body["severity"]
+    assert_equal 80, response.parsed_body["severity"]
     assert_equal %w[plastic], response.parsed_body["trash_types"]
   end
 

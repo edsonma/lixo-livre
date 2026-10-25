@@ -27,15 +27,54 @@ class PhotoSanitizerTest < ActiveSupport::TestCase
     PhotoSanitizer.call(bytes, detector: RecordingDetector.new(*regions))
   end
 
-  test "output carries no EXIF, GPS or camera info" do
+  test "keeps GPS, capture time and camera make and model by default" do
     assert PhotoMetadata.read(exif_photo).exif?, "fixture should start with EXIF"
 
     result = sanitize
+    metadata = PhotoMetadata.read(result.data)
 
+    assert_predicate result, :metadata_kept
+    assert_predicate metadata, :gps?
+    assert_in_delta(-15.7942, metadata.lat, 1e-4)
+    assert_in_delta(-47.8825, metadata.lng, 1e-4)
+    assert_equal Time.utc(2026, 10, 20, 14, 30), metadata.taken_at
+    assert_includes result.data.b, "FakeCam"
+    assert_includes result.data.b, "PhotoPhone 9"
+  end
+
+  test "the kept EXIF has no embedded preview image, maker note or private fields" do
+    result = sanitize(file_fixture("exif_thumbnail.jpg").binread)
+
+    assert_predicate result, :metadata_kept
+    assert_includes result.data.b, "FakeCam"
+    %w[UNBLURRED-THUMBNAIL SECRET-MAKERNOTE SECRET-DESCRIPTION SECRET-ARTIST SECRET-SERIAL].each do |secret|
+      assert_not_includes result.data.b, secret
+    end
+  end
+
+  test "strips every trace of EXIF when told to" do
+    result = PhotoSanitizer.call(exif_photo, detector: RecordingDetector.new, keep_metadata: false)
+
+    assert_not result.metadata_kept
     assert_not PhotoMetadata.read(result.data).exif?
     assert_not_includes result.data.b, "FakeCam"
-    assert_not_includes result.data.b, "PhotoPhone"
     assert_not_includes result.data.b, "Exif".b
+  end
+
+  test "STRIP_PHOTO_METADATA=true switches the EXIF copy off" do
+    with_env("STRIP_PHOTO_METADATA" => "true") do
+      assert_not PhotoSanitizer.keep_metadata?
+      assert_not PhotoMetadata.read(sanitize.data).exif?
+    end
+    with_env("STRIP_PHOTO_METADATA" => nil) { assert PhotoSanitizer.keep_metadata? }
+    with_env("STRIP_PHOTO_METADATA" => "false") { assert PhotoSanitizer.keep_metadata? }
+  end
+
+  test "a photo that had no EXIF has none afterwards" do
+    result = sanitize(file_fixture("plain.jpg").binread)
+
+    assert_not result.metadata_kept
+    assert_not PhotoMetadata.read(result.data).exif?
   end
 
   test "output is a JPEG with the dimensions reported" do
@@ -106,7 +145,9 @@ class PhotoSanitizerTest < ActiveSupport::TestCase
     assert_equal [80, 120], [result.width, result.height]
     image = decode(result.data)
     assert_equal [80, 120], [image.width, image.height]
-    assert_not PhotoMetadata.read(result.data).exif? # orientation tag is gone, pixels are already upright
+    metadata = PhotoMetadata.read(result.data)
+    assert_equal 1, metadata.orientation # the pixels are already upright, so viewers must not rotate again
+    assert_equal [80, 120], [metadata.pixel_width, metadata.pixel_height]
   end
 
   test "shrinks big photos to the maximum dimension, keeping the aspect ratio" do

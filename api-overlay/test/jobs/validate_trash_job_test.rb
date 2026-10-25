@@ -15,14 +15,14 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
   end
 
   test "validates a trash photo: severity, types and confidence come from the AI" do
-    @vision_answer = vision_result(severity: 5, types: %w[plastic bulky_items], confidence: 0.88)
+    @vision_answer = vision_result(severity: 95, types: %w[plastic bulky_items], confidence: 0.88)
     trash = sanitized_trash
 
     ValidateTrashJob.perform_now(trash.id)
 
     trash.reload
     assert_predicate trash, :validated?
-    assert_equal 5, trash.severity
+    assert_equal 95, trash.severity
     assert_equal %w[plastic bulky_items], trash.trash_types
     assert_in_delta 0.88, trash.ai_confidence
     assert_not_nil trash.validated_at
@@ -114,7 +114,7 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
   end
 
   test "a garbled answer from the provider holds the report for review and never publishes it" do
-    TrashVision.provider = ->(_photo) { { is_trash: true, severity: 9, confidence: 0.99 } }
+    TrashVision.provider = ->(_photo) { { is_trash: true, severity: 150, confidence: 0.99 } }
     trash = sanitized_trash
 
     perform_enqueued_jobs { ValidateTrashJob.perform_later(trash.id) }
@@ -126,14 +126,14 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
   end
 
   test "a provider that answers with a plain hash works" do
-    TrashVision.provider = ->(_photo) { { "is_trash" => true, "severity" => 2, "types" => ["glass"], "confidence" => 0.8 } }
+    TrashVision.provider = ->(_photo) { { "is_trash" => true, "severity" => 35, "types" => ["glass"], "confidence" => 0.8 } }
     trash = sanitized_trash
 
     ValidateTrashJob.perform_now(trash.id)
 
     trash.reload
     assert_predicate trash, :validated?
-    assert_equal 2, trash.severity
+    assert_equal 35, trash.severity
     assert_equal %w[glass], trash.trash_types
   end
 

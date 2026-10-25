@@ -5,7 +5,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
   FACE = { kind: "face", x: 0.25, y: 0.25, width: 0.25, height: 0.25 }.freeze
   INSIDE = [55, 40, 40, 32].freeze # inside the padded redaction box of FACE on a 200x150 photo
 
-  test "replaces the stored photo with a copy that has no EXIF" do
+  test "replaces the stored photo with a sanitized copy that keeps GPS and camera EXIF" do
     trash = create_trash(fixture: "exif_gps.jpg")
     assert PhotoMetadata.read(trash.photo.download).exif?, "the upload starts with EXIF"
 
@@ -13,10 +13,23 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
 
     trash.reload
     stored = trash.photo.download
-    assert_not PhotoMetadata.read(stored).exif?
-    assert_not_includes stored.b, "FakeCam"
+    assert_predicate PhotoMetadata.read(stored), :gps?
+    assert_includes stored.b, "FakeCam"
+    assert_equal true, trash.photo_meta["metadata_kept"]
     assert_equal "image/jpeg", trash.photo.content_type
     assert_not_nil trash.sanitized_at
+  end
+
+  test "with STRIP_PHOTO_METADATA=true the stored photo has no EXIF at all" do
+    trash = create_trash(fixture: "exif_gps.jpg")
+
+    with_env("STRIP_PHOTO_METADATA" => "true") { SanitizePhotoJob.perform_now(trash.id) }
+
+    trash.reload
+    stored = trash.photo.download
+    assert_not PhotoMetadata.read(stored).exif?
+    assert_not_includes stored.b, "FakeCam"
+    assert_equal false, trash.photo_meta["metadata_kept"]
   end
 
   test "deletes the original file, not just the database row" do

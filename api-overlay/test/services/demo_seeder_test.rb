@@ -8,7 +8,7 @@ class DemoSeederTest < ActiveSupport::TestCase
     assert_equal 30, Trash.count
     assert_equal 30, Trash.for_heatmap.count, "every demo report is publicly visible"
     assert Trash.all.all? { |t| t.photo.attached? }
-    assert Trash.all.all? { |t| t.sanitized_at.present? && t.severity.between?(1, 5) }
+    assert Trash.all.all? { |t| t.sanitized_at.present? && t.severity.between?(0, 100) }
     assert_operator HeatCell.count, :>, 0
     assert_operator Trash.where(user_id: nil).count, :>, 0
     assert_operator Trash.where.not(user_id: nil).count, :>, 0

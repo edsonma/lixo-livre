@@ -1,7 +1,7 @@
 module Api
   module V1
     class HeatmapController < BaseController
-      MIN_SCORE = 0.1
+      MIN_SCORE = 2 # cells that have cooled below this (severity 0-100, decayed) are not drawn
 
       # GET /api/v1/heatmap?bbox=west,south,east,north  ->  GeoJSON FeatureCollection of cell centers
       def index

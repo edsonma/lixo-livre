@@ -27,9 +27,9 @@ class TrashTest < ActiveSupport::TestCase
     assert build_trash(user: nil).valid?
   end
 
-  test "severity must be 1 to 5 when present" do
-    [0, 6, -1].each { |bad| assert_not build_trash(severity: bad).valid?, "#{bad} should be invalid" }
-    [1, 3, 5, nil].each { |ok| assert build_trash(severity: ok).valid?, "#{ok.inspect} should be valid" }
+  test "severity must be 0 to 100 when present" do
+    [-1, 101, 500].each { |bad| assert_not build_trash(severity: bad).valid?, "#{bad} should be invalid" }
+    [0, 1, 50, 100, nil].each { |ok| assert build_trash(severity: ok).valid?, "#{ok.inspect} should be valid" }
   end
 
   test "trash types must be known" do

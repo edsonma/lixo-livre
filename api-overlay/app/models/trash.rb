@@ -6,6 +6,9 @@ class Trash < ApplicationRecord
   PHOTO_CONTENT_TYPES = %w[image/jpeg image/png image/webp image/heic image/heif].freeze
   MAX_PHOTO_BYTES = 15.megabytes
 
+  # How dirty the AI says the spot is: 0 (spotless) to 100 (large illegal dump). Set by the AI only.
+  SEVERITY_RANGE = (0..100).freeze
+
   # A photo whose EXIF position is farther than this from the reported spot, or whose EXIF time
   # differs from the reported time by more than this, goes to human review.
   # (EXIF has no time zone, so the time tolerance must cover any zone offset.)
@@ -25,7 +28,7 @@ class Trash < ApplicationRecord
   }, default: "pending"
 
   validates :photo, :lonlat, :taken_at, presence: true
-  validates :severity, inclusion: { in: 1..5 }, allow_nil: true
+  validates :severity, inclusion: { in: SEVERITY_RANGE }, allow_nil: true
   validate :trash_types_are_known
   validate :photo_is_acceptable
 

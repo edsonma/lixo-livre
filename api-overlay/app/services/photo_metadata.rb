@@ -1,13 +1,14 @@
 # Reads the few EXIF fields we care about (capture time and GPS position) from a JPEG.
 #
 # We read them BEFORE the photo is sanitized, only to sanity-check the report (does the photo
-# claim to be from somewhere else, or from weeks ago?). The sanitizer then strips everything.
+# claim to be from somewhere else, or from weeks ago?). The stored copy keeps its EXIF unless
+# PhotoSanitizer is told to strip it (see ExifPreserver).
 #
 # This is a small, bounds-checked reader on purpose: it never raises, and anything it cannot
 # understand just comes back as nil. The capture time has no time zone in EXIF, so it is
 # returned as if it were UTC; compare with a tolerance of at least a day.
 class PhotoMetadata
-  attr_reader :taken_at, :lat, :lng
+  attr_reader :taken_at, :lat, :lng, :orientation, :pixel_width, :pixel_height
 
   def self.read(bytes)
     tiff = exif_segment(bytes.to_s.b)
@@ -18,8 +19,11 @@ class PhotoMetadata
     new(exif: true) # there is an EXIF block, but we could not make sense of it
   end
 
-  def initialize(exif: false, taken_at: nil, lat: nil, lng: nil)
+  def initialize(exif: false, taken_at: nil, lat: nil, lng: nil, orientation: nil, pixel_width: nil, pixel_height: nil)
     @exif = exif
+    @orientation = orientation
+    @pixel_width = pixel_width
+    @pixel_height = pixel_height
     @taken_at = taken_at
     @lat = lat
     @lng = lng
@@ -56,7 +60,6 @@ class PhotoMetadata
     end
     nil
   end
-  private_class_method :exif_segment
 
   # Minimal TIFF/EXIF structure reader (either byte order).
   class Tiff
@@ -68,6 +71,9 @@ class PhotoMetadata
     GPS_IFD = 0x8825
     DATE_TIME_ORIGINAL = 0x9003
     DATE_TIME = 0x0132
+    ORIENTATION = 0x0112
+    PIXEL_X = 0xA002
+    PIXEL_Y = 0xA003
 
     def initialize(data)
       @data = data
@@ -86,7 +92,10 @@ class PhotoMetadata
         exif: true,
         taken_at: taken && parse_time(value(taken)),
         lat: coordinate(gps, 1, 2, "S", 90),
-        lng: coordinate(gps, 3, 4, "W", 180)
+        lng: coordinate(gps, 3, 4, "W", 180),
+        orientation: ifd0[ORIENTATION] && value(ifd0[ORIENTATION]).first,
+        pixel_width: exif[PIXEL_X] && value(exif[PIXEL_X]).first,
+        pixel_height: exif[PIXEL_Y] && value(exif[PIXEL_Y]).first
       )
     end
 

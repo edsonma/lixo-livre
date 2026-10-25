@@ -18,8 +18,8 @@ from PIL import Image
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "api-overlay" / "test" / "fixtures" / "files"
 
-ASCII, SHORT, LONG, RATIONAL = 2, 3, 4, 5
-TYPE_SIZE = {ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8}
+ASCII, SHORT, LONG, RATIONAL, UNDEFINED = 2, 3, 4, 5, 7
+TYPE_SIZE = {ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8, UNDEFINED: 1}
 
 
 def noise_image(width, height, seed):
@@ -52,10 +52,12 @@ def encode_entry_data(endian, kind, values):
         return b"".join(struct.pack(e + "L", v) for v in values), len(values)
     if kind == RATIONAL:
         return b"".join(struct.pack(e + "LL", n, d) for n, d in values), len(values)
+    if kind == UNDEFINED:
+        return bytes(values), len(values)
     raise ValueError(kind)
 
 
-def build_ifd(endian, entries, start_offset, pointers):
+def build_ifd(endian, entries, start_offset, pointers, next_ifd=0):
     """entries: list of (tag, kind, values) sorted by tag. kind 'ptr' = LONG taken from `pointers`.
     Returns (table_bytes, data_bytes) assuming the table is placed at start_offset."""
     e = "<" if endian == "II" else ">"
@@ -72,29 +74,40 @@ def build_ifd(endian, entries, start_offset, pointers):
             inline = struct.pack(e + "L", start_offset + table_size + len(data))
             data += raw + (b"\0" if len(raw) % 2 else b"")
         table += struct.pack(e + "HHL", tag, kind, count) + inline
-    table += struct.pack(e + "L", 0)  # no next IFD
+    table += struct.pack(e + "L", next_ifd)  # 0 = no next IFD
     return table, data
 
 
-def build_tiff(endian, ifd0, exif, gps):
+def build_tiff(endian, ifd0, exif, gps, thumbnail=None):
+    """thumbnail: raw JPEG bytes to embed as the EXIF thumbnail (IFD1), like cameras do."""
     e = "<" if endian == "II" else ">"
     header = endian.encode() + struct.pack(e + "HL", 42, 8)
+    ifd1 = None
+    if thumbnail is not None:
+        ifd1 = [(0x0201, "ptr", "thumb"), (0x0202, LONG, [len(thumbnail)])]
 
     def layout(pointers):
         blobs, offset = [], 8
-        for entries in (ifd0, exif, gps):
-            table, data = build_ifd(endian, entries, offset, pointers)
+        tables = [ifd0, exif, gps] + ([ifd1] if ifd1 else [])
+        for i, entries in enumerate(tables):
+            next_ifd = pointers.get("ifd1", 0) if i == 0 else 0
+            table, data = build_ifd(endian, entries, offset, pointers, next_ifd)
             blobs.append((offset, table + data))
             offset += len(table) + len(data)
+        if thumbnail is not None:
+            blobs.append((offset, thumbnail))
         return blobs
 
-    blobs = layout({"exif": 0, "gps": 0})  # first pass only to learn the offsets
+    blobs = layout({"exif": 0, "gps": 0, "ifd1": 0, "thumb": 0})  # first pass only to learn the offsets
     pointers = {"exif": blobs[1][0], "gps": blobs[2][0]}
+    if thumbnail is not None:
+        pointers.update({"ifd1": blobs[3][0], "thumb": blobs[4][0]})
     blobs = layout(pointers)
     return header + b"".join(blob for _, blob in blobs)
 
 
-def exif_block(endian, lat, lng, taken, make="FakeCam", model="PhotoPhone 9", orientation=1):
+def exif_block(endian, lat, lng, taken, make="FakeCam", model="PhotoPhone 9", orientation=1,
+               thumbnail=None, maker_note=None, dimensions=None, extras=False):
     ifd0 = sorted([
         (0x010F, ASCII, make),
         (0x0110, ASCII, model),
@@ -103,13 +116,22 @@ def exif_block(endian, lat, lng, taken, make="FakeCam", model="PhotoPhone 9", or
         (0x8825, "ptr", "gps"),
     ])
     exif = [(0x9003, ASCII, taken)]
+    if extras:  # things a phone writes that we must NOT keep (SECRET-*), and one we keep (the lens)
+        ifd0 = sorted(ifd0 + [(0x010E, ASCII, "SECRET-DESCRIPTION 12 Rua X"), (0x013B, ASCII, "SECRET-ARTIST Jane Doe")])
+        exif += [(0xA431, ASCII, "SECRET-SERIAL-12345"), (0xA434, ASCII, "FakeLens 24mm"),
+                 (0x829D, RATIONAL, [(28, 10)]), (0x8827, SHORT, [200])]
+        exif.sort()
+    if maker_note is not None:
+        exif.append((0x927C, UNDEFINED, maker_note))
+    if dimensions is not None:
+        exif += [(0xA002, SHORT, [dimensions[0]]), (0xA003, SHORT, [dimensions[1]])]
     gps = [
         (1, ASCII, "N" if lat >= 0 else "S"),
         (2, RATIONAL, dms(lat)),
         (3, ASCII, "E" if lng >= 0 else "W"),
         (4, RATIONAL, dms(lng)),
     ]
-    return build_tiff(endian, ifd0, exif, gps)
+    return build_tiff(endian, ifd0, exif, gps, thumbnail)
 
 
 def with_exif(jpeg, tiff):
@@ -145,6 +167,16 @@ if __name__ == "__main__":
     # Stored 120x80 (landscape) with Orientation=6: displays rotated 90 degrees, i.e. 80x120.
     sideways = jpeg_bytes(noise_image(120, 80, seed=3))
     write("exif_rotated.jpg", with_exif(sideways, exif_block("II", *BRASILIA, "2026:10:20 14:30:00", orientation=6)))
+
+    # What a phone really writes: an embedded preview (EXIF thumbnail) and a maker note, plus
+    # Orientation=6 and the camera's own pixel dimensions. The two marker strings stand in for
+    # the unblurred preview and the vendor data, so tests can check that neither survives.
+    thumb = (b"\xff\xd8" + b"UNBLURRED-THUMBNAIL-BYTES" + bytes(range(0x80, 0x100)) * 2
+             + b"\xff\xd9")  # marker, then data that is not printable text, like real JPEG data
+    full = jpeg_bytes(noise_image(120, 80, seed=4))
+    write("exif_thumbnail.jpg", with_exif(full, exif_block(
+        "II", *BRASILIA, "2026:10:20 14:30:00", orientation=6,
+        thumbnail=thumb, maker_note=b"SECRET-MAKERNOTE-PREVIEW-DATA", dimensions=(4000, 3000), extras=True)))
 
     # Looks like a JPEG (right magic bytes, so it passes upload checks) but cannot be decoded.
     write("corrupt.jpg", b"\xff\xd8\xff\xe0" + b"this is not really a jpeg")

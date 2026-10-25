@@ -20,7 +20,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
     Trash.find(response.parsed_body["id"])
   end
 
-  test "an uploaded photo is stripped, blurred and validated before it reaches the map" do
+  test "an uploaded photo is blurred and validated, keeping its EXIF, before it reaches the map" do
     travel_to NOW do
       PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       original = decode(file_fixture("exif_gps.jpg").binread)
@@ -33,21 +33,21 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
       assert_equal({ "license_plate" => 1 }, trash.photo_meta["redactions"])
 
       stored = trash.photo.download
-      assert_not PhotoMetadata.read(stored).exif?, "GPS and camera data must be gone"
-      assert_not_includes stored.b, "FakeCam"
+      assert_predicate PhotoMetadata.read(stored), :gps?, "GPS and camera data are kept"
+      assert_includes stored.b, "FakeCam"
       assert_operator deviation_in(decode(stored), INSIDE), :<, deviation_in(original, INSIDE) * 0.35
 
       get "/api/v1/heatmap", params: { bbox: BBOX }
       features = response.parsed_body["features"]
       assert_equal 1, features.size
-      assert_operator features.first["properties"]["score"], :>, 3.5 # severity 4, a day old
+      assert_operator features.first["properties"]["score"], :>, 70 # severity 80, a day old
 
       get "/api/v1/trashes", params: { lat: -15.7942, lng: -47.8825 }
       assert_equal [trash.id], response.parsed_body.map { |t| t["id"] }
     end
   end
 
-  test "the AI is shown the sanitized photo, never the original" do
+  test "the AI is shown the blurred photo without any EXIF, never the original" do
     travel_to NOW do
       PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       seen = nil

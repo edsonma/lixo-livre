@@ -9,7 +9,7 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
   end
 
   test "returns the cells in the box as a GeoJSON FeatureCollection" do
-    cell(lng: -47.88, lat: -15.79, score: 5.5, count: 3)
+    cell(lng: -47.88, lat: -15.79, score: 55.5, count: 3)
 
     get "/api/v1/heatmap", params: { bbox: BBOX }
 
@@ -19,7 +19,7 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
     assert_equal 1, body["features"].size
     feature = body["features"].first
     assert_equal "Feature", feature["type"]
-    assert_in_delta 5.5, feature["properties"]["score"]
+    assert_in_delta 55.5, feature["properties"]["score"]
     assert_equal 3, feature["properties"]["count"]
     assert_in_delta(-47.88, feature["geometry"]["coordinates"][0], 1e-6)
     assert_in_delta(-15.79, feature["geometry"]["coordinates"][1], 1e-6)
@@ -34,8 +34,8 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
   end
 
   test "leaves out cells that have cooled down to almost nothing" do
-    cell(lng: -47.88, lat: -15.79, score: 0.05)
-    hot = cell(lng: -47.85, lat: -15.75, score: 2)
+    cell(lng: -47.88, lat: -15.79, score: 1)
+    hot = cell(lng: -47.85, lat: -15.75, score: 40)
 
     get "/api/v1/heatmap", params: { bbox: BBOX }
 

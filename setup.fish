@@ -32,8 +32,15 @@ if test "$gem_bin" != "$ruby_bin"
     echo "This often causes 'Could not find nokogiri ... in locally installed gems'."
     echo "Continuing, but if bundler fails, fix your PATH (see: which -a ruby gem bundle) and retry."
 end
-for tool in pg_config cmake vips
-    command -q $tool; or echo "warning: $tool not found (needed for PostGIS client libs, the h3 gem and photo processing)"
+# libvips is loaded by the ruby-vips gem when Rails boots, so without it nothing runs
+if not command -q vips
+    echo "libvips not found. Photo processing needs it. Install it and retry:"
+    echo "  macOS:  brew install vips"
+    echo "  Ubuntu: sudo apt install libvips42"
+    exit 1
+end
+for tool in pg_config cmake
+    command -q $tool; or echo "warning: $tool not found (needed for PostgreSQL client libs and the h3 gem)"
 end
 
 gem install rails --no-document
@@ -58,7 +65,8 @@ if not grep -Eq "^[[:space:]]*gem ['\"]aws-sdk-s3['\"]" Gemfile
 end
 
 # Active Storage tables (photos)
-rails active_storage:install
+bin/rails active_storage:install
+or exit 1
 
 # Copy our migrations, models, controllers, jobs, routes and config over the generated app
 cp -R ../api-overlay/. .
@@ -68,7 +76,8 @@ ruby ../tools/patch_generated_app.rb .
 or exit 1
 chmod +x bin/railway-start
 
-rails db:create db:migrate
+bin/rails db:create db:migrate
+or exit 1
 
 echo ""
 echo "Done. Start the API with:  cd api; bin/rails server"

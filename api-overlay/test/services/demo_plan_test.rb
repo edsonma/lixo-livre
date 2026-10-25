@@ -19,14 +19,26 @@ class DemoPlanTest < ActiveSupport::TestCase
 
   test "stays inside the valid ranges" do
     plan.each do |report|
-      assert_includes 1..5, report.severity
+      assert_includes 0..100, report.severity
       assert_operator report.taken_at, :<=, NOW
       assert_operator report.taken_at, :>=, NOW - DemoPlan::MAX_AGE_DAYS.days
       assert_includes 0...DemoPlan::ACTORS, report.actor
-      assert_match(/\Aseverity-#{report.severity}-[abc]\.jpg\z/, report.photo)
+      assert_match(/\Aseverity-#{DemoPlan.photo_bucket(report.severity)}-[abc]\.jpg\z/, report.photo)
       assert_operator (report.lat - CENTER[0]).abs, :<, 0.5
       assert_operator (report.lng - CENTER[1]).abs, :<, 0.5
     end
+  end
+
+  test "maps a 0-100 severity to one of the 5 demo photo looks" do
+    {0 => 1, 1 => 1, 20 => 1, 21 => 2, 40 => 2, 41 => 3, 60 => 3, 61 => 4, 80 => 4, 81 => 5, 100 => 5}.each do |severity, bucket|
+      assert_equal bucket, DemoPlan.photo_bucket(severity), "severity #{severity}"
+    end
+  end
+
+  test "severities cover a wide range so the map shows clean and dirty areas" do
+    severities = plan(count: 220).map(&:severity)
+    assert_operator severities.min, :<, 30
+    assert_operator severities.max, :>, 85
   end
 
   test "every photo it names exists in db/demo_photos" do

@@ -14,8 +14,8 @@ MapLibre needs a development build, not Expo Go: `npx expo run:ios` or `npx expo
 
 - Swipe pager with two pages: **Map** (main) and **My pictures** (feed like Instagram).
 - Map page: a button opens the camera. The photo is sent with the current GPS position and `taken_at`.
-  The AI sets the severity, so there is no star rating. Show the result after upload
-  ("analyzing..." then the stars the AI gave).
+  The AI sets the severity (0-100), so there is no star rating. Show the result after upload
+  ("analyzing..." then the score the AI gave) by polling `GET /api/v1/me/trashes/:id` until `done`.
 - My pictures page: `GET /api/v1/me/trashes`.
 
 ## API contract

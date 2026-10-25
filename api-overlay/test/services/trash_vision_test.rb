@@ -2,7 +2,7 @@ require "test_helper"
 
 class TrashVisionTest < ActiveSupport::TestCase
   def answer(**overrides)
-    { is_trash: true, severity: 3, types: %w[plastic], confidence: 0.9 }.merge(overrides)
+    { is_trash: true, severity: 60, types: %w[plastic], confidence: 0.9 }.merge(overrides)
   end
 
   def analyze_with(response)
@@ -22,6 +22,18 @@ class TrashVisionTest < ActiveSupport::TestCase
     assert_instance_of TrashVision::Image, seen
     assert_equal "image/jpeg", seen.content_type
     assert_equal trash.photo.download, seen.bytes
+  end
+
+  test "the provider never gets EXIF, even when the stored photo carries it" do
+    trash = create_trash(fixture: "exif_gps.jpg") # the stored file has GPS and camera data
+    assert PhotoMetadata.read(trash.photo.download).exif?
+    seen = nil
+    TrashVision.provider = ->(image) { seen = image; answer }
+
+    TrashVision.analyze(trash.photo)
+
+    assert_not PhotoMetadata.read(seen.bytes).exif?
+    assert_not_includes seen.bytes, "FakeCam"
   end
 
   test "an Image can hand itself to an API as base64 or a data URI" do
@@ -44,26 +56,26 @@ class TrashVisionTest < ActiveSupport::TestCase
     result = analyze_with(answer)
 
     assert_instance_of TrashVision::Result, result
-    assert_equal [true, 3, %w[plastic], 0.9], [result.is_trash, result.severity, result.types, result.confidence]
+    assert_equal [true, 60, %w[plastic], 0.9], [result.is_trash, result.severity, result.types, result.confidence]
   end
 
   test "accepts a Hash with string keys, like parsed JSON" do
     result = analyze_with(JSON.parse(answer.to_json))
 
-    assert_equal 3, result.severity
+    assert_equal 60, result.severity
     assert_equal %w[plastic], result.types
   end
 
   test "accepts a TrashVision::Result" do
-    result = analyze_with(vision_result(severity: 5))
+    result = analyze_with(vision_result(severity: 95))
 
-    assert_equal 5, result.severity
+    assert_equal 95, result.severity
   end
 
   test "rounds and parses numeric severity and confidence from loose types" do
-    result = analyze_with(answer(severity: "4", confidence: "0.75"))
+    result = analyze_with(answer(severity: "72.4", confidence: "0.75"))
 
-    assert_equal 4, result.severity
+    assert_equal 72, result.severity
     assert_in_delta 0.75, result.confidence
   end
 
@@ -73,6 +85,12 @@ class TrashVisionTest < ActiveSupport::TestCase
   end
 
   # --- cleaning ---
+
+  test "severity runs from 0 to 100 and both ends are valid" do
+    assert_equal 0, analyze_with(answer(severity: 0)).severity
+    assert_equal 100, analyze_with(answer(severity: 100)).severity
+    assert_equal 100, analyze_with(answer(severity: 100.4)).severity
+  end
 
   test "drops unknown types, normalizes case and removes duplicates" do
     result = analyze_with(answer(types: ["Plastic", "plastic", "unicorn", " GLASS "]))
@@ -85,7 +103,7 @@ class TrashVisionTest < ActiveSupport::TestCase
   end
 
   test "not trash needs no severity or types, and ignores any it sends" do
-    result = analyze_with(is_trash: false, confidence: 0.97, severity: 4, types: %w[plastic])
+    result = analyze_with(is_trash: false, confidence: 0.97, severity: 80, types: %w[plastic])
 
     assert_not result.is_trash
     assert_nil result.severity
@@ -98,7 +116,7 @@ class TrashVisionTest < ActiveSupport::TestCase
     [
       nil, "trash", 42, [],
       answer(is_trash: nil), answer(is_trash: "yes"), answer.except(:is_trash),
-      answer(severity: 0), answer(severity: 6), answer(severity: nil), answer(severity: "bad"),
+      answer(severity: -1), answer(severity: 101), answer(severity: 100.6), answer(severity: nil), answer(severity: "bad"),
       answer(confidence: nil), answer(confidence: 1.5), answer(confidence: -0.1), answer(confidence: 90), answer(confidence: "high")
     ].each do |bad|
       assert_raises(TrashVision::InvalidResponse, bad.inspect) { analyze_with(bad) }
@@ -132,7 +150,7 @@ class TrashVisionTest < ActiveSupport::TestCase
     result = TrashVision.analyze(TrashVision::Image.new(bytes: "x", content_type: "image/jpeg"))
 
     assert result.is_trash
-    assert_includes 1..5, result.severity
+    assert_includes 0..100, result.severity
     assert_operator result.confidence, :>=, ValidateTrashJob::CONFIDENCE_THRESHOLD
   end
 

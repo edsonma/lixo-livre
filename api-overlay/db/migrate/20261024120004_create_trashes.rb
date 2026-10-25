@@ -8,7 +8,7 @@ class CreateTrashes < ActiveRecord::Migration[8.0]
       t.string   :h3_index, null: false                 # H3 cell (resolution 9), set from lonlat
       t.datetime :taken_at, null: false                 # when the photo was taken
 
-      t.integer  :severity                              # 1..5, set by the AI only
+      t.integer  :severity                              # 0..100, set by the AI only (was 1..5, see the rescale migration)
       t.string   :trash_types, array: true, default: [] # filled by the AI
       t.text     :extra_info                            # free text from the person
 

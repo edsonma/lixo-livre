@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       end
 
       get "me/trashes", to: "me#trashes"
+      get "me/trashes/:id", to: "me#show"
       # later: resource :session, resources :users (login)
     end
   end

@@ -29,11 +29,11 @@ class MeApiTest < ActionDispatch::IntegrationTest
   end
 
   test "includes the AI's verdict once there is one" do
-    create_published_trash(device: @device, severity: 4)
+    create_published_trash(device: @device, severity: 80)
 
     entry = feed.first
 
-    assert_equal 4, entry["severity"]
+    assert_equal 80, entry["severity"]
     assert_equal %w[plastic], entry["trash_types"]
   end
 
@@ -58,5 +58,59 @@ class MeApiTest < ActionDispatch::IntegrationTest
 
   test "is empty for a brand new device" do
     assert_equal [], feed
+  end
+
+  # --- polling one report after upload ---
+
+  def show_report(id, token: @device.token)
+    get "/api/v1/me/trashes/#{id}", headers: { "X-Device-Token" => token }
+    response.parsed_body
+  end
+
+  test "show walks through the stages of the pipeline" do
+    trash = create_trash(device: @device)
+    body = show_report(trash.id)
+    assert_equal "protecting_photo", body["stage"]
+    assert_equal false, body["done"]
+    assert_nil body["severity"]
+
+    trash.update_columns(sanitized_at: Time.current)
+    assert_equal "analyzing", show_report(trash.id)["stage"]
+
+    trash.update_columns(ai_status: "validated", severity: 80, trash_types: %w[plastic])
+    body = show_report(trash.id)
+    assert_equal "scored", body["stage"]
+    assert_equal true, body["done"]
+    assert_equal 80, body["severity"]
+  end
+
+  test "show reports not_trash and in_review as finished" do
+    trash = create_published_trash(device: @device)
+
+    trash.update_columns(ai_status: "rejected", severity: nil)
+    assert_equal ["not_trash", true], show_report(trash.id).values_at("stage", "done")
+
+    trash.update_columns(ai_status: "needs_review")
+    assert_equal ["in_review", true], show_report(trash.id).values_at("stage", "done")
+  end
+
+  test "show never links an unsanitized photo" do
+    trash = create_trash(device: @device)
+
+    assert_nil show_report(trash.id)["photo_url"]
+  end
+
+  test "show is private to the device that uploaded the report" do
+    theirs = create_published_trash
+
+    show_report(theirs.id)
+
+    assert_response :not_found
+  end
+
+  test "show needs a device token" do
+    get "/api/v1/me/trashes/#{create_published_trash(device: @device).id}"
+
+    assert_response :unauthorized
   end
 end

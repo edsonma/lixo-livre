@@ -19,7 +19,7 @@ class DemoDataApiTest < ActionDispatch::IntegrationTest
     assert_response :success
     reports = response.parsed_body
     assert_operator reports.size, :>, 0
-    assert reports.all? { |r| r["photo_url"].present? && r["severity"].between?(1, 5) }
+    assert reports.all? { |r| r["photo_url"].present? && r["severity"].between?(0, 100) }
 
     get URI(reports.first["photo_url"]).request_uri
     assert_response :redirect

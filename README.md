@@ -6,6 +6,14 @@ Heatmap of how dirty each neighborhood is, built from photos people take of tras
 
 ![Lixo Livre concept board](docs/concept.png)
 
+![Lixo Livre app flow: map, community feed, camera, AI analysis, follow-up](docs/concept-app-flow.png)
+
+The app flow in five steps: **1. Map** (real-time heat map of urban cleanliness), **2. Community feed** (see, like,
+comment and follow reports from your neighborhood), **3. Report** (take a photo of the trash), **4. AI analysis**
+(the AI identifies the type and amount of trash and gives a dirtiness level) and **5. Follow-up** (see how a spot
+changes over time and compare photos). In this repo the severity scale is 0-100 (the mock-ups show 8.5/10); see
+[Severity scale](#severity-scale).
+
 ## Product concept
 
 The board above is the product vision. The mobile app has three main views:
@@ -37,8 +45,6 @@ Brand colors: two greens, amber, red, and dark slate (green to red also drives t
 
 These appear on the board but are not in the data model yet:
 
-- **Score out of 100:** the API uses severity 1-5 and a recency-weighted heat score. Either map severity to
-  a 0-100 score for display, or let the AI return 0-100 directly. Decide before building the UI.
 - **Trash type percentages:** `trash_types` is a list of labels. Add a `trash_breakdown` jsonb
   (type to percent) if the camera screen should show the split.
 - **Resolved status:** a `Cleanup` record (or `resolved_at` on `Trash`) so cleaned spots stop heating the map.
@@ -99,13 +105,20 @@ and a working upload endpoint, without any AI provider. Step by step in
 
 Demo mode uses a fake AI and a detector that blurs nothing. Do not point real users at it.
 
+## Severity scale
+
+The AI gives each report a `severity` from **0 (spotless) to 100 (large illegal dump)**. Rough guide: about 20 a few
+items, about 50 a clear pile, 80 or more a big dump or a hazard. The UI labels it in bands of 20 (*Muito leve*,
+*Leve*, *Moderada*, *Grave*, *Muito grave*). A heat cell's `score` is the sum of its reports' severity, halved every
+14 days. Vendors that think in 1-5 stars need to convert in their adapter: `TrashVision` accepts any 0-100 value, so a 4 would be read as "almost spotless".
+
 ## Data flow
 
 1. Mobile creates an anonymous device (`POST /devices`) and keeps the token.
 2. Mobile uploads a photo with GPS and `taken_at` (`POST /trashes`). It starts as `pending` and is not public.
 3. `SanitizePhotoJob` makes the photo safe (see [Photo privacy](#photo-privacy)) and deletes the original.
 4. `ValidateTrashJob` shows the sanitized photo to the AI (`app/services/trash_vision.rb`), which decides if
-   it is trash and sets `severity` (1-5) and `trash_types`, or sends it to `needs_review`.
+   it is trash and sets `severity` (0-100) and `trash_types`, or sends it to `needs_review`.
 5. Validated reports re-score their H3 cell (`RefreshHeatCellJob`). A nightly job applies time decay.
 6. Web reads `GET /heatmap` for the colored layer and `GET /trashes` for the photos of a clicked spot.
 
@@ -114,19 +127,29 @@ Demo mode uses a fake AI and a detector that blurs nothing. Do not point real us
 Photos carry personal data: GPS and camera info in the EXIF block, faces and license plates in the pixels.
 Every upload goes through `SanitizePhotoJob` before the AI, the map or the mobile feed can see it:
 
-- **EXIF stripped.** The photo is decoded, rotated upright, converted to sRGB, shrunk to 2048 px and re-encoded
-  as a new JPEG, so nothing from the original file can survive in it (EXIF, GPS, XMP, IPTC, thumbnails).
+- **Rebuilt from pixels.** The photo is decoded, rotated upright, converted to sRGB, shrunk to 2048 px and
+  re-encoded as a new JPEG, so nothing from the original file survives by accident (XMP, IPTC, ICC, previews).
+- **EXIF kept, cleaned.** The stored photo keeps its GPS position, capture time, camera make and model, lens and
+  basic shooting settings (`ExifPreserver`). It is a brand new EXIF block built from that allowlist, so it has
+  **no embedded preview image** (that preview comes from the unblurred original and would bring a face back), no
+  maker note, no serial number, owner name or description. Orientation is reset to 1 and the pixel size updated.
+  Set `STRIP_PHOTO_METADATA=true` to store photos with no EXIF at all.
 - **Faces and plates blurred.** A detector (`PrivacyDetector`) returns regions; each becomes a 6x6 mosaic
-  (padded 20% so box edges are covered). The detector only receives the already-stripped pixels, so no GPS or
-  device info reaches a third party.
+  (padded 20% so box edges are covered). The detector and the AI vendor only receive metadata-free pixels, so no GPS
+  or device info reaches a third party.
 - **Original deleted.** The stored file is replaced; the old blob is purged.
 - **Fail closed.** If sanitizing cannot finish (detector down, ...) the report goes to `needs_review` and stays
   private. An unsanitized photo is never shown, never sent to the AI, and `/me/trashes` does not link it.
-- **EXIF is checked, then discarded.** Before stripping, we read the capture time and GPS and keep only the
-  comparison (`photo_meta`: `exif_taken_at`, `exif_distance_m`, `redactions`). A photo whose EXIF position is
+- **EXIF is cross-checked.** Before sanitizing, we read the capture time and GPS and record the comparison
+  (`photo_meta`: `exif_taken_at`, `exif_distance_m`, `redactions`, `metadata_kept`). A photo whose EXIF position is
   over 1 km from the reported spot, or whose capture time is over 2 days off, goes to `needs_review` instead of
   the map (no AI cost).
 - Uploads must be JPEG, PNG, WebP or HEIC and at most 15 MB; unreadable files are rejected and deleted.
+
+Keeping the EXIF means **anyone who opens a public photo URL can read where it was taken and with which
+camera**, exactly where the person stood. That is exposed on every report the map shows. If that is not what you
+want for real users, set `STRIP_PHOTO_METADATA=true`: the position is still used for the map and the cross-check, it
+just is not repeated inside the image file.
 
 ### Plugging in a face and plate detector
 
@@ -163,7 +186,7 @@ class MyVisionAdapter
     reply = MyVendor.ask(prompt: TrashVision::PROMPT,
                          schema: TrashVision.json_schema,
                          image: image.data_uri)
-    JSON.parse(reply)                   # { "is_trash" => true, "severity" => 4, "types" => ["plastic"], "confidence" => 0.92 }
+    JSON.parse(reply)                   # { "is_trash" => true, "severity" => 72, "types" => ["plastic"], "confidence" => 0.92 }
   end
 end
 
@@ -171,7 +194,7 @@ TrashVision.provider = MyVisionAdapter.new
 ```
 
 The answer can be a Hash (string or symbol keys) or a `TrashVision::Result`. Before the app uses it,
-`TrashVision.normalize` checks it: `is_trash` must be a boolean, `severity` an integer 1-5, `confidence`
+`TrashVision.normalize` checks it: `is_trash` must be a boolean, `severity` an integer 0-100, `confidence`
 0-1; unknown `types` are dropped. A bad answer raises `TrashVision::InvalidResponse`, the job retries, and
 then the report goes to `needs_review`, so a confused provider never publishes anything. Switching vendors
 means writing a new adapter and nothing else.
@@ -187,7 +210,11 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/trashes/:id` | both | One report |
 | POST | `/api/v1/trashes` | mobile | Upload photo + `lat`, `lng`, `taken_at`, `extra_info` |
 | GET | `/api/v1/me/trashes` | mobile | "My pictures" feed (all AI statuses) |
+| GET | `/api/v1/me/trashes/:id` | mobile, demo page | Poll one report after upload: `stage` (`protecting_photo` → `analyzing` → `scored` / `not_trash` / `in_review`), `done`, `severity` |
 | POST | `/api/v1/trashes/:id/flags` | both | Report a bad or private photo |
+
+After `POST /trashes` (202 with the new `id`), poll `GET /me/trashes/:id` every 1-2 seconds until `done` is true, then show
+"Analyzing…" → the 0-100 `severity`. The demo page at `/` does exactly this (button "Reportar lixo").
 
 Mobile requests send `X-Device-Token`. When login is added, call `device.claim_by!(user)` so the
 anonymous history moves to the account.
@@ -214,7 +241,7 @@ bin/rails test test/integration                   # API + end-to-end privacy pip
 
 | Folder | Covers |
 |---|---|
-| `test/services` | `DemoMode`, `DemoPlan`, `DemoSeeder`, `PipelineRecovery`, `PhotoSanitizer` (EXIF gone, rotation, resize, alpha, mosaic where asked and nowhere else), `PhotoMetadata` (both byte orders, truncated and fuzzed input), `PrivacyRegion`, `PrivacyDetector`, `TrashVision`, `Geo` |
+| `test/services` | `DemoMode`, `DemoPlan`, `DemoSeeder`, `PipelineRecovery`, `PhotoSanitizer` and `ExifPreserver` (EXIF kept but cleaned: no preview image, maker note or private fields; rotation, resize, alpha, mosaic where asked and nowhere else), `PhotoMetadata` (both byte orders, truncated and fuzzed input), `PrivacyRegion`, `PrivacyDetector`, `TrashVision`, `Geo` |
 | `test/models` | validations, scopes, EXIF cross-check, flag auto-hide, heat score and decay, device claiming |
 | `test/jobs` | `SanitizePhotoJob` (original deleted, retries, fail-closed), `ValidateTrashJob`, heat cell jobs |
 | `test/integration` | every endpoint (including `/status` and the seeded demo data), plus `photo_privacy_pipeline_test.rb`: upload a photo with GPS in its EXIF and follow it to the map |

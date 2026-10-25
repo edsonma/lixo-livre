@@ -1,6 +1,7 @@
 # Runs right after upload, BEFORE the AI sees the photo or anyone can see it:
 # reads the EXIF fields we need, then replaces the stored photo with a sanitized copy
-# (no metadata, faces and license plates blurred) and deletes the original file.
+# (faces and license plates blurred, EXIF kept in a cleaned form, see PhotoSanitizer) and deletes
+# the original file.
 #
 # Fail closed: if sanitizing cannot be completed (detector down, ...) the report goes to
 # `needs_review` and stays private. An unsanitized photo is never published.
@@ -45,7 +46,7 @@ class SanitizePhotoJob < ApplicationJob
   end
 
   def build_meta(trash, metadata, result)
-    meta = { "exif_present" => metadata.exif?, "redactions" => result.redactions }
+    meta = { "exif_present" => metadata.exif?, "metadata_kept" => result.metadata_kept, "redactions" => result.redactions }
     meta["exif_taken_at"] = metadata.taken_at.utc.iso8601 if metadata.taken_at
     if metadata.gps?
       meta["exif_distance_m"] = Geo.distance_m(trash.lonlat.y, trash.lonlat.x, metadata.lat, metadata.lng).round

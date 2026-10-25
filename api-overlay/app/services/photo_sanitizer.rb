@@ -5,9 +5,14 @@ require "vips"
 #   1. decodes it, applies the EXIF rotation, converts to sRGB, shrinks it to MAX_DIMENSION
 #   2. asks the detector for faces and license plates (it only ever sees metadata-free pixels)
 #   3. replaces each of those regions with a coarse mosaic
-#   4. re-encodes as JPEG with ALL metadata dropped (EXIF, GPS, XMP, IPTC, ICC, thumbnails)
+#   4. re-encodes as JPEG from the decoded pixels, with no metadata
+#   5. copies the original's EXIF back in (GPS, capture time, camera make and model), cleaned by
+#      ExifPreserver: no embedded preview image, no maker note, orientation reset
 #
-# The output is built from decoded pixels, so nothing from the original file can survive in it.
+# The EXIF copy is the default. Set STRIP_PHOTO_METADATA=true (or pass keep_metadata: false) to drop it.
+# Either way the detector, and anything else outside our servers, only ever sees metadata-free pixels.
+# XMP, IPTC and ICC are never kept: the output is built from decoded pixels.
+#
 # If the detector raises, so does this: the caller must keep the photo private, never fall back
 # to publishing it unblurred. Needs libvips (brew install vips / apt install libvips42).
 class PhotoSanitizer
@@ -17,16 +22,22 @@ class PhotoSanitizer
   JPEG_QUALITY = 85
   MOSAIC_CELLS = 6 # a redacted region becomes at most 6x6 blocks: no face or plate survives that
 
-  Result = Struct.new(:data, :width, :height, :content_type, :redactions, keyword_init: true)
+  Result = Struct.new(:data, :width, :height, :content_type, :redactions, :metadata_kept, keyword_init: true)
 
-  # detector: anything with #detect(jpeg_bytes) returning PrivacyRegion objects
-  def self.call(bytes, detector: PrivacyDetector)
-    new(bytes, detector: detector).call
+  # Stored photos keep their EXIF unless STRIP_PHOTO_METADATA is set.
+  def self.keep_metadata?
+    !%w[1 true yes on].include?(ENV["STRIP_PHOTO_METADATA"].to_s.strip.downcase)
   end
 
-  def initialize(bytes, detector:)
+  # detector: anything with #detect(jpeg_bytes) returning PrivacyRegion objects
+  def self.call(bytes, detector: PrivacyDetector, keep_metadata: keep_metadata?)
+    new(bytes, detector: detector, keep_metadata: keep_metadata).call
+  end
+
+  def initialize(bytes, detector:, keep_metadata: self.class.keep_metadata?)
     @bytes = bytes
     @detector = detector
+    @keep_metadata = keep_metadata
   end
 
   def call
@@ -34,12 +45,16 @@ class PhotoSanitizer
     regions = @detector.detect(encode(image)) # metadata-free bytes: nothing sensitive leaves here
     image = redact(image, regions)
 
+    data = encode(image)
+    data = ExifPreserver.copy(@bytes, into: data, width: image.width, height: image.height) if @keep_metadata
+
     Result.new(
-      data: encode(image),
+      data: data,
       width: image.width,
       height: image.height,
       content_type: "image/jpeg",
-      redactions: regions.group_by(&:kind).transform_values(&:size)
+      redactions: regions.group_by(&:kind).transform_values(&:size),
+      metadata_kept: PhotoMetadata.read(data).exif?
     )
   rescue Vips::Error => e
     raise InvalidImage, e.message

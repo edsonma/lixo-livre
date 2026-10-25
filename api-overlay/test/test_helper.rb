@@ -10,7 +10,7 @@ module TrashTestHelpers
 
   # What the fake AI vision provider answers unless a test overrides it.
   def vision_result(**overrides)
-    defaults = { is_trash: true, severity: 4, types: %w[plastic], confidence: 0.95, raw: { "provider" => "test" } }
+    defaults = { is_trash: true, severity: 80, types: %w[plastic], confidence: 0.95, raw: { "provider" => "test" } }
     TrashVision::Result.new(**defaults, **overrides)
   end
 
@@ -46,7 +46,7 @@ module TrashTestHelpers
 
   # A report that already went through the whole pipeline and is publicly visible.
   # Writes the final state directly, so no jobs run.
-  def create_published_trash(severity: 3, **attrs)
+  def create_published_trash(severity: 60, **attrs)
     trash = create_trash(**attrs)
     trash.update_columns(
       ai_status: "validated", severity: severity, trash_types: %w[plastic],
