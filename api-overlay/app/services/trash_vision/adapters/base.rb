@@ -43,7 +43,10 @@ class TrashVision
         end
         return parsed if status.between?(200, 299) && parsed.is_a?(Hash)
 
-        detail = parsed.is_a?(Hash) ? (parsed.dig("error", "message") || parsed["message"]) : nil
+        # Gemini sometimes answers with an array: [{"error": {...}}]
+        err = parsed.is_a?(Array) ? parsed.first : parsed
+        detail = err.is_a?(Hash) ? (err.dig("error", "message") || err["message"]) : nil
+        detail = text.to_s.strip if detail.to_s.empty? # not JSON, or no message: show what came back
         hint = [401, 403].include?(status) ? " (check the API key)" : ""
         raise RequestFailed, "#{self.class.name.split('::').last} answered HTTP #{status}#{hint}: #{detail.to_s[0, 200]}"
       end
