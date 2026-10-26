@@ -28,6 +28,7 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
    | `DEMO_MODE` | `true` | Fake AI, no face/plate detection. |
    | `SEED_DEMO_DATA` | `true` | Loads fake reports at start, only if there are none yet. |
    | `TRASH_VISION_PROVIDER` | `anthropic` | Optional: use a real AI for the analysis (works with `DEMO_MODE`). Also set `ANTHROPIC_API_KEY`. For `openai` set `OPENAI_API_KEY` and `TRASH_VISION_MODEL`. |
+   | `EXIF_MAX_DISTANCE_M` | `1000` | Optional: how far (meters) a photo's EXIF GPS may be from the chosen spot before the report is held for review. Raise it (e.g. `50000`) when testing with gallery photos. |
    | `AUTO_PUBLISH` | `true` | Optional. Skip the "Publicar" step: reports go to the map as soon as the AI validates them. |
    | `DEMO_COUNT` | `220` | Optional. |
    | `DEMO_CENTER` | `-23.55,-46.63` | Optional, `lat,lng`. Default is Brasília. |

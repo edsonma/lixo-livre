@@ -103,12 +103,19 @@ class Trash < ApplicationRecord
   # True when the EXIF data read at upload contradicts the report (see the constants above).
   def metadata_suspicious?
     distance = photo_meta["exif_distance_m"]
-    return true if distance && distance > MAX_EXIF_DISTANCE_M
+    return true if distance && distance > max_exif_distance_m
 
     exif_time = photo_meta["exif_taken_at"]
     return false unless exif_time
 
     (Time.zone.parse(exif_time) - taken_at).abs > MAX_EXIF_TIME_SKEW.to_i
+  end
+
+  # EXIF_MAX_DISTANCE_M (meters) overrides the default; useful for testing with gallery photos.
+  def max_exif_distance_m
+    Float(ENV.fetch("EXIF_MAX_DISTANCE_M", MAX_EXIF_DISTANCE_M))
+  rescue ArgumentError
+    MAX_EXIF_DISTANCE_M
   end
 
   private
