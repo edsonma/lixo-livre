@@ -183,7 +183,19 @@ a guarantee: keep the flag button, and show moderators only sanitized photos (`s
 
 ### Plugging in an AI provider
 
-`TrashVision` knows no vendor. Give it anything that responds to `call`, in an initializer:
+**Ready-made (no code):** set environment variables and redeploy.
+
+| Provider | Variables |
+|---|---|
+| Claude (Anthropic) | `TRASH_VISION_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, optional `TRASH_VISION_MODEL` (default `claude-sonnet-5-5`; `claude-haiku-5-5` is cheaper) |
+| OpenAI or any OpenAI-compatible server | `TRASH_VISION_PROVIDER=openai`, `OPENAI_API_KEY`, `TRASH_VISION_MODEL` (required, a model that accepts images), optional `OPENAI_BASE_URL` |
+
+The adapters live in `app/services/trash_vision/adapters/` and use plain `Net::HTTP`, with no extra gems. The photo
+they send has no EXIF. A provider set this way is used even with `DEMO_MODE=true`, so you can try a real AI on fake
+data. **Note:** `DEMO_MODE` still turns face and plate blurring off; do not accept real users until `PrivacyDetector`
+is wired in. A failing call (bad key, rate limit, timeout) is retried, then the report goes to `needs_review`.
+
+**Your own vendor:** `TrashVision` knows no vendor. Give it anything that responds to `call`, in an initializer:
 
 ```ruby
 # config/initializers/trash_vision.rb

@@ -78,10 +78,13 @@ class TrashVision
     # Development, test and DEMO_MODE get a fake answer so the whole pipeline works end to end.
     # Anywhere else it refuses to run until you plug in a real provider.
     def default_provider(local: DemoMode.fakes_allowed?)
+      # A provider chosen with TRASH_VISION_PROVIDER wins, also in demo mode: you can try a real AI with fake data.
+      adapter = Adapters.from_env
+      return adapter if adapter
       return ->(_image) { fake_answer } if local
 
       lambda do |_image|
-        raise NotConfigured, "Set TrashVision.provider to your AI vision provider " \
+        raise NotConfigured, "Set TRASH_VISION_PROVIDER (anthropic or openai) with its API key, or TrashVision.provider to your own adapter " \
                              "(it receives a TrashVision::Image and returns is_trash, severity 0-100, types and confidence), " \
                              "or set DEMO_MODE=true to use fake results"
       end
