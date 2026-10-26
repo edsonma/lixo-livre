@@ -22,8 +22,8 @@ class SanitizePhotoJob < ApplicationJob
 
     begin
       result = PhotoSanitizer.call(original)
-    rescue PhotoSanitizer::InvalidImage
-      reject_unreadable(trash)
+    rescue PhotoSanitizer::InvalidImage => e
+      reject_unreadable(trash, e.message)
       return
     end
 
@@ -40,8 +40,9 @@ class SanitizePhotoJob < ApplicationJob
   private
 
   # A file we cannot decode cannot be sanitized, so it must not be kept either.
-  def reject_unreadable(trash)
-    trash.update_columns(ai_status: "rejected", ai_payload: { "reason" => "unreadable_image" }, updated_at: Time.current)
+  def reject_unreadable(trash, detail = nil)
+    Rails.logger.warn("[sanitize] trash #{trash.id} unreadable: #{detail}")
+    trash.update_columns(ai_status: "rejected", ai_payload: { "reason" => "unreadable_image", "detail" => detail.to_s.truncate(300) }, updated_at: Time.current)
     trash.photo.purge_later
   end
 
