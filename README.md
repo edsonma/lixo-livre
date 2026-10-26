@@ -195,6 +195,17 @@ they send has no EXIF. A provider set this way is used even with `DEMO_MODE=true
 data. **Note:** `DEMO_MODE` still turns face and plate blurring off; do not accept real users until `PrivacyDetector`
 is wired in. A failing call (bad key, rate limit, timeout) is retried, then the report goes to `needs_review`.
 
+**Comparing providers on your own photos:** put some photos in a folder and run, from `api/`:
+
+```
+ANTHROPIC_API_KEY=... GEMINI_API_KEY=... GEMINI_MODEL=<a Gemini Flash model> \
+  bin/rails vision:compare DIR=../photos PROVIDERS=anthropic,gemini
+```
+
+It prints one row per photo with each provider's severity, types, confidence and time, so you can see which one
+agrees with your own scores. Providers: `anthropic`, `gemini`, `openai` (each reads its own key and model variables,
+see `lib/tasks/demo.rake`).
+
 **Your own vendor:** `TrashVision` knows no vendor. Give it anything that responds to `call`, in an initializer:
 
 ```ruby

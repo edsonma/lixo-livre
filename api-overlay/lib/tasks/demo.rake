@@ -19,3 +19,36 @@ namespace :heat do
     puts "Heat cells recomputed: #{HeatCell.count}"
   end
 end
+
+namespace :vision do
+  desc "Run photos through several AI providers and print the answers side by side. DIR=photos PROVIDERS=anthropic,gemini"
+  task compare: :environment do
+    dir = ENV.fetch("DIR") { abort "Set DIR to a folder with .jpg, .png or .webp photos" }
+    paths = Dir.glob(File.join(dir, "*")).select { |f| TrashVision::Comparison::CONTENT_TYPES.key?(File.extname(f).downcase) }.sort
+    abort "No photos found in #{dir}" if paths.empty?
+
+    # Each name gets its own settings, so several providers can run in one go.
+    #   anthropic: ANTHROPIC_API_KEY, TRASH_VISION_MODEL (optional)
+    #   gemini:    GEMINI_API_KEY, GEMINI_MODEL (required), through Google's OpenAI-compatible endpoint
+    #   openai:    OPENAI_API_KEY, OPENAI_MODEL (required), OPENAI_BASE_URL (optional)
+    builders = {
+      "anthropic" => -> { TrashVision::Adapters::Anthropic.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["ANTHROPIC_MODEL"] || ENV["TRASH_VISION_MODEL"])) },
+      "gemini" => lambda {
+        TrashVision::Adapters::OpenAI.new(env: {
+          "OPENAI_API_KEY" => ENV["GEMINI_API_KEY"], "TRASH_VISION_MODEL" => ENV["GEMINI_MODEL"],
+          "OPENAI_BASE_URL" => ENV.fetch("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+        })
+      },
+      "openai" => lambda {
+        TrashVision::Adapters::OpenAI.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["OPENAI_MODEL"]))
+      }
+    }
+    names = ENV.fetch("PROVIDERS", "anthropic,gemini").split(",").map(&:strip)
+    unknown = names - builders.keys
+    abort "Unknown provider(s): #{unknown.join(', ')}. Use: #{builders.keys.join(', ')}" if unknown.any?
+
+    providers = names.to_h { |name| [name, builders.fetch(name).call] }
+    puts "#{paths.size} photo(s), providers: #{names.join(', ')}\n\n"
+    puts TrashVision::Comparison.table(TrashVision::Comparison.new(providers: providers).run(paths))
+  end
+end
