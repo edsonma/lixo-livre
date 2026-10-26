@@ -27,7 +27,6 @@
   <ul id="results"></ul>
 </header>
 <div id="demo" class="box">Modo demonstração: dados fictícios</div>
-<div id="panel" class="box"><button class="close" id="close" aria-label="Fechar">×</button><h2 id="title"></h2><div id="items"></div></div>
 <div id="pin"></div>
 
 <div id="chips" role="group" aria-label="Filtrar por nível de sujeira">
@@ -101,6 +100,35 @@
   </div>
   <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
   <input id="photo" type="file" accept="image/*" hidden>
+</div>
+
+<div id="detail" class="screen" role="dialog" aria-label="Detalhes do local">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="dt-back" class="icon-btn" type="button" aria-label="Voltar ao mapa">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Detalhes do local</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="an-body">
+      <div class="dt-hero">
+        <img id="dt-photo" class="an-photo" alt="Foto do local">
+        <span id="dt-badge" class="dt-badge"></span>
+        <span id="dt-date" class="dt-date"></span>
+      </div>
+      <div id="dt-title" class="dt-title">Carregando…</div>
+      <div id="dt-sub" class="dt-sub"></div>
+      <p id="dt-desc" class="dt-desc"></p>
+      <h3>Evolução da limpeza</h3>
+      <div id="dt-chart" class="dt-chart"></div>
+      <div class="dt-photos-head"><h3>Fotos do local</h3><button id="dt-all" class="link" type="button">Ver todas</button></div>
+      <div id="dt-photos" class="dt-photos"></div>
+    </div>
+    <div class="an-actions">
+      <button id="dt-follow" class="outline" type="button">🔔 Seguir este local</button>
+    </div>
+  </div>
 </div>
 
 <div id="analysis" class="screen" role="dialog" aria-label="Análise da imagem">

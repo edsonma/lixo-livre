@@ -241,6 +241,7 @@ means writing a new adapter and nothing else.
 | POST | `/api/v1/devices` | mobile | Returns the anonymous token |
 | GET | `/api/v1/status` | demo page, monitors | Demo flag, map center, counts |
 | GET | `/api/v1/heatmap?bbox=w,s,e,n` | web | GeoJSON cells in the viewport |
+| GET | `/api/v1/places/:h3_index` | web | One map cell: latest report, monthly cleanliness history, photos |
 | GET | `/api/v1/trashes?lat=&lng=&radius=` | web, mobile | Photos near a point |
 | GET | `/api/v1/trashes/:id` | both | One report |
 | POST | `/api/v1/trashes` | mobile | Upload photo + `lat`, `lng`, `taken_at`, `extra_info` |

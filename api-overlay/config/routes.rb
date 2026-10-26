@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       get "status", to: "status#show"
       resources :devices, only: :create
       get "heatmap", to: "heatmap#index"
+      get "places/:h3_index", to: "places#show"
 
       resources :trashes, only: %i[index show create] do
         resources :flags, only: :create

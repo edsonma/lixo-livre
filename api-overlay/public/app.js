@@ -166,29 +166,120 @@
     return n;
   }
 
-  map.on("click", async function (e) {
-    if (reporting) return;
-    var panel = document.getElementById("panel"), items = document.getElementById("items");
-    var url = "/api/v1/trashes?lat=" + e.lngLat.lat + "&lng=" + e.lngLat.lng + "&radius=" + radiusFor();
-    var list = [];
-    try { list = await (await fetch(url)).json(); } catch (err) {}
-    items.replaceChildren();
-    document.getElementById("title").textContent = list.length ? list.length + " registro(s) aqui" : "Nenhum registro aqui";
-    list.forEach(function (t) {
-      var item = el("div", null, "item");
-      var img = document.createElement("img");
-      img.loading = "lazy"; img.alt = "Foto do lixo";
-      try { img.src = new URL(t.photo_url, location.href).pathname; } catch (err) {}
-      item.appendChild(img);
-      item.appendChild(el("div", levelLabel(t.severity) + " (" + t.severity + "/100) · " + new Date(t.taken_at).toLocaleDateString("pt-BR")));
-      if (t.trash_types && t.trash_types.length) item.appendChild(el("div", t.trash_types.join(", "), "muted"));
-      if (t.extra_info) item.appendChild(el("div", t.extra_info, "muted"));
-      item.appendChild(el("div", "Enviado por " + (t.uploader ? t.uploader.name : "Anônimo"), "muted"));
-      items.appendChild(item);
+
+
+  // ---- Place screen: tap a spot on the map ----
+  var MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  var place = null, placeRun = 0;
+
+  function shortDate(iso) {
+    var d = new Date(iso);
+    return d.getDate() + " " + MONTH_NAMES[d.getMonth()].toLowerCase() + " " + d.getFullYear();
+  }
+  function photoPath(url) { try { return new URL(url, location.href).pathname; } catch (e) { return ""; } }
+
+  // The closest cell of the map to a tap, within ~44px (works at any zoom, also where pins are not drawn).
+  function cellNear(point) {
+    var best = null, bestDistance = 44;
+    map.querySourceFeatures("heat").forEach(function (f) {
+      var p = map.project(f.geometry.coordinates), d = Math.hypot(p.x - point.x, p.y - point.y);
+      if (d < bestDistance) { best = f; bestDistance = d; }
     });
-    panel.style.display = "block";
+    return best;
+  }
+
+  map.on("click", function (e) {
+    if (reporting) return;
+    var cell = cellNear(e.point);
+    if (!cell) return toast("Nenhum registro aqui. Aproxime o mapa e toque em um pino.");
+    openPlace(cell.properties.h3);
   });
 
+  function chartSvg(points) {
+    var W = 320, H = 150, L = 30, R = 12, T = 12, B = 26, NS = "http://www.w3.org/2000/svg";
+    function node(name, attrs, text) {
+      var n = document.createElementNS(NS, name);
+      Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (text != null) n.textContent = text;
+      return n;
+    }
+    var svg = node("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Evolução da limpeza por mês" });
+    var y = function (v) { return T + (H - T - B) * (1 - v / 100); };
+    [0, 50, 100].forEach(function (v) {
+      svg.appendChild(node("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "#e3e8e4", "stroke-width": 1 }));
+      svg.appendChild(node("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 10, fill: "#7a857e" }, v));
+    });
+    var step = points.length > 1 ? (W - L - R - 20) / (points.length - 1) : 0;
+    var xs = points.map(function (p, i) { return points.length > 1 ? L + 10 + step * i : (L + W - R) / 2; });
+    if (points.length > 1) {
+      svg.appendChild(node("polyline", { points: points.map(function (p, i) { return xs[i] + "," + y(p.average); }).join(" "), fill: "none", stroke: "#9aa59e", "stroke-width": 2, "stroke-linejoin": "round" }));
+    }
+    points.forEach(function (p, i) {
+      var title = node("title", {}, MONTH_NAMES[+p.month.slice(5) - 1] + ": " + p.average + "/100 (" + p.reports + " registro" + (p.reports > 1 ? "s" : "") + ")");
+      var dot = node("circle", { cx: xs[i], cy: y(p.average), r: 5, fill: levelOf(p.average).color, stroke: "#fff", "stroke-width": 2 });
+      dot.appendChild(title); svg.appendChild(dot);
+      svg.appendChild(node("text", { x: xs[i], y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "#7a857e" }, MONTH_NAMES[+p.month.slice(5) - 1]));
+    });
+    return svg;
+  }
+
+  function selectPhoto(report) {
+    var level = levelOf(report.severity);
+    $("detail").style.setProperty("--lvl", level.color);
+    $("dt-photo").src = photoPath(report.photo_url);
+    $("dt-badge").textContent = "🗑 " + level.label + " · " + report.severity;
+    $("dt-date").textContent = shortDate(report.taken_at);
+    var types = (report.trash_types || []).map(function (t) { return (TYPE_INFO[t] || ["", t])[1]; });
+    $("dt-desc").textContent = report.extra_info || (types.length ? "Itens: " + types.join(", ") + "." : "");
+    document.querySelectorAll("#dt-photos img").forEach(function (img) { img.classList.toggle("on", +img.dataset.id === report.id); });
+  }
+
+  async function openPlace(h3) {
+    var run = ++placeRun;
+    place = null;
+    $("dt-title").textContent = "Carregando…"; $("dt-sub").textContent = ""; $("dt-desc").textContent = "";
+    $("dt-photo").removeAttribute("src"); $("dt-badge").textContent = ""; $("dt-date").textContent = "";
+    $("dt-chart").replaceChildren(); $("dt-photos").replaceChildren(); $("dt-photos").classList.remove("all"); $("dt-all").textContent = "Ver todas";
+    show("detail", true, "flex");
+    var data = null;
+    try {
+      var res = await fetch("/api/v1/places/" + encodeURIComponent(h3));
+      if (res.ok) data = await res.json();
+    } catch (e) {}
+    if (run !== placeRun) return;
+    if (!data) { show("detail", false); return toast("Não foi possível abrir este local agora."); }
+    place = data;
+
+    selectPhoto(data.latest);
+    data.photos.forEach(function (r) {
+      var img = document.createElement("img");
+      img.src = photoPath(r.photo_url); img.alt = "Foto de " + shortDate(r.taken_at); img.loading = "lazy"; img.dataset.id = r.id;
+      img.onclick = function () { selectPhoto(r); };
+      $("dt-photos").appendChild(img);
+    });
+    selectPhoto(data.latest);
+    show("dt-all", data.photos.length > 4, "inline-block");
+
+    var chart = $("dt-chart");
+    if (data.history.length) chart.appendChild(chartSvg(data.history));
+    else chart.appendChild(el("div", "Ainda sem histórico neste local.", "none"));
+
+    $("dt-title").textContent = "Local no mapa";
+    $("dt-sub").textContent = data.center.lat.toFixed(5) + ", " + data.center.lng.toFixed(5);
+    var parts = await addressParts(data.center.lat, data.center.lng);
+    if (run === placeRun && parts) {
+      $("dt-title").textContent = parts.street || parts.area;
+      $("dt-sub").textContent = parts.street ? parts.area : "";
+    }
+  }
+
+  function closePlace() { placeRun++; place = null; show("detail", false); }
+  $("dt-back").onclick = closePlace;
+  $("dt-all").onclick = function () {
+    var all = $("dt-photos").classList.toggle("all");
+    this.textContent = all ? "Ver menos" : "Ver todas";
+  };
+  $("dt-follow").onclick = function () { toast("Em breve"); };
 
   // ---- Report a photo: upload, then poll until the AI has scored it ----
   var memoryToken = null;
@@ -312,15 +403,20 @@
 
   function anMessage(msg) { $("an-error").textContent = msg || ""; }
 
-  async function addressOf(lat, lng) {
+  // { street, area } from OpenStreetMap, or null when it cannot say.
+  async function addressParts(lat, lng) {
     try {
       var res = await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=" + lat + "&lon=" + lng, { headers: { "Accept-Language": "pt-BR" } });
       if (!res.ok) return null;
       var a = (await res.json()).address || {};
-      var street = a.road || a.pedestrian || a.footway || a.path;
+      var street = a.road || a.pedestrian || a.footway || a.path || null;
       var area = [a.suburb || a.neighbourhood || a.quarter, a.city || a.town || a.village, a.state].filter(Boolean).join(" - ");
-      return [street, area].filter(Boolean).join(", ") || null;
+      return street || area ? { street: street, area: area } : null;
     } catch (e) { return null; }
+  }
+  async function addressOf(lat, lng) {
+    var parts = await addressParts(lat, lng);
+    return parts ? [parts.street, parts.area].filter(Boolean).join(", ") : null;
   }
 
   function showAnalysis(r) {
@@ -415,7 +511,6 @@
   function openReport() {
     resetReport();
     reporting = true; placed = null;
-    $("panel").style.display = "none";
     goToPlace();
   }
   function closeReport() {
@@ -475,7 +570,10 @@
   // While choosing the place, a tap on the map moves the pin there instead of opening the info panel.
   map.on("click", function (e) { if (step === "place") map.easeTo({ center: e.lngLat }); });
 
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && reporting) closeReport(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (reporting) closeReport(); else if ($("detail").style.display === "flex") closePlace();
+  });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) { if (liveCamera) stopCamera(); }
@@ -560,5 +658,4 @@
     }
   };
 
-  document.getElementById("close").onclick = function () { document.getElementById("panel").style.display = "none"; };
 })();
