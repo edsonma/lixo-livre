@@ -2,7 +2,7 @@ class TrashVision
   module Adapters
     # Any OpenAI-compatible chat completions endpoint with image input. There is no default model:
     # vendors retire them, so you choose one with TRASH_VISION_MODEL.
-    class OpenAI < Base
+    class OpenAiCompatible < Base
       def call(image)
         json_mode = env["TRASH_VISION_JSON_MODE"].to_s.strip.downcase != "off" && @json_mode != false
         reply = begin

@@ -34,13 +34,13 @@ namespace :vision do
     builders = {
       "anthropic" => -> { TrashVision::Adapters::Anthropic.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["ANTHROPIC_MODEL"] || ENV["TRASH_VISION_MODEL"])) },
       "gemini" => lambda {
-        TrashVision::Adapters::OpenAI.new(env: {
+        TrashVision::Adapters::OpenAiCompatible.new(env: {
           "OPENAI_API_KEY" => ENV["GEMINI_API_KEY"], "TRASH_VISION_MODEL" => ENV.fetch("GEMINI_MODEL", "gemini-3.8-flash"),
           "OPENAI_BASE_URL" => ENV.fetch("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
         })
       },
       "openai" => lambda {
-        TrashVision::Adapters::OpenAI.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["OPENAI_MODEL"]))
+        TrashVision::Adapters::OpenAiCompatible.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["OPENAI_MODEL"]))
       }
     }
     names = ENV.fetch("PROVIDERS", "anthropic,gemini").split(",").map(&:strip)

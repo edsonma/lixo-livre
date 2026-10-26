@@ -33,7 +33,7 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
   test "the provider name is read without regard to case or spaces" do
     adapter = TrashVision::Adapters.from_env("TRASH_VISION_PROVIDER" => " Anthropic ")
     assert_instance_of TrashVision::Adapters::Anthropic, adapter
-    assert_instance_of TrashVision::Adapters::OpenAI, TrashVision::Adapters.from_env("TRASH_VISION_PROVIDER" => "openai")
+    assert_instance_of TrashVision::Adapters::OpenAiCompatible, TrashVision::Adapters.from_env("TRASH_VISION_PROVIDER" => "openai")
   end
 
   test "an unknown provider name is refused and the message lists the valid ones" do
@@ -139,7 +139,7 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
   test "openai needs a model name: there is no default" do
     http, sent = transport
     error = assert_raises(TrashVision::NotConfigured) do
-      TrashVision::Adapters::OpenAI.new(env: { "OPENAI_API_KEY" => SECRET }, transport: http).call(IMAGE)
+      TrashVision::Adapters::OpenAiCompatible.new(env: { "OPENAI_API_KEY" => SECRET }, transport: http).call(IMAGE)
     end
     assert_includes error.message, "TRASH_VISION_MODEL"
     assert_empty sent
@@ -149,7 +149,7 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
     http, sent = transport(body: openai_reply('{"is_trash": true, "severity": 71, "types": ["plastic", "unicorn"], "confidence": 0.88}'))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "some-model" }
 
-    answer = TrashVision.normalize(TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE))
+    answer = TrashVision.normalize(TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE))
 
     assert_equal 71, answer.severity
     assert_equal %w[plastic], answer.types, "unknown types are dropped"
@@ -164,7 +164,7 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
   test "openai base URL points at any compatible server" do
     http, sent = transport(body: openai_reply('{"is_trash": false, "confidence": 0.7}'))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m", "OPENAI_BASE_URL" => "http://localhost:11434/v1" }
-    TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE)
+    TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE)
     assert_equal "http://localhost:11434/v1/chat/completions", sent.first[:url]
   end
 
@@ -177,7 +177,7 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
       status, body = answers.shift
       [status, JSON.generate(body)]
     end
-    adapter = TrashVision::Adapters::OpenAI.new(env: { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }, transport: http)
+    adapter = TrashVision::Adapters::OpenAiCompatible.new(env: { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }, transport: http)
 
     adapter.call(IMAGE)
     adapter.call(IMAGE)
@@ -191,14 +191,14 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
   test "TRASH_VISION_JSON_MODE=off never sends response_format" do
     http, sent = transport(body: openai_reply('{"is_trash": false, "confidence": 0.7}'))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m", "TRASH_VISION_JSON_MODE" => "off" }
-    TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE)
+    TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE)
     assert_not sent.first[:body].key?(:response_format)
   end
 
   test "a 400 for another reason is not retried forever: one retry, then the error" do
     calls = 0
     http = ->(_u, _h, _p) { calls += 1; [400, JSON.generate("error" => { "message" => "bad image" })] }
-    adapter = TrashVision::Adapters::OpenAI.new(env: { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }, transport: http)
+    adapter = TrashVision::Adapters::OpenAiCompatible.new(env: { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }, transport: http)
     assert_raises(TrashVision::Adapters::RequestFailed) { adapter.call(IMAGE) }
     assert_equal 2, calls
   end
@@ -207,26 +207,26 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
     fenced = "```json\n{\"is_trash\": true, \"severity\": 55, \"types\": [\"paper\"], \"confidence\": 0.8}\n```"
     http, = transport(body: openai_reply(fenced))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }
-    answer = TrashVision.normalize(TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE))
+    answer = TrashVision.normalize(TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE))
     assert_equal 55, answer.severity
   end
 
   test "openai content that is not JSON is an InvalidResponse" do
     http, = transport(body: openai_reply("Sure! Here is my analysis..."))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }
-    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE) }
+    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE) }
   end
 
   test "openai content that is JSON but not an object is an InvalidResponse" do
     http, = transport(body: openai_reply("[1]"))
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }
-    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE) }
+    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE) }
   end
 
   test "openai with no choices is an InvalidResponse" do
     http, = transport(body: { "choices" => [] })
     env = { "OPENAI_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "m" }
-    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAI.new(env: env, transport: http).call(IMAGE) }
+    assert_raises(TrashVision::InvalidResponse) { TrashVision::Adapters::OpenAiCompatible.new(env: env, transport: http).call(IMAGE) }
   end
 
   # --- wiring into TrashVision.default_provider ---

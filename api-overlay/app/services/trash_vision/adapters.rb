@@ -14,7 +14,7 @@ class TrashVision
 
     PROVIDERS = {
       "anthropic" => "Anthropic",
-      "openai" => "OpenAI"
+      "openai" => "OpenAiCompatible"
     }.freeze
 
     # nil when TRASH_VISION_PROVIDER is not set.
