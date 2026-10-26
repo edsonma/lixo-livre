@@ -31,36 +31,36 @@
   #report .grab { width: 40px; height: 4px; border-radius: 2px; background: #d5dbd7; margin: 0 auto 10px; }
   #report .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   /* Camera screen ("Registrar local") */
-  #camera { position: fixed; inset: 0; z-index: 20; background: #fff; display: none; flex-direction: column; }
-  #camera .cam { display: flex; flex-direction: column; width: 100%; height: 100%; background: #fff; box-sizing: border-box; padding: 0 16px 12px; }
-  #camera .cam-head { display: flex; align-items: center; justify-content: space-between; height: 56px; flex: none; }
-  #camera .cam-head h2 { font-size: 17px; }
-  #camera .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 50%; color: var(--ink); padding: 0; }
-  #camera .icon-btn:hover { background: #eef1ee; }
-  #camera .viewfinder { position: relative; flex: 1; min-height: 0; border-radius: 20px; overflow: hidden; background: #101612; }
-  #camera .viewfinder video, #camera .viewfinder img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  #camera .corner { position: absolute; width: 34px; height: 34px; border: 0 solid #3cc15f; pointer-events: none; }
-  #camera .tl { top: 10px; left: 10px; border-top-width: 5px; border-left-width: 5px; border-top-left-radius: 14px; }
-  #camera .tr { top: 10px; right: 10px; border-top-width: 5px; border-right-width: 5px; border-top-right-radius: 14px; }
-  #camera .bl { bottom: 10px; left: 10px; border-bottom-width: 5px; border-left-width: 5px; border-bottom-left-radius: 14px; }
-  #camera .br { bottom: 10px; right: 10px; border-bottom-width: 5px; border-right-width: 5px; border-bottom-right-radius: 14px; }
-  #camera .caption { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 64px); text-align: center; background: rgba(30,30,30,.62); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 15px; line-height: 1.35; }
-  #camera .cam-fallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px 24px 90px; color: #cfd8d2; line-height: 1.45; }
-  #camera .cam-controls { display: flex; align-items: center; justify-content: space-between; padding: 14px 8px 6px; flex: none; }
-  #camera .side-btn { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--ink); border-radius: 14px; padding: 0; }
-  #camera .side-btn:hover { background: #eef1ee; }
-  #camera .shutter { width: 78px; height: 78px; border-radius: 50%; background: #1fa043; border: 5px solid #fff; box-shadow: 0 0 0 3px var(--ink); padding: 0; transition: transform .08s; }
-  #camera .shutter:active { transform: scale(.93); }
-  #camera .shutter:disabled { opacity: .55; }
-  #camera .cam-tabs { display: flex; justify-content: space-around; border-top: 1px solid var(--line); margin: 6px -16px 0; padding: 0 16px; flex: none; }
-  #camera .cam-tabs button { background: none; border: 0; padding: 12px 18px 10px; font-size: 16px; color: var(--muted); border-bottom: 3px solid transparent; }
-  #camera .cam-tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: #1fa043; }
-  #camera .cam-review { display: none; gap: 8px; padding-top: 12px; flex: none; }
-  #camera .cam-review button { flex: 1; padding: 14px; font-size: 16px; font-weight: 600; border: 0; border-radius: 12px; }
-  #camera .error { text-align: center; flex: none; }
+  .screen { position: fixed; inset: 0; z-index: 20; background: #fff; display: none; flex-direction: column; }
+  .screen .cam { display: flex; flex-direction: column; width: 100%; height: 100%; background: #fff; box-sizing: border-box; padding: 0 16px 12px; }
+  .screen .cam-head { display: flex; align-items: center; justify-content: space-between; height: 56px; flex: none; }
+  .screen .cam-head h2 { font-size: 17px; }
+  .screen .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 50%; color: var(--ink); padding: 0; }
+  .screen .icon-btn:hover { background: #eef1ee; }
+  .screen .viewfinder { position: relative; flex: 1; min-height: 0; border-radius: 20px; overflow: hidden; background: #101612; }
+  .screen .viewfinder video, .screen .viewfinder img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .screen .corner { position: absolute; width: 34px; height: 34px; border: 0 solid #3cc15f; pointer-events: none; }
+  .screen .tl { top: 10px; left: 10px; border-top-width: 5px; border-left-width: 5px; border-top-left-radius: 14px; }
+  .screen .tr { top: 10px; right: 10px; border-top-width: 5px; border-right-width: 5px; border-top-right-radius: 14px; }
+  .screen .bl { bottom: 10px; left: 10px; border-bottom-width: 5px; border-left-width: 5px; border-bottom-left-radius: 14px; }
+  .screen .br { bottom: 10px; right: 10px; border-bottom-width: 5px; border-right-width: 5px; border-bottom-right-radius: 14px; }
+  .screen .caption { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 64px); text-align: center; background: rgba(30,30,30,.62); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 15px; line-height: 1.35; }
+  .screen .cam-fallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px 24px 90px; color: #cfd8d2; line-height: 1.45; }
+  .screen .cam-controls { display: flex; align-items: center; justify-content: space-between; padding: 14px 8px 6px; flex: none; }
+  .screen .side-btn { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--ink); border-radius: 14px; padding: 0; }
+  .screen .side-btn:hover { background: #eef1ee; }
+  .screen .shutter { width: 78px; height: 78px; border-radius: 50%; background: #1fa043; border: 5px solid #fff; box-shadow: 0 0 0 3px var(--ink); padding: 0; transition: transform .08s; }
+  .screen .shutter:active { transform: scale(.93); }
+  .screen .shutter:disabled { opacity: .55; }
+  .screen .cam-tabs { display: flex; justify-content: space-around; border-top: 1px solid var(--line); margin: 6px -16px 0; padding: 0 16px; flex: none; }
+  .screen .cam-tabs button { background: none; border: 0; padding: 12px 18px 10px; font-size: 16px; color: var(--muted); border-bottom: 3px solid transparent; }
+  .screen .cam-tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: #1fa043; }
+  .screen .cam-review { display: none; gap: 8px; padding-top: 12px; flex: none; }
+  .screen .cam-review button { flex: 1; padding: 14px; font-size: 16px; font-weight: 600; border: 0; border-radius: 12px; }
+  .screen .error { text-align: center; flex: none; }
   @media (min-width: 700px) {
-    #camera { background: rgba(0,0,0,.45); align-items: center; justify-content: center; }
-    #camera .cam { width: 440px; height: min(820px, calc(100dvh - 32px)); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+    .screen { background: rgba(0,0,0,.45); align-items: center; justify-content: center; }
+    .screen .cam { width: 440px; height: min(820px, calc(100dvh - 32px)); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
   }
   #report .status { font-size: 15px; margin: 10px 0; }
   #report .score { font-size: 34px; font-weight: 700; }
@@ -99,3 +99,24 @@
   #toast { position: absolute; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 9; background: rgba(29,42,34,.92); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; display: none; }
   .maplibregl-ctrl-bottom-right { bottom: calc(128px + env(safe-area-inset-bottom)); }
   .maplibregl-ctrl-bottom-left { bottom: calc(76px + env(safe-area-inset-bottom)); }
+
+  /* ---- Analysis screen ("Análise da imagem") ---- */
+  .screen .an-body { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 6px; }
+  .screen .an-photo { display: block; width: 100%; height: 200px; object-fit: cover; border-radius: 16px; background: #e9eeea; }
+  .screen .an-score { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--lvl, #e8452c) 12%, #fff); }
+  .screen .an-badge { flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--lvl, #e8452c); display: flex; align-items: center; justify-content: center; }
+  .screen .an-level { font-size: 20px; font-weight: 700; color: var(--lvl, #e8452c); }
+  .screen .an-num { font-size: 22px; font-weight: 700; color: var(--lvl, #e8452c); }
+  .screen .an-num small { font-size: 14px; font-weight: 500; }
+  .screen h3 { margin: 18px 0 8px; font-size: 15px; }
+  .screen .an-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .screen .an-item { display: flex; align-items: center; gap: 8px; background: #f3f6f4; border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+  .screen .an-item .ico { font-size: 18px; line-height: 1; }
+  .screen .an-none { color: var(--muted); font-size: 14px; grid-column: 1 / -1; }
+  .screen .an-place { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .screen .an-place .pin { font-size: 26px; }
+  .screen .an-place small { display: block; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .screen .an-actions { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; flex: none; }
+  .screen .an-actions button { padding: 15px; font-size: 16px; font-weight: 600; border-radius: 12px; border: 0; cursor: pointer; }
+  .screen .an-actions .outline { background: #fff; color: var(--green); border: 2px solid var(--green); }
+  .screen .an-actions button:disabled { opacity: .55; cursor: default; }

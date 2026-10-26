@@ -11,6 +11,20 @@ class PipelineRecoveryTest < ActiveSupport::TestCase
     assert_enqueued_with(job: SanitizePhotoJob, args: [trash.id])
   end
 
+  test "purges drafts nobody published for a week, and nothing else" do
+    stale = create_draft_trash.tap { |t| t.update_columns(validated_at: 8.days.ago) }
+    fresh = create_draft_trash.tap { |t| t.update_columns(validated_at: 2.days.ago) }
+    published = create_published_trash.tap { |t| t.update_columns(validated_at: 30.days.ago) }
+    pending_report = create_trash.tap { |t| t.update_columns(created_at: 30.days.ago) }
+
+    assert_equal 1, PipelineRecovery.purge_stale_drafts
+
+    assert_not Trash.exists?(stale.id)
+    assert Trash.exists?(fresh.id)
+    assert Trash.exists?(published.id), "a published report is never purged"
+    assert Trash.exists?(pending_report.id), "a report still in the pipeline is not a draft"
+  end
+
   test "re-queues sanitized reports that were never validated" do
     trash = create_trash
     trash.update_columns(sanitized_at: Time.current)

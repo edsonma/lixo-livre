@@ -17,8 +17,9 @@ if Rails.env.production? && ENV["BACKGROUND_MAINTENANCE"] != "false"
       loop do
         Rails.application.executor.wrap do
           requeued = PipelineRecovery.requeue_stuck
+          purged = PipelineRecovery.purge_stale_drafts
           RecomputeHeatCellsJob.perform_later
-          Rails.logger.info("[maintenance] requeued #{requeued.inspect}, recomputing heat cells")
+          Rails.logger.info("[maintenance] requeued #{requeued.inspect}, purged #{purged} stale drafts, recomputing heat cells")
         end
         sleep Integer(ENV.fetch("MAINTENANCE_INTERVAL_MINUTES", "360")) * 60
       rescue StandardError => e

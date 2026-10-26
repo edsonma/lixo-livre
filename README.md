@@ -181,6 +181,12 @@ anywhere else it raises until you configure a provider, so a fresh deployment ca
 Detectors miss things (small, angled or partly hidden faces and plates). Treat the blur as a strong default, not
 a guarantee: keep the flag button, and show moderators only sanitized photos (`sanitized_at` present).
 
+### Publishing
+
+A report is scored by the AI first and appears on the map only after its author taps **Publicar** on the analysis
+screen (`published_at`). Reports that are scored but never published are private and are deleted after 7 days. Set
+`AUTO_PUBLISH=true` to skip that step and publish as soon as the AI validates (for clients without the analysis screen).
+
 ### Plugging in an AI provider
 
 **Ready-made (no code):** set environment variables and redeploy.
@@ -239,7 +245,9 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/trashes/:id` | both | One report |
 | POST | `/api/v1/trashes` | mobile | Upload photo + `lat`, `lng`, `taken_at`, `extra_info` |
 | GET | `/api/v1/me/trashes` | mobile | "My pictures" feed (all AI statuses) |
-| GET | `/api/v1/me/trashes/:id` | mobile, demo page | Poll one report after upload: `stage` (`protecting_photo` → `analyzing` → `scored` / `not_trash` / `in_review`), `done`, `severity` |
+| GET | `/api/v1/me/trashes/:id` | mobile, demo page | Poll one report after upload: `stage` (`protecting_photo` → `analyzing` → `scored` / `not_trash` / `in_review`; after publishing, `published`), `done`, `severity` |
+| POST | `/api/v1/me/trashes/:id/publish` | analysis screen | "Publicar no Lixo Livre": puts a scored report on the map (422 if it is not scored, or already published) |
+| DELETE | `/api/v1/me/trashes/:id` | analysis screen | "Voltar": deletes a report that was never published (422 once published) |
 | POST | `/api/v1/trashes/:id/flags` | both | Report a bad or private photo |
 
 After `POST /trashes` (202 with the new `id`), poll `GET /me/trashes/:id` every 1-2 seconds until `done` is true, then show

@@ -13,4 +13,12 @@ module PipelineRecovery
 
     { sanitize: unsanitized.size, validate: unvalidated.size }
   end
+
+  # Reports that were scored but never published (the author closed the page) are private and
+  # useless after a while: delete them. Returns how many were removed.
+  def self.purge_stale_drafts(older_than: 7.days, now: Time.current)
+    stale = Trash.drafts.where("validated_at < ?", now - older_than).to_a
+    stale.each(&:destroy)
+    stale.size
+  end
 end

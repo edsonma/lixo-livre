@@ -107,6 +107,44 @@ class TrashTest < ActiveSupport::TestCase
 
   # --- scopes ---
 
+  test "for_heatmap leaves out reports that are scored but not published" do
+    draft = create_draft_trash
+    published = create_published_trash
+
+    assert_equal [published.id], Trash.for_heatmap.pluck(:id)
+    assert_equal [draft.id], Trash.drafts.pluck(:id)
+  end
+
+  test "publish! sets published_at, re-scores the heat cell, and works only once" do
+    trash = create_draft_trash
+
+    assert_enqueued_with(job: RefreshHeatCellJob, args: [trash.h3_index]) { trash.publish! }
+
+    assert_predicate trash.reload, :published?
+    assert_raises(Trash::NotPublishable) { trash.publish! }
+  end
+
+  test "publish! refuses a report that is pending, rejected, hidden or not sanitized" do
+    assert_raises(Trash::NotPublishable) { create_trash.publish! }
+    assert_raises(Trash::NotPublishable) { create_draft_trash.tap { |t| t.update_columns(ai_status: "rejected") }.publish! }
+    assert_raises(Trash::NotPublishable) { create_draft_trash.tap { |t| t.update_columns(hidden_at: Time.current) }.publish! }
+    assert_raises(Trash::NotPublishable) { create_draft_trash.tap { |t| t.update_columns(sanitized_at: nil) }.publish! }
+  end
+
+  test "discard_draft! deletes an unpublished report and refuses a published one" do
+    draft = create_draft_trash
+    draft.discard_draft!
+    assert_not Trash.exists?(draft.id)
+
+    assert_raises(Trash::NotPublishable) { create_published_trash.discard_draft! }
+  end
+
+  test "auto_publish? reads AUTO_PUBLISH" do
+    with_env("AUTO_PUBLISH" => nil) { assert_not Trash.auto_publish? }
+    with_env("AUTO_PUBLISH" => "false") { assert_not Trash.auto_publish? }
+    with_env("AUTO_PUBLISH" => " TRUE ") { assert Trash.auto_publish? }
+  end
+
   test "for_heatmap only has validated, visible, sanitized reports" do
     published = create_published_trash
     create_trash # pending

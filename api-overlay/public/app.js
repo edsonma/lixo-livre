@@ -1,7 +1,6 @@
 (async function () {
   var $ = function (id) { return document.getElementById(id); };
   // severity is 0-100
-  function levelLabel(s) { return s >= 80 ? "Muito grave" : s >= 60 ? "Grave" : s >= 40 ? "Moderada" : s >= 20 ? "Leve" : "Muito leve"; }
   var status = { center: { lat: -15.7942, lng: -47.8825 }, demo_mode: false };
   try { status = await (await fetch("/api/v1/status")).json(); } catch (e) {}
 
@@ -31,6 +30,7 @@
     { key: "muito-sujo", label: "Muito sujo", max: Infinity, color: "#b3261e" }
   ];
   function levelOf(score) { return LEVELS.find(function (l) { return score < l.max; }); }
+  function levelLabel(s) { return levelOf(s).label; }
 
   // Round pin with a trash can, one image per level, drawn here so there is nothing to download.
   function pinImage(color) {
@@ -300,12 +300,93 @@
     showReviewState();
   }
 
+
+  // ---- Analysis screen: the AI's result, then "Publicar no Lixo Livre" or "Voltar" ----
+  var TYPE_INFO = {
+    plastic: ["🧴", "Plástico"], paper: ["📄", "Papel e papelão"], glass: ["🍾", "Vidro"], metal: ["🥫", "Metal"],
+    organic: ["🍂", "Resíduos orgânicos"], construction_debris: ["🧱", "Entulho"], electronics: ["🔌", "Eletrônicos"],
+    bulky_items: ["🛋️", "Itens volumosos"], textile: ["👕", "Têxteis"], hazardous: ["⚠️", "Perigosos"],
+    mixed: ["🗑️", "Lixo misto"], other: ["📦", "Outros"]
+  };
+  var draft = null;
+
+  function anMessage(msg) { $("an-error").textContent = msg || ""; }
+
+  async function addressOf(lat, lng) {
+    try {
+      var res = await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=" + lat + "&lon=" + lng, { headers: { "Accept-Language": "pt-BR" } });
+      if (!res.ok) return null;
+      var a = (await res.json()).address || {};
+      var street = a.road || a.pedestrian || a.footway || a.path;
+      var area = [a.suburb || a.neighbourhood || a.quarter, a.city || a.town || a.village, a.state].filter(Boolean).join(" - ");
+      return [street, area].filter(Boolean).join(", ") || null;
+    } catch (e) { return null; }
+  }
+
+  function showAnalysis(r) {
+    draft = r; step = "analysis";
+    var level = levelOf(r.severity);
+    $("analysis").style.setProperty("--lvl", level.color);
+    $("an-level").textContent = level.label;
+    $("an-num").textContent = r.severity;
+    try { $("an-photo").src = new URL(r.photo_url, location.href).pathname; } catch (e) {}
+    var box = $("an-items"); box.replaceChildren();
+    (r.trash_types || []).forEach(function (type) {
+      var info = TYPE_INFO[type] || ["📦", type];
+      var item = el("div", null, "an-item");
+      item.appendChild(el("span", info[0], "ico")); item.appendChild(el("span", info[1]));
+      box.appendChild(item);
+    });
+    if (!box.children.length) box.appendChild(el("div", "Nenhum item específico identificado.", "an-none"));
+    $("an-address").textContent = "Local escolhido no mapa";
+    $("an-coords").textContent = r.lat.toFixed(5) + ", " + r.lng.toFixed(5);
+    anMessage(""); $("an-publish").disabled = false; $("an-discard").disabled = false;
+    show("report", false); show("analysis", true, "flex");
+    addressOf(r.lat, r.lng).then(function (text) { if (text && draft === r) $("an-address").textContent = text; });
+  }
+
+  async function ownReportRequest(method, suffix) {
+    var token = await deviceToken();
+    return fetch("/api/v1/me/trashes/" + draft.id + (suffix || ""), { method: method, headers: { "X-Device-Token": token } });
+  }
+
+  $("an-publish").onclick = async function () {
+    if (!draft) return;
+    anMessage(""); $("an-publish").disabled = true; $("an-discard").disabled = true;
+    try {
+      var res = await ownReportRequest("POST", "/publish");
+      if (!res.ok) throw new Error("Não foi possível publicar agora. Tente de novo.");
+      show("analysis", false);
+      setStatus(false, "Publicado no mapa. Obrigado por ajudar!");
+      show("progress", true); show("report", true); step = "progress";
+      $("again").style.display = "inline-block"; $("done").style.display = "inline-block";
+      draft = null;
+      // the heat cell is re-scored in the background: look again a little later
+      [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+    } catch (e) {
+      anMessage(e.message); $("an-publish").disabled = false; $("an-discard").disabled = false;
+    }
+  };
+
+  // "Voltar": the report was never published, so it is deleted and the person is back on the map.
+  $("an-discard").onclick = $("an-back").onclick = async function () {
+    if (!draft) return closeReport();
+    anMessage(""); $("an-publish").disabled = true; $("an-discard").disabled = true;
+    try {
+      var res = await ownReportRequest("DELETE");
+      if (!res.ok && res.status !== 404) throw new Error("Não foi possível descartar agora. Tente de novo.");
+      draft = null; closeReport();
+    } catch (e) {
+      anMessage(e.message); $("an-publish").disabled = false; $("an-discard").disabled = false;
+    }
+  };
+
   // ---- Steps ----
   // Step 1: the pin stays in the middle of the screen, the map moves under it.
   function goToPlace() {
     step = "place";
-    dropMarker(); stopCamera();
-    show("camera", false); show("report", false); show("place", true); show("pin", true); chrome(false);
+    dropMarker(); stopCamera(); draft = null;
+    show("analysis", false); show("camera", false); show("report", false); show("place", true); show("pin", true); chrome(false);
     placeError(""); showCoords();
     map.easeTo({ padding: { bottom: 0 }, center: placed || map.getCenter(), zoom: Math.max(map.getZoom(), 16), duration: 300 });
   }
@@ -340,12 +421,12 @@
   function closeReport() {
     polling++; clearTimeout(pollTimer);
     reporting = false; step = null; dropMarker(); stopCamera();
-    show("camera", false); show("place", false); show("report", false); show("pin", false); chrome(true);
+    show("analysis", false); show("camera", false); show("place", false); show("report", false); show("pin", false); chrome(true);
     map.easeTo({ padding: { bottom: 0 }, duration: 200 });
   }
   function resetReport() {
     polling++; clearTimeout(pollTimer);
-    stopCamera();
+    stopCamera(); draft = null; show("analysis", false);
     $("photo").value = ""; $("photo-camera").value = ""; chosen = null;
     show("progress", false);
     $("again").style.display = "none"; $("done").style.display = "none";
@@ -423,11 +504,8 @@
   function renderStage(r) {
     if (r.stage === "protecting_photo") return setStatus(true, "Protegendo sua privacidade…");
     if (r.stage === "analyzing") return setStatus(true, "Analisando…");
-    if (r.stage === "scored") {
-      var text = levelLabel(r.severity);
-      if (r.trash_types && r.trash_types.length) text += " · " + r.trash_types.join(", ");
-      return setStatus(false, text, r.severity);
-    }
+    if (r.stage === "scored") return showAnalysis(r);
+    if (r.stage === "published") return setStatus(false, "Publicado no mapa. Obrigado por ajudar!");
     if (r.stage === "not_trash") return setStatus(false, "A IA não encontrou lixo nessa foto. Tente outra mais de perto.");
     return setStatus(false, "Sua foto ficou em revisão. Ela aparece no mapa depois de aprovada.");
   }

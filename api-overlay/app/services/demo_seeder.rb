@@ -96,6 +96,7 @@ class DemoSeeder
       ai_confidence: report.confidence,
       ai_payload: { "provider" => "demo" },
       validated_at: report.taken_at + 1.minute,
+      published_at: report.taken_at + 2.minutes,
       sanitized_at: report.taken_at + 30.seconds,
       photo_meta: { "exif_present" => false, "redactions" => {} }
     )

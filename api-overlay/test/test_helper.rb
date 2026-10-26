@@ -47,6 +47,11 @@ module TrashTestHelpers
   # A report that already went through the whole pipeline and is publicly visible.
   # Writes the final state directly, so no jobs run.
   def create_published_trash(severity: 60, **attrs)
+    create_draft_trash(severity: severity, **attrs).tap { |trash| trash.update_columns(published_at: Time.current) }
+  end
+
+  # A report the AI has scored and whose author has not published yet: private.
+  def create_draft_trash(severity: 60, **attrs)
     trash = create_trash(**attrs)
     trash.update_columns(
       ai_status: "validated", severity: severity, trash_types: %w[plastic],

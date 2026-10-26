@@ -37,6 +37,17 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
       assert_includes stored.b, "FakeCam"
       assert_operator deviation_in(decode(stored), INSIDE), :<, deviation_in(original, INSIDE) * 0.35
 
+      # Scored, but private until the author publishes it
+      get "/api/v1/heatmap", params: { bbox: BBOX }
+      assert_empty response.parsed_body["features"]
+      get "/api/v1/trashes", params: { lat: -15.7942, lng: -47.8825 }
+      assert_empty response.parsed_body
+
+      perform_enqueued_jobs do
+        post "/api/v1/me/trashes/#{trash.id}/publish", headers: { "X-Device-Token" => @device.token }
+      end
+      assert_response :success
+
       get "/api/v1/heatmap", params: { bbox: BBOX }
       features = response.parsed_body["features"]
       assert_equal 1, features.size

@@ -39,8 +39,12 @@ class Trash < ApplicationRecord
   after_commit :refresh_heat_cell, if: :affects_heatmap?
 
   scope :visible, -> { where(hidden_at: nil) }
-  # The only reports that may be shown publicly or counted on the map.
-  scope :for_heatmap, -> { validated.visible.where.not(sanitized_at: nil) }
+  scope :published, -> { where.not(published_at: nil) }
+  # The only reports that may be shown publicly or counted on the map: scored by the AI, with a
+  # sanitized photo, and published by their author.
+  scope :for_heatmap, -> { validated.visible.published.where.not(sanitized_at: nil) }
+  # Scored but never published: the author saw the result and has not decided yet.
+  scope :drafts, -> { validated.where(published_at: nil) }
   scope :near, ->(lng, lat, meters) {
     where(
       "ST_DWithin(lonlat, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)",
@@ -55,6 +59,36 @@ class Trash < ApplicationRecord
 
   def hide!
     update!(hidden_at: Time.current)
+  end
+
+  class NotPublishable < StandardError; end
+
+  # With AUTO_PUBLISH=true a report goes straight to the map when the AI validates it, with no
+  # "Publicar" step (for clients that do not show the analysis screen).
+  def self.auto_publish?
+    DemoMode::TRUE_VALUES.include?(ENV["AUTO_PUBLISH"].to_s.strip.downcase)
+  end
+
+  def published?
+    published_at.present?
+  end
+
+  # Scored, photo sanitized, still private: the author may publish it.
+  def publishable?
+    validated? && sanitized_at.present? && hidden_at.nil? && !published?
+  end
+
+  def publish!
+    raise NotPublishable, "report #{id} cannot be published (status #{ai_status}, published: #{published?})" unless publishable?
+
+    update!(published_at: Time.current)
+  end
+
+  # The author changed their mind. Only an unpublished report can be thrown away this way.
+  def discard_draft!
+    raise NotPublishable, "report #{id} is already published" if published?
+
+    destroy!
   end
 
   # Used when the pipeline cannot finish: keeps the report private until a human looks at it.
@@ -100,7 +134,7 @@ class Trash < ApplicationRecord
 
   # Re-score the cell when a report enters or leaves the heatmap
   def affects_heatmap?
-    saved_change_to_ai_status? || saved_change_to_hidden_at?
+    saved_change_to_ai_status? || saved_change_to_hidden_at? || saved_change_to_published_at?
   end
 
   def refresh_heat_cell

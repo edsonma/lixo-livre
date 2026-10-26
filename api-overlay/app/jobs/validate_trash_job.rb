@@ -32,7 +32,8 @@ class ValidateTrashJob < ApplicationJob
         trash_types: result.types,
         ai_confidence: result.confidence,
         ai_payload: result.raw,
-        validated_at: Time.current
+        validated_at: Time.current,
+        published_at: (Time.current if Trash.auto_publish?)
       )
     end
   end

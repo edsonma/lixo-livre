@@ -84,6 +84,91 @@ class MeApiTest < ActionDispatch::IntegrationTest
     assert_equal 80, body["severity"]
   end
 
+  # --- publishing or discarding a scored report ---
+
+  def publish_report(id, token: @device.token)
+    post "/api/v1/me/trashes/#{id}/publish", headers: { "X-Device-Token" => token }
+  end
+
+  test "a scored report can be published by its author, and then shows as published" do
+    trash = create_draft_trash(device: @device)
+    body = show_report(trash.id)
+    assert_equal ["scored", true, false], body.values_at("stage", "can_publish", "published")
+
+    publish_report(trash.id)
+
+    assert_response :success
+    assert_equal ["published", false, true], response.parsed_body.values_at("stage", "can_publish", "published")
+    assert_includes Trash.for_heatmap.pluck(:id), trash.id
+  end
+
+  test "the report's own position is part of the answer, for the analysis screen" do
+    trash = create_draft_trash(device: @device, lng: -47.9, lat: -15.8)
+    body = show_report(trash.id)
+    assert_in_delta(-15.8, body["lat"], 0.0001)
+    assert_in_delta(-47.9, body["lng"], 0.0001)
+  end
+
+  test "only a scored report with a sanitized photo can be published" do
+    pending_report = create_trash(device: @device)
+    publish_report(pending_report.id)
+    assert_response :unprocessable_entity
+    assert_equal "not_publishable", response.parsed_body["error"]
+
+    unsanitized = create_draft_trash(device: @device).tap { |t| t.update_columns(sanitized_at: nil) }
+    publish_report(unsanitized.id)
+    assert_response :unprocessable_entity
+    assert_not_includes Trash.for_heatmap.pluck(:id), unsanitized.id
+  end
+
+  test "publishing twice is refused and keeps the first publication time" do
+    trash = create_draft_trash(device: @device)
+    publish_report(trash.id)
+    first = trash.reload.published_at
+
+    publish_report(trash.id)
+
+    assert_response :unprocessable_entity
+    assert_equal first, trash.reload.published_at
+  end
+
+  test "nobody can publish or discard somebody else's report" do
+    trash = create_draft_trash # another device's
+    publish_report(trash.id)
+    assert_response :not_found
+    delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+    assert_response :not_found
+    assert Trash.exists?(trash.id)
+    assert_nil trash.reload.published_at
+  end
+
+  test "publishing and discarding need a device token" do
+    trash = create_draft_trash(device: @device)
+    post "/api/v1/me/trashes/#{trash.id}/publish"
+    assert_response :unauthorized
+    delete "/api/v1/me/trashes/#{trash.id}"
+    assert_response :unauthorized
+  end
+
+  test "Voltar: an unpublished report can be thrown away" do
+    trash = create_draft_trash(device: @device)
+
+    delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+
+    assert_response :no_content
+    assert_not Trash.exists?(trash.id)
+  end
+
+  test "a published report cannot be thrown away through this endpoint" do
+    trash = create_published_trash(device: @device)
+
+    delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+
+    assert_response :unprocessable_entity
+    assert_equal "already_published", response.parsed_body["error"]
+    assert Trash.exists?(trash.id)
+  end
+
   test "show reports not_trash and in_review as finished" do
     trash = create_published_trash(device: @device)
 

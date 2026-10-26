@@ -14,8 +14,26 @@ module Api
 
       # GET /api/v1/me/trashes/:id   poll one report after uploading it:
       # stage goes protecting_photo -> analyzing -> scored | not_trash | in_review, and done flips to true.
+      # "scored" waits for the author: POST .../publish puts it on the map (stage "published"), DELETE throws it away.
       def show
         render json: serialize_own_trash(@device.trashes.with_attached_photo.find(params[:id]))
+      end
+
+      # POST /api/v1/me/trashes/:id/publish   the author confirmed the AI's result: put it on the map
+      def publish
+        trash = @device.trashes.with_attached_photo.find(params[:id])
+        trash.publish!
+        render json: serialize_own_trash(trash)
+      rescue Trash::NotPublishable => e
+        render json: { error: "not_publishable", message: e.message }, status: :unprocessable_entity
+      end
+
+      # DELETE /api/v1/me/trashes/:id   "Voltar": throw away a report that was not published
+      def destroy
+        @device.trashes.find(params[:id]).discard_draft!
+        head :no_content
+      rescue Trash::NotPublishable => e
+        render json: { error: "already_published", message: e.message }, status: :unprocessable_entity
       end
 
       private
@@ -30,6 +48,10 @@ module Api
           severity: trash.severity,
           trash_types: trash.trash_types,
           taken_at: trash.taken_at,
+          lat: trash.lonlat.y,
+          lng: trash.lonlat.x,
+          published: trash.published?,
+          can_publish: trash.publishable?,
           photo_ready: ready,
           photo_url: ready ? url_for(trash.photo) : nil
         }
@@ -37,7 +59,7 @@ module Api
 
       def stage_of(trash)
         case trash.ai_status
-        when "validated" then "scored"
+        when "validated" then trash.published? ? "published" : "scored"
         when "rejected" then "not_trash"
         when "needs_review" then "in_review"
         else trash.sanitized_at ? "analyzing" : "protecting_photo"

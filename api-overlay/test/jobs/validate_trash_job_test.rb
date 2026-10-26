@@ -26,6 +26,26 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
     assert_equal %w[plastic bulky_items], trash.trash_types
     assert_in_delta 0.88, trash.ai_confidence
     assert_not_nil trash.validated_at
+  end
+
+  test "a validated report waits for its author: it is not on the map until published" do
+    trash = sanitized_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    trash.reload
+    assert_predicate trash, :validated?
+    assert_nil trash.published_at
+    assert_predicate trash, :publishable?
+    assert_not_includes Trash.for_heatmap.pluck(:id), trash.id
+  end
+
+  test "AUTO_PUBLISH=true puts a validated report on the map right away" do
+    trash = sanitized_trash
+
+    with_env("AUTO_PUBLISH" => "true") { ValidateTrashJob.perform_now(trash.id) }
+
+    assert_not_nil trash.reload.published_at
     assert_includes Trash.for_heatmap.pluck(:id), trash.id
   end
 
