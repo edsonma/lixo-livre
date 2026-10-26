@@ -27,6 +27,7 @@
   #report button.primary { background: #1b7f3b; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; margin-right: 6px; }
   #report button.secondary { background: #eee; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
   #report button:disabled { opacity: .5; cursor: default; }
+  #report .pick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   #report .preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; margin: 8px 0; display: none; }
   #report .status { font-size: 15px; margin: 10px 0; }
   #report .score { font-size: 30px; font-weight: 600; }
@@ -50,7 +51,12 @@
   <div id="form">
     <div class="muted">1. Mova o mapa até o local (o pino marca onde será o registro).</div>
     <div class="muted" style="margin-top:6px">2. Escolha uma foto:</div>
-    <input id="photo" type="file" accept="image/*" capture="environment">
+    <div class="pick">
+      <button id="pick-camera" class="secondary" type="button">📷 Tirar foto</button>
+      <button id="pick-gallery" class="secondary" type="button">🖼️ Escolher da galeria</button>
+    </div>
+    <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
+    <input id="photo" type="file" accept="image/*" hidden>
     <img id="preview" class="preview" alt="Prévia da foto">
     <div><button id="send" class="primary" type="button" disabled>Enviar</button><button id="cancel" class="secondary" type="button">Cancelar</button></div>
   </div>
@@ -178,7 +184,7 @@
   function resetReport() {
     polling++; clearTimeout(pollTimer);
     $("form").style.display = "block"; $("progress").style.display = "none";
-    $("photo").value = ""; $("send").disabled = true; $("preview").style.display = "none";
+    $("photo").value = ""; $("photo-camera").value = ""; chosen = null; $("send").disabled = true; $("preview").style.display = "none";
     $("again").style.display = "none"; $("done").style.display = "none";
     showError("");
     if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
@@ -189,8 +195,14 @@
   $("again").onclick = resetReport;
   $("done").onclick = function () { closeReport(); loadHeat(); };
 
-  $("photo").onchange = function () {
-    var file = $("photo").files[0];
+  // Two inputs feed one choice: the camera (capture) and the gallery (no capture, so phones offer their photo library)
+  var chosen = null;
+  $("pick-camera").onclick = function () { $("photo-camera").click(); };
+  $("pick-gallery").onclick = function () { $("photo").click(); };
+  $("photo").onchange = $("photo-camera").onchange = function () {
+    var file = this.files[0];
+    if (!file) return; // picker cancelled: keep the previous choice
+    chosen = file;
     if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
     $("send").disabled = !file;
     if (file) { previewUrl = URL.createObjectURL(file); $("preview").src = previewUrl; $("preview").style.display = "block"; }
@@ -248,7 +260,7 @@
   }
 
   $("send").onclick = async function () {
-    var file = $("photo").files[0];
+    var file = chosen;
     if (!file) return;
     showError(""); $("send").disabled = true;
     try {
@@ -257,7 +269,9 @@
       var form = new FormData();
       form.append("photo", file);
       form.append("lat", c.lat); form.append("lng", c.lng);
-      form.append("taken_at", new Date().toISOString());
+      // A gallery photo was usually taken earlier: its file date is the best guess (the server also reads the EXIF).
+      var taken = file.lastModified && file.lastModified > 946684800000 && file.lastModified <= Date.now() ? new Date(file.lastModified) : new Date();
+      form.append("taken_at", taken.toISOString());
       var res = await fetch("/api/v1/trashes", { method: "POST", headers: { "X-Device-Token": token }, body: form });
       var body = await res.json().catch(function () { return {}; });
       if (res.status === 401) { saveToken(""); throw new Error("Sessão expirada. Tente enviar de novo."); }
