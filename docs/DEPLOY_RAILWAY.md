@@ -27,7 +27,7 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
    | `SECRET_KEY_BASE` | output of `openssl rand -hex 64` | Required. |
    | `DEMO_MODE` | `true` | Fake AI, no face/plate detection. |
    | `SEED_DEMO_DATA` | `true` | Loads fake reports at start, only if there are none yet. |
-  | `TRASH_VISION_PROVIDER` | `anthropic` | Optional: use a real AI for the analysis (works with `DEMO_MODE`). Also set `ANTHROPIC_API_KEY`. For `openai` set `OPENAI_API_KEY` and `TRASH_VISION_MODEL`. |
+   | `TRASH_VISION_PROVIDER` | `anthropic` | Optional: use a real AI for the analysis (works with `DEMO_MODE`). Also set `ANTHROPIC_API_KEY`. For `openai` set `OPENAI_API_KEY` and `TRASH_VISION_MODEL`. |
    | `DEMO_COUNT` | `220` | Optional. |
    | `DEMO_CENTER` | `-23.55,-46.63` | Optional, `lat,lng`. Default is Brasília. |
    | `RAILS_LOG_TO_STDOUT` | `true` | Optional, logs in the Railway panel. |
