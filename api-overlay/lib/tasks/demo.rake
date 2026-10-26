@@ -35,7 +35,7 @@ namespace :vision do
       "anthropic" => -> { TrashVision::Adapters::Anthropic.new(env: ENV.to_h.merge("TRASH_VISION_MODEL" => ENV["ANTHROPIC_MODEL"] || ENV["TRASH_VISION_MODEL"])) },
       "gemini" => lambda {
         TrashVision::Adapters::OpenAI.new(env: {
-          "OPENAI_API_KEY" => ENV["GEMINI_API_KEY"], "TRASH_VISION_MODEL" => ENV["GEMINI_MODEL"],
+          "OPENAI_API_KEY" => ENV["GEMINI_API_KEY"], "TRASH_VISION_MODEL" => ENV.fetch("GEMINI_MODEL", "gemini-3.8-flash"),
           "OPENAI_BASE_URL" => ENV.fetch("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
         })
       },

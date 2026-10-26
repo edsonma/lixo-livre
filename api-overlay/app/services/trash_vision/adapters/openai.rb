@@ -4,14 +4,19 @@ class TrashVision
     # vendors retire them, so you choose one with TRASH_VISION_MODEL.
     class OpenAI < Base
       def call(image)
-        reply = post_json(
-          "#{optional('OPENAI_BASE_URL', 'https://api.openai.com/v1')}/chat/completions",
-          { "authorization" => "Bearer #{required('OPENAI_API_KEY')}" },
-          body(image)
-        )
+        json_mode = env["TRASH_VISION_JSON_MODE"].to_s.strip.downcase != "off" && @json_mode != false
+        reply = begin
+          request(image, json_mode: json_mode)
+        rescue RequestFailed => e
+          # Some compatible servers reject response_format. Ask once more without it, and remember.
+          raise unless json_mode && e.message.include?("HTTP 400")
+
+          @json_mode = false
+          request(image, json_mode: false)
+        end
         content = reply.dig("choices", 0, "message", "content")
         answer = begin
-          JSON.parse(content.to_s)
+          JSON.parse(strip_code_fence(content.to_s))
         rescue JSON::ParserError
           raise InvalidResponse, "the model did not return JSON"
         end
@@ -22,10 +27,23 @@ class TrashVision
 
       private
 
-      def body(image)
+      def request(image, json_mode:)
+        post_json(
+          "#{optional('OPENAI_BASE_URL', 'https://api.openai.com/v1')}/chat/completions",
+          { "authorization" => "Bearer #{required('OPENAI_API_KEY')}" },
+          body(image, json_mode: json_mode)
+        )
+      end
+
+      # Models without JSON mode like to wrap the answer in ```json ... ```.
+      def strip_code_fence(text)
+        text.strip.sub(/\A```(?:json)?\s*/i, "").sub(/\s*```\z/, "")
+      end
+
+      def body(image, json_mode:)
         {
           model: required("TRASH_VISION_MODEL"),
-          response_format: { type: "json_object" },
+          **(json_mode ? { response_format: { type: "json_object" } } : {}),
           max_tokens: 400,
           messages: [{
             role: "user",
