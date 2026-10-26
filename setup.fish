@@ -64,9 +64,8 @@ if not grep -Eq "^[[:space:]]*gem ['\"]aws-sdk-s3['\"]" Gemfile
     or exit 1
 end
 
-# Active Storage tables (photos)
-bin/rails active_storage:install
-or exit 1
+# Active Storage tables (photos): created by a fixed migration in api-overlay/db/migrate
+# (do not run active_storage:install, it stamps a new version every time)
 
 # Copy our migrations, models, controllers, jobs, routes and config over the generated app
 cp -R ../api-overlay/. .

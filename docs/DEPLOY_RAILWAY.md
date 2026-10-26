@@ -71,6 +71,7 @@ Note: if the photo carries GPS in its EXIF and it is far from `lat`/`lng`, the r
 |---|---|
 | Deploy fails at `CREATE EXTENSION postgis` | The database is plain PostgreSQL. Use the `postgis/postgis` image. |
 | `connection to server at "69.46.46.69" ... Connection timed out` (any public IP) | The host in `DATABASE_URL` or `PGHOST` is a public address (`*.up.railway.app`, `*.proxy.rlwy.net`). Use the private name `<database-service>.railway.internal` with port 5432 (Settings → Networking → Private Networking on the database service). Do not generate a public domain for the database. |
+| `PG::DuplicateTable: relation "active_storage_blobs" already exists` | Fixed in the repo (Active Storage now has one fixed migration that skips tables that exist). Redeploy the latest commit. |
 | `could not translate host name` | The service name in `DATABASE_URL` does not match the database service. |
 | `DATABASE_URL still contains a Railway reference` | The `${{...}}` part was not filled in: the service name inside it does not match the database service. |
 | `DATABASE_URL is not a valid URL`, or `connection_url_resolver.rb` in the error | A special character in the password, or a broken reference. Use a letters-and-digits password, or delete `DATABASE_URL` and set `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` instead: the app builds and encodes the URL itself. |

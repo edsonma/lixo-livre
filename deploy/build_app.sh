@@ -31,7 +31,7 @@ else
     grep -Eq "^[[:space:]]*gem ['\"]$g['\"]" Gemfile || bundle add "$g"
   done
   grep -Eq "^[[:space:]]*gem ['\"]aws-sdk-s3['\"]" Gemfile || bundle add aws-sdk-s3 --require=false
-  bin/rails active_storage:install
+  # No active_storage:install: its migration gets a new timestamp on every build. The overlay has a fixed one.
   cp -R "$src/api-overlay/." .
   ruby "$src/tools/patch_generated_app.rb" .
 fi
