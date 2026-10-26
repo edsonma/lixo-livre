@@ -43,13 +43,38 @@
   #report { left: 50%; bottom: 0; transform: translateX(-50%); width: min(460px, 100%); max-height: 85%; overflow: auto; box-sizing: border-box; border-radius: 20px 20px 0 0; padding: 8px 16px 20px; display: none; }
   #report .grab { width: 40px; height: 4px; border-radius: 2px; background: #d5dbd7; margin: 0 auto 10px; }
   #report .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  #report .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  #report .tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 18px 8px; background: #f6f9f6; border: 1.5px dashed #b9c8bd; border-radius: 14px; color: var(--ink); }
-  #report .tile:hover { border-color: var(--green); background: #eef7f0; }
-  #report .tile .ico { font-size: 30px; line-height: 1.2; }
-  #report .tile small { color: var(--muted); }
-  #report .chosen { text-align: right; }
-  #report .preview { display: block; width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 4px; }
+  /* Camera screen ("Registrar local") */
+  #camera { position: fixed; inset: 0; z-index: 20; background: #fff; display: none; flex-direction: column; }
+  #camera .cam { display: flex; flex-direction: column; width: 100%; height: 100%; background: #fff; box-sizing: border-box; padding: 0 16px 12px; }
+  #camera .cam-head { display: flex; align-items: center; justify-content: space-between; height: 56px; flex: none; }
+  #camera .cam-head h2 { font-size: 17px; }
+  #camera .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 50%; color: var(--ink); padding: 0; }
+  #camera .icon-btn:hover { background: #eef1ee; }
+  #camera .viewfinder { position: relative; flex: 1; min-height: 0; border-radius: 20px; overflow: hidden; background: #101612; }
+  #camera .viewfinder video, #camera .viewfinder img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #camera .corner { position: absolute; width: 34px; height: 34px; border: 0 solid #3cc15f; pointer-events: none; }
+  #camera .tl { top: 10px; left: 10px; border-top-width: 5px; border-left-width: 5px; border-top-left-radius: 14px; }
+  #camera .tr { top: 10px; right: 10px; border-top-width: 5px; border-right-width: 5px; border-top-right-radius: 14px; }
+  #camera .bl { bottom: 10px; left: 10px; border-bottom-width: 5px; border-left-width: 5px; border-bottom-left-radius: 14px; }
+  #camera .br { bottom: 10px; right: 10px; border-bottom-width: 5px; border-right-width: 5px; border-bottom-right-radius: 14px; }
+  #camera .caption { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 64px); text-align: center; background: rgba(30,30,30,.62); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 15px; line-height: 1.35; }
+  #camera .cam-fallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px 24px 90px; color: #cfd8d2; line-height: 1.45; }
+  #camera .cam-controls { display: flex; align-items: center; justify-content: space-between; padding: 14px 8px 6px; flex: none; }
+  #camera .side-btn { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--ink); border-radius: 14px; padding: 0; }
+  #camera .side-btn:hover { background: #eef1ee; }
+  #camera .shutter { width: 78px; height: 78px; border-radius: 50%; background: #1fa043; border: 5px solid #fff; box-shadow: 0 0 0 3px var(--ink); padding: 0; transition: transform .08s; }
+  #camera .shutter:active { transform: scale(.93); }
+  #camera .shutter:disabled { opacity: .55; }
+  #camera .cam-tabs { display: flex; justify-content: space-around; border-top: 1px solid var(--line); margin: 6px -16px 0; padding: 0 16px; flex: none; }
+  #camera .cam-tabs button { background: none; border: 0; padding: 12px 18px 10px; font-size: 16px; color: var(--muted); border-bottom: 3px solid transparent; }
+  #camera .cam-tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: #1fa043; }
+  #camera .cam-review { display: none; gap: 8px; padding-top: 12px; flex: none; }
+  #camera .cam-review button { flex: 1; padding: 14px; font-size: 16px; font-weight: 600; border: 0; border-radius: 12px; }
+  #camera .error { text-align: center; flex: none; }
+  @media (min-width: 700px) {
+    #camera { background: rgba(0,0,0,.45); align-items: center; justify-content: center; }
+    #camera .cam { width: 440px; height: min(820px, calc(100dvh - 32px)); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  }
   #report .status { font-size: 15px; margin: 10px 0; }
   #report .score { font-size: 34px; font-weight: 700; }
   #report .score small { font-size: 14px; font-weight: 400; color: var(--muted); }
@@ -82,29 +107,49 @@
   </div>
 </div>
 
-<div id="report" class="card" role="dialog" aria-labelledby="report-title">
-  <div class="grab"></div>
-  <div class="head">
-    <h2 id="report-title">Reportar lixo</h2>
-    <button id="change-place" class="link" type="button">Mudar local</button>
-  </div>
-  <div id="form">
-    <div id="choose" class="tiles">
-      <button id="pick-camera" class="tile" type="button"><span class="ico">📷</span><b>Tirar foto</b><small>Abrir a câmera</small></button>
-      <button id="pick-gallery" class="tile" type="button"><span class="ico">🖼️</span><b>Galeria</b><small>Escolher uma foto</small></button>
+<div id="camera" role="dialog" aria-label="Registrar local">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="cam-back" class="icon-btn" type="button" aria-label="Voltar e mudar o local">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Registrar local</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
     </div>
-    <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
-    <input id="photo" type="file" accept="image/*" hidden>
-    <div id="chosen" class="chosen" style="display:none">
-      <img id="preview" class="preview" alt="Prévia da foto">
-      <button id="swap" class="link" type="button">Trocar foto</button>
+    <div id="viewfinder" class="viewfinder">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="shot" alt="Prévia da foto" style="display:none">
+      <div id="cam-fallback" class="cam-fallback"></div>
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div id="cam-caption" class="caption">Tire uma foto do local<br>onde há lixo</div>
     </div>
-    <div class="actions">
-      <button id="cancel" class="secondary" type="button">Cancelar</button>
+    <div id="cam-controls" class="cam-controls">
+      <button id="gallery-btn" class="side-btn" type="button" aria-label="Escolher da galeria">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
+      </button>
+      <button id="shutter" class="shutter" type="button" aria-label="Tirar foto"></button>
+      <button id="flip" class="side-btn" type="button" aria-label="Trocar de câmera">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.4M4 5v3.6h3.6"/><path d="M4 13a8 8 0 0 0 14.5 4.4M20 19v-3.6h-3.6"/></svg>
+      </button>
+    </div>
+    <div id="cam-tabs" class="cam-tabs">
+      <button id="tab-camera" class="on" type="button">Câmera</button>
+      <button id="tab-gallery" type="button">Galeria</button>
+    </div>
+    <div id="cam-review" class="cam-review">
+      <button id="retake" class="secondary" type="button">Tirar outra</button>
       <button id="send" class="primary" type="button" disabled>Enviar</button>
     </div>
+    <div id="cam-error" class="error" role="alert"></div>
   </div>
-  <div id="progress" style="display:none">
+  <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
+  <input id="photo" type="file" accept="image/*" hidden>
+</div>
+
+<div id="report" class="card" role="dialog" aria-labelledby="report-title">
+  <div class="grab"></div>
+  <div class="head"><h2 id="report-title">Reportar lixo</h2></div>
+  <div id="progress">
     <div id="status" class="status" role="status" aria-live="polite"></div>
     <div class="actions">
       <button id="again" class="secondary" type="button" style="display:none">Enviar outra</button>
@@ -220,15 +265,17 @@
 
   function showError(msg) { $("error").textContent = msg || ""; }
 
-  // The flow has three steps: 1. choose the place on the map, 2. choose the photo, 3. watch the AI score it.
+  // The flow: 1. choose the place on the map, 2. take or choose the photo, 3. watch the AI score it.
   var reporting = false, step = null, placed = null, marker = null, chosen = null;
+  var stream = null, facing = "environment", liveCamera = false, camRun = 0;
 
   function show(id, on, display) { $(id).style.display = on ? (display || "block") : "none"; }
   function placeError(msg) { $("place-error").textContent = msg || ""; }
+  function camMessage(msg) { $("cam-error").textContent = msg || ""; }
   function sheetPadding() { return Math.min(340, Math.round(window.innerHeight * 0.42)); }
 
   function showCoords() {
-    var c = placed || map.getCenter();
+    var c = map.getCenter();
     $("coords").textContent = c.lat.toFixed(5) + ", " + c.lng.toFixed(5);
   }
   map.on("move", function () { if (step === "place") showCoords(); });
@@ -237,23 +284,107 @@
     if (marker) { marker.remove(); marker = null; }
   }
 
+  // ---- Camera (live preview with getUserMedia; the phone's own camera app is the fallback) ----
+  function stopCamera() {
+    camRun++;
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    $("video").srcObject = null;
+    liveCamera = false;
+  }
+
+  function showFallback(text) {
+    stopCamera();
+    show("video", false); show("cam-fallback", true, "flex"); $("cam-fallback").textContent = text;
+    $("flip").style.visibility = "hidden";
+  }
+
+  async function startCamera() {
+    stopCamera();
+    var run = camRun;
+    camMessage("");
+    show("shot", false); show("video", true); show("cam-fallback", false);
+    $("flip").style.visibility = "hidden";
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return showFallback("Toque no botão verde para abrir a câmera do celular.");
+    }
+    try {
+      var s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false
+      });
+      if (run !== camRun) { s.getTracks().forEach(function (t) { t.stop(); }); return; } // the person moved on while the permission prompt was open
+      stream = s; liveCamera = true;
+      $("video").srcObject = s;
+      $("flip").style.visibility = "visible";
+      try { await $("video").play(); } catch (e) {}
+    } catch (e) {
+      if (run !== camRun) return;
+      showFallback("Sem acesso à câmera. Toque no botão verde para usar a câmera do celular, ou escolha uma foto da galeria.");
+    }
+  }
+
+  function captureFrame() {
+    var v = $("video");
+    if (!v.videoWidth) return camMessage("A câmera ainda está iniciando. Tente de novo.");
+    $("shutter").disabled = true; // feedback right away, and no double tap while the photo is encoded
+    var scale = Math.min(1, 2000 / Math.max(v.videoWidth, v.videoHeight));
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.round(v.videoWidth * scale); canvas.height = Math.round(v.videoHeight * scale);
+    canvas.getContext("2d").drawImage(v, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(function (blob) {
+      if (!blob) { $("shutter").disabled = false; return camMessage("Não foi possível capturar a foto. Tente de novo."); }
+      setChosen(new File([blob], "foto.jpg", { type: "image/jpeg", lastModified: Date.now() }));
+    }, "image/jpeg", 0.9);
+  }
+
+  // The camera screen has two states: taking a photo (shutter, tabs) and reviewing it (retake, send).
+  function showCaptureState() {
+    show("shot", false); show("cam-caption", true);
+    show("cam-controls", true, "flex"); show("cam-tabs", true, "flex"); show("cam-review", false);
+    $("send").disabled = true; $("shutter").disabled = false;
+  }
+  function showReviewState() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(chosen);
+    $("shot").src = previewUrl;
+    show("video", false); show("cam-fallback", false); show("shot", true); show("cam-caption", false);
+    show("cam-controls", false); show("cam-tabs", false); show("cam-review", true, "flex");
+    $("send").disabled = false;
+    camMessage("");
+  }
+  function setChosen(file) {
+    stopCamera();
+    chosen = file;
+    showReviewState();
+  }
+
+  // ---- Steps ----
   // Step 1: the pin stays in the middle of the screen, the map moves under it.
   function goToPlace() {
     step = "place";
-    dropMarker();
-    show("report", false); show("place", true); show("pin", true); show("report-btn", false);
+    dropMarker(); stopCamera();
+    show("camera", false); show("report", false); show("place", true); show("pin", true); show("report-btn", false);
     placeError(""); showCoords();
     map.easeTo({ padding: { bottom: 0 }, center: placed || map.getCenter(), zoom: Math.max(map.getZoom(), 16), duration: 300 });
   }
 
-  // Step 2: the place is fixed on a marker, the sheet with the photo options opens below it.
+  // Step 2: the place is fixed on a marker; a full camera screen opens on top.
   function goToPhoto() {
     step = "photo";
     placed = map.getCenter();
     var pin = document.createElement("div");
     pin.className = "placed-pin"; pin.textContent = "📍";
     marker = new maplibregl.Marker({ element: pin, anchor: "bottom" }).setLngLat(placed).addTo(map);
-    show("pin", false); show("place", false); show("report", true);
+    show("pin", false); show("place", false); show("report", false);
+    show("camera", true, "flex");
+    if (chosen) showReviewState();
+    else { showCaptureState(); startCamera(); }
+  }
+
+  // Step 3: the camera screen closes and the sheet shows the progress and the score.
+  function goToProgress() {
+    step = "progress";
+    stopCamera(); show("camera", false);
+    show("progress", true); show("report", true);
     map.easeTo({ center: placed, padding: { bottom: sheetPadding() }, duration: 300 });
   }
 
@@ -265,29 +396,44 @@
   }
   function closeReport() {
     polling++; clearTimeout(pollTimer);
-    reporting = false; step = null; dropMarker();
-    show("place", false); show("report", false); show("pin", false); show("report-btn", true);
+    reporting = false; step = null; dropMarker(); stopCamera();
+    show("camera", false); show("place", false); show("report", false); show("pin", false); show("report-btn", true);
     map.easeTo({ padding: { bottom: 0 }, duration: 200 });
   }
   function resetReport() {
     polling++; clearTimeout(pollTimer);
-    show("form", true); show("progress", false);
-    show("change-place", true, "inline-block");
+    stopCamera();
     $("photo").value = ""; $("photo-camera").value = ""; chosen = null;
-    $("send").disabled = true; show("chosen", false); show("choose", true, "grid");
+    show("progress", false);
     $("again").style.display = "none"; $("done").style.display = "none";
-    showError("");
+    showError(""); camMessage("");
+    showCaptureState();
     if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
   }
 
   $("report-btn").onclick = openReport;
   $("place-ok").onclick = goToPhoto;
   $("place-cancel").onclick = closeReport;
-  $("change-place").onclick = goToPlace;
-  $("cancel").onclick = closeReport;
+  $("cam-back").onclick = goToPlace;
   $("again").onclick = openReport;
   $("done").onclick = function () { closeReport(); loadHeat(); };
-  $("swap").onclick = function () { resetReport(); };
+
+  $("shutter").onclick = function () {
+    if (liveCamera) captureFrame(); else $("photo-camera").click(); // no live preview: use the phone's camera app
+  };
+  $("flip").onclick = function () { facing = facing === "environment" ? "user" : "environment"; startCamera(); };
+  $("gallery-btn").onclick = $("tab-gallery").onclick = function () { $("photo").click(); };
+  $("tab-camera").onclick = function () { if (!liveCamera && !chosen) startCamera(); };
+  $("retake").onclick = function () {
+    $("photo").value = ""; $("photo-camera").value = ""; chosen = null;
+    showCaptureState(); startCamera();
+  };
+  // Photos from the gallery or from the phone's camera app keep their own EXIF (GPS, camera); frames captured by the live preview have none.
+  $("photo").onchange = $("photo-camera").onchange = function () {
+    var file = this.files[0];
+    if (!file) return; // picker cancelled: keep what we had
+    setChosen(file);
+  };
 
   $("locate").onclick = function () {
     placeError("");
@@ -306,20 +452,12 @@
   map.on("click", function (e) { if (step === "place") map.easeTo({ center: e.lngLat }); });
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && reporting) closeReport(); });
-
-  // Two inputs feed one choice: the camera (capture) and the gallery (no capture, so phones offer their photo library)
-  $("pick-camera").onclick = function () { $("photo-camera").click(); };
-  $("pick-gallery").onclick = function () { $("photo").click(); };
-  $("photo").onchange = $("photo-camera").onchange = function () {
-    var file = this.files[0];
-    if (!file) return; // picker cancelled: keep the previous choice
-    chosen = file;
-    if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
-    previewUrl = URL.createObjectURL(file);
-    $("preview").src = previewUrl;
-    show("choose", false); show("chosen", true);
-    $("send").disabled = false;
-  };
+  // Never keep the camera on in the background; bring it back when the person returns to the photo step.
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { if (liveCamera) stopCamera(); }
+    else if (step === "photo" && !chosen) startCamera();
+  });
+  window.addEventListener("pagehide", stopCamera);
 
   function setStatus(spinning, text, severity) {
     var box = $("status");
@@ -374,7 +512,7 @@
   $("send").onclick = async function () {
     var file = chosen;
     if (!file) return;
-    showError(""); $("send").disabled = true;
+    camMessage(""); $("send").disabled = true;
     try {
       var token = await deviceToken();
       var c = placed || map.getCenter();
@@ -391,12 +529,12 @@
         var msgs = body.errors ? Object.keys(body.errors).map(function (k) { return k + " " + body.errors[k].join(", "); }).join("; ") : "Erro " + res.status;
         throw new Error(msgs);
       }
-      $("form").style.display = "none"; $("progress").style.display = "block"; show("change-place", false);
+      goToProgress();
       setStatus(true, "Enviando…");
       var run = ++polling;
       poll(body.id, token, run, 0);
     } catch (e) {
-      showError(e.message || "Falha no envio.");
+      camMessage(e.message || "Falha no envio."); // the camera screen is still open
       $("send").disabled = false;
     }
   };
