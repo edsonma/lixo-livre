@@ -202,4 +202,40 @@ class MeApiTest < ActionDispatch::IntegrationTest
 
     assert_response :unauthorized
   end
+
+  # --- the profile grid ---
+
+  test "the feed is everything this account sent, from any device, newest first, in every status" do
+    other_phone = create_device(user: @user)
+    old = create_trash(device: @device, user: @user, taken_at: 3.days.ago)
+    newer = create_published_trash(device: other_phone, user: @user, taken_at: 1.hour.ago)
+    create_published_trash # somebody else's
+
+    get "/api/v1/me/feed"
+
+    assert_response :success
+    assert_equal [newer.id, old.id], response.parsed_body.map { |t| t["id"] }
+  end
+
+  test "feed entries have a small thumbnail once the photo is protected, and none before" do
+    ready = create_published_trash(device: @device, user: @user)
+    waiting = create_trash(device: @device, user: @user, taken_at: 2.days.ago)
+
+    get "/api/v1/me/feed"
+
+    by_id = response.parsed_body.index_by { |t| t["id"] }
+    assert_match(/active_storage/, by_id[ready.id]["thumb_url"])
+    assert_not_equal by_id[ready.id]["photo_url"], by_id[ready.id]["thumb_url"]
+    assert_nil by_id[waiting.id]["thumb_url"]
+    assert_nil by_id[waiting.id]["photo_url"]
+  end
+
+  test "the feed needs a login but not a device token" do
+    get "/api/v1/me/feed"
+    assert_response :success
+
+    delete "/api/v1/session"
+    get "/api/v1/me/feed"
+    assert_response :unauthorized
+  end
 end

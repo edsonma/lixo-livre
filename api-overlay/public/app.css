@@ -204,3 +204,18 @@
   .rv-actions .btn.danger { background: #fff; color: #b3261e; border-color: #b3261e; }
   .rv-actions .btn.danger.armed { background: #b3261e; color: #fff; }
   .rv-card .error { text-align: left; margin-top: 8px; }
+
+  /* ---- Profile grid ("Minhas fotos") ---- */
+  .pf-feed { margin-top: 20px; }
+  .pf-feed h3 { font-size: 15px; margin: 18px 2px 8px; }
+  .pf-stats { display: flex; justify-content: space-around; text-align: center; background: #fff; border-radius: 16px; padding: 14px 6px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .pf-stats b { display: block; font-size: 20px; }
+  .pf-stats span { color: var(--muted); font-size: 13px; }
+  .feed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: 12px; overflow: hidden; }
+  .feed-cell { position: relative; aspect-ratio: 1; padding: 0; border: 0; background: #dfe6e1; overflow: hidden; cursor: pointer; display: block; }
+  .feed-cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .feed-cell .wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--muted); }
+  .feed-dot { position: absolute; left: 6px; top: 6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .feed-state { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(20,28,23,.72); color: #fff; font-size: 11px; font-weight: 600; text-align: center; padding: 3px 2px; }
+  .mp-status { margin: 12px 2px 0; padding: 10px 12px; border-radius: 12px; background: #f3f6f4; line-height: 1.4; }
+  .screen .an-actions .outline.armed { background: #b3261e; border-color: #b3261e; color: #fff; }

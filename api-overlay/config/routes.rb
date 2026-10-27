@@ -16,6 +16,7 @@ Rails.application.routes.draw do
       end
 
       get "me/trashes", to: "me#trashes"
+      get "me/feed", to: "me#feed"
       get "me/trashes/:id", to: "me#show"
       post "me/trashes/:id/publish", to: "me#publish"
       delete "me/trashes/:id", to: "me#destroy"

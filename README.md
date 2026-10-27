@@ -272,6 +272,7 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/trashes/:id` | both | One report |
 | POST | `/api/v1/trashes` | mobile | Upload photo + `lat`, `lng`, `taken_at`, `extra_info` |
 | GET | `/api/v1/me/trashes` | mobile | "My pictures" feed (all AI statuses) |
+| GET | `/api/v1/me/feed` | web | The logged-in account's own reports from any device, newest first (up to 90), each with `thumb_url` (360px square) for the profile grid |
 | GET | `/api/v1/me/trashes/:id` | mobile, demo page | Poll one report after upload: `stage` (`protecting_photo` → `analyzing` → `scored` / `not_trash` / `in_review`; after publishing, `published`), `done`, `severity` |
 | POST | `/api/v1/me/trashes/:id/publish` | analysis screen | "Publicar no Lixo Livre": puts a scored report on the map (422 if it is not scored, or already published) |
 | DELETE | `/api/v1/me/trashes/:id` | analysis screen | "Voltar": deletes a report that was never published (422 once published) |

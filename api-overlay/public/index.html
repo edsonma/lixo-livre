@@ -39,6 +39,16 @@
       <div id="pf-passkey-info" class="pf-info"></div>
       <button id="pf-logout" class="btn plain" type="button">Sair</button>
     </div>
+    <div id="pf-feed" class="pf-feed" style="display:none">
+      <div class="pf-stats">
+        <div><b id="st-total">0</b><span>Fotos</span></div>
+        <div><b id="st-pub">0</b><span>Publicadas</span></div>
+        <div><b id="st-wait">0</b><span>Pendentes</span></div>
+      </div>
+      <h3>Minhas fotos</h3>
+      <div id="feed-grid" class="feed-grid"></div>
+      <div id="feed-empty" class="rv-empty" style="display:none">Você ainda não enviou fotos.<br>Toque no + para reportar lixo.</div>
+    </div>
   </section>
 </div>
 <header id="topbar">
@@ -166,6 +176,35 @@
         <div id="au-google" class="au-google"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="myphoto" class="screen" role="dialog" aria-label="Minha foto">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="mp-back" class="icon-btn" type="button" aria-label="Voltar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Minha foto</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="an-body">
+      <div class="dt-hero">
+        <img id="mp-photo" class="an-photo" alt="Minha foto">
+        <span id="mp-badge" class="dt-badge"></span>
+        <span id="mp-date" class="dt-date"></span>
+      </div>
+      <div id="mp-status" class="mp-status"></div>
+      <h3>Itens detectados pela IA</h3>
+      <div id="mp-items" class="an-items"></div>
+      <h3>Localização</h3>
+      <div class="an-place"><span class="pin" aria-hidden="true">📍</span><div><b id="mp-address">Local escolhido no mapa</b><small id="mp-coords"></small></div></div>
+    </div>
+    <div class="an-actions">
+      <button id="mp-primary" class="primary" type="button" style="display:none"></button>
+      <button id="mp-secondary" class="outline" type="button" style="display:none"></button>
+    </div>
+    <div id="mp-error" class="error" role="alert"></div>
   </div>
 </div>
 

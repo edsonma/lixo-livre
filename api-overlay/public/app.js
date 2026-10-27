@@ -156,6 +156,7 @@
     if (PAGES[i] === currentPage) return;
     currentPage = PAGES[i];
     document.body.dataset.page = currentPage;
+    if (currentPage === "profile") loadFeed(); // fresh grid every time the profile is opened
     PAGES.forEach(function (name) {
       var tab = $("nav-" + name), on = name === currentPage;
       tab.classList.toggle("on", on);
@@ -190,7 +191,9 @@
     $("acct").setAttribute("aria-label", me ? "Conta de " + me.name : "Conta: entrar ou criar conta");
     $("pf-guest").style.display = me ? "none" : "";
     $("pf-user").style.display = me ? "" : "none";
+    show("pf-feed", !!me);
     if (!me) return;
+    if (currentPage === "profile") loadFeed();
     var initial = firstName(me).charAt(0).toUpperCase();
     $("acct-initial").textContent = initial; $("pf-avatar").textContent = initial;
     $("pf-name").textContent = me.name; $("pf-email").textContent = me.email;
@@ -489,6 +492,122 @@
   };
   $("dt-follow").onclick = function () { toast("Em breve"); };
 
+
+
+  // ---- "Minhas fotos": everything I sent, as a 3-column grid (like a profile on Instagram) ----
+  var feed = [], feedLoading = false, STATE_TEXT = {
+    protecting_photo: "Protegendo", analyzing: "Analisando", scored: "Publicar", in_review: "Em revisão", not_trash: "Sem lixo"
+  };
+  var STATUS_LINE = {
+    published: "Publicada no mapa. Obrigado por ajudar!",
+    scored: "A IA já analisou. Falta você publicar no mapa.",
+    in_review: "Em revisão: aparece no mapa depois de aprovada.",
+    not_trash: "A IA não encontrou lixo nessa foto.",
+    analyzing: "Analisando…", protecting_photo: "Protegendo a privacidade da foto…"
+  };
+
+  async function loadFeed() {
+    if (!me || feedLoading) return;
+    feedLoading = true;
+    var res = await api("/api/v1/me/feed").catch(function () { return null; });
+    feedLoading = false;
+    if (!res || !res.ok) return;
+    feed = res.data; renderFeed();
+  }
+
+  function renderFeed() {
+    var grid = $("feed-grid"); grid.replaceChildren();
+    $("st-total").textContent = feed.length;
+    $("st-pub").textContent = feed.filter(function (r) { return r.published; }).length;
+    $("st-wait").textContent = feed.filter(function (r) { return !r.published && r.stage !== "not_trash"; }).length;
+    show("feed-empty", !feed.length);
+    feed.forEach(function (r) {
+      var cell = el("button", null, "feed-cell"); cell.type = "button";
+      cell.setAttribute("aria-label", "Foto de " + shortDate(r.taken_at) + (STATE_TEXT[r.stage] ? ", " + STATE_TEXT[r.stage] : ""));
+      if (r.thumb_url) {
+        var img = document.createElement("img"); img.src = photoPath(r.thumb_url); img.alt = ""; img.loading = "lazy"; cell.appendChild(img);
+      } else {
+        cell.appendChild(el("span", "⏳", "wait"));
+      }
+      if (r.severity != null) { var dot = el("i", null, "feed-dot"); dot.style.background = levelOf(r.severity).color; cell.appendChild(dot); }
+      if (STATE_TEXT[r.stage]) cell.appendChild(el("span", STATE_TEXT[r.stage], "feed-state"));
+      cell.onclick = function () { openMyPhoto(r); };
+      grid.appendChild(cell);
+    });
+  }
+
+  var myPhoto = null;
+  function myError(msg) { $("mp-error").textContent = msg || ""; }
+
+  function openMyPhoto(r) {
+    myPhoto = r; myError("");
+    var level = r.severity != null ? levelOf(r.severity) : null;
+    $("myphoto").style.setProperty("--lvl", level ? level.color : "#8a948d");
+    $("mp-photo").src = r.photo_url ? photoPath(r.photo_url) : "";
+    show("mp-badge", !!level, "flex");
+    if (level) $("mp-badge").textContent = "🗑 " + level.label + " · " + r.severity;
+    $("mp-date").textContent = shortDate(r.taken_at);
+    $("mp-status").textContent = STATUS_LINE[r.stage] || "";
+    var box = $("mp-items"); box.replaceChildren();
+    (r.trash_types || []).forEach(function (type) {
+      var info = TYPE_INFO[type] || ["📦", type], item = el("div", null, "an-item");
+      item.appendChild(el("span", info[0], "ico")); item.appendChild(el("span", info[1])); box.appendChild(item);
+    });
+    if (!box.children.length) box.appendChild(el("div", "Nenhum item específico identificado.", "an-none"));
+    $("mp-coords").textContent = r.lat.toFixed(5) + ", " + r.lng.toFixed(5);
+    $("mp-address").textContent = "Local escolhido no mapa";
+    addressOf(r.lat, r.lng).then(function (text) { if (text && myPhoto === r) $("mp-address").textContent = text; });
+
+    var primary = $("mp-primary"), secondary = $("mp-secondary");
+    primary.disabled = secondary.disabled = false;
+    show("mp-primary", r.can_publish || r.published, "block");
+    primary.textContent = r.published ? "Ver no mapa" : "Publicar no Lixo Livre";
+    show("mp-secondary", !r.published && r.stage !== "analyzing" && r.stage !== "protecting_photo", "block");
+    secondary.textContent = "Excluir foto"; secondary.classList.remove("armed");
+    show("myphoto", true, "flex");
+  }
+
+  function ownRequest(method, suffix) {
+    return deviceToken().then(function (token) {
+      return fetch("/api/v1/me/trashes/" + myPhoto.id + (suffix || ""), { method: method, headers: { "X-Device-Token": token } });
+    });
+  }
+  function finishMyPhoto(message) {
+    show("myphoto", false); myPhoto = null; toast(message); loadFeed(); loadHeat();
+  }
+  function ownFailure(res) {
+    return res.status === 404 ? "Esta foto foi enviada por outro aparelho. Use aquele aparelho para publicar ou excluir." : "Não foi possível agora. Tente de novo.";
+  }
+
+  $("mp-primary").onclick = async function () {
+    if (!myPhoto) return;
+    if (myPhoto.published) { show("myphoto", false); goPage("map"); map.jumpTo({ center: [myPhoto.lng, myPhoto.lat], zoom: 17 }); return; }
+    this.disabled = true; myError("");
+    try {
+      var res = await ownRequest("POST", "/publish");
+      if (res.ok) return finishMyPhoto("Publicada no mapa!");
+      myError(ownFailure(res));
+    } catch (e) { myError("Sem conexão. Tente de novo."); }
+    this.disabled = false;
+  };
+  var armDelete = null;
+  $("mp-secondary").onclick = async function () {
+    if (!myPhoto) return;
+    var button = this;
+    if (!button.classList.contains("armed")) { // two taps: the first only arms it
+      button.classList.add("armed"); button.textContent = "Toque de novo para excluir";
+      armDelete = setTimeout(function () { button.classList.remove("armed"); button.textContent = "Excluir foto"; }, 3500);
+      return;
+    }
+    clearTimeout(armDelete); button.disabled = true; myError("");
+    try {
+      var res = await ownRequest("DELETE");
+      if (res.ok || res.status === 204) return finishMyPhoto("Foto excluída.");
+      myError(res.status === 422 ? "Fotos já publicadas não podem ser excluídas." : ownFailure(res));
+    } catch (e) { myError("Sem conexão. Tente de novo."); }
+    button.disabled = false;
+  };
+  $("mp-back").onclick = function () { show("myphoto", false); myPhoto = null; };
 
   // ---- Moderation (admins and moderators): held reports and flagged photos ----
   var REASON_TEXT = {
@@ -879,7 +998,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (reporting) closeReport(); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
+    if (reporting) closeReport(); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {
