@@ -17,6 +17,8 @@ module Api
         options, challenge = service.registration_options(current_user)
         session[:passkey_registration_challenge] = challenge
         render json: options
+      rescue StandardError => e
+        passkey_error(e)
       end
 
       def create
@@ -27,12 +29,18 @@ module Api
         render json: serialize_passkey(passkey), status: :created
       rescue PasskeyService::Failed => e
         render json: { error: "passkey_failed", message: e.message }, status: :unprocessable_entity
+      rescue ActionController::ParameterMissing
+        raise
+      rescue StandardError => e
+        passkey_error(e)
       end
 
       def authentication_options
         options, challenge = service.authentication_options
         session[:passkey_authentication_challenge] = challenge
         render json: options
+      rescue StandardError => e
+        passkey_error(e)
       end
 
       def authenticate
@@ -53,6 +61,13 @@ module Api
       end
 
       private
+
+      # Anything unexpected (a library mismatch, a bad configuration) is logged and shown to the
+      # logged-in person instead of a blank 500, so it can be fixed.
+      def passkey_error(error)
+        Rails.logger.error("[passkeys] #{error.class}: #{error.message}\n#{error.backtrace.first(6).join("\n")}")
+        render json: { error: "passkey_error", message: "#{error.class}: #{error.message}".truncate(200) }, status: :internal_server_error
+      end
 
       def service
         PasskeyService.new(request)

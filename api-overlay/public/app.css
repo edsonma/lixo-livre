@@ -180,3 +180,27 @@
   .au-or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 20px 0 6px; }
   .au-or::before, .au-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   .au-google { display: flex; justify-content: center; margin-top: 12px; min-height: 0; }
+
+  /* ---- Moderation screen ---- */
+  .count-badge { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px; border-radius: 999px; background: #fff; color: var(--green-dark); font-size: 13px; font-weight: 700; }
+  .count-badge:empty { display: none; }
+  .screen .rv-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 2px 16px; }
+  .rv-body h3 { font-size: 15px; margin: 18px 0 8px; }
+  .rv-empty { text-align: center; color: var(--muted); padding: 40px 12px; line-height: 1.5; }
+  .rv-card { border: 1.5px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 14px; background: #fff; }
+  .rv-photo { position: relative; }
+  .rv-photo img, .rv-nophoto { display: block; width: 100%; height: 190px; object-fit: cover; border-radius: 12px; background: #e9eeea; }
+  .rv-nophoto { display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 12px; box-sizing: border-box; font-size: 14px; line-height: 1.4; }
+  .rv-tag { position: absolute; left: 8px; top: 8px; background: rgba(30,30,30,.7); color: #fff; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 8px; }
+  .rv-reason { margin: 10px 0 4px; font-weight: 600; line-height: 1.35; }
+  .rv-meta { color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .rv-meta .link { padding: 0; font-size: 13px; }
+  .rv-sev { margin: 12px 0 2px; }
+  .rv-sev label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .rv-sev b { color: var(--lvl, var(--ink)); }
+  .rv-sev input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--lvl, var(--green)); }
+  .rv-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .rv-actions .btn { margin-top: 0; padding: 11px; font-size: 15px; }
+  .rv-actions .btn.danger { background: #fff; color: #b3261e; border-color: #b3261e; }
+  .rv-actions .btn.danger.armed { background: #b3261e; color: #fff; }
+  .rv-card .error { text-align: left; margin-top: 8px; }

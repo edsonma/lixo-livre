@@ -100,6 +100,47 @@ class Trash < ApplicationRecord
     )
   end
 
+  # --- human review (admins and moderators) ---
+
+  class NotReviewable < StandardError; end
+
+  # A held report (needs_review): a person looked at the protected photo and decided the severity.
+  # It goes to the map right away. A photo that was never sanitized cannot be approved.
+  def approve_after_review!(severity:, types: nil, reviewer: nil)
+    raise NotReviewable, "report #{id} is not waiting for review" unless needs_review?
+    raise NotReviewable, "report #{id} has no protected photo yet" unless sanitized_at.present?
+
+    update!(
+      ai_status: :validated, severity: severity, trash_types: types.nil? ? trash_types : types,
+      validated_at: Time.current, published_at: Time.current,
+      ai_payload: (ai_payload || {}).merge("reviewed" => "approved", "reviewer_id" => reviewer&.id)
+    )
+  end
+
+  def reject_after_review!(reviewer: nil)
+    raise NotReviewable, "report #{id} is not waiting for review" unless needs_review?
+
+    update_columns(ai_status: "rejected", updated_at: Time.current,
+                   ai_payload: (ai_payload || {}).merge("reviewed" => "rejected", "reviewer_id" => reviewer&.id))
+    photo.purge_later
+  end
+
+  # A published photo people reported: the moderator says it is fine ...
+  def keep_after_flags!
+    transaction do
+      flags.pending.update_all(status: "dismissed")
+      update!(hidden_at: nil)
+    end
+  end
+
+  # ... or takes it down.
+  def take_down_after_flags!
+    transaction do
+      flags.pending.update_all(status: "resolved")
+      update!(hidden_at: hidden_at || Time.current)
+    end
+  end
+
   # True when the EXIF data read at upload contradicts the report (see the constants above).
   def metadata_suspicious?
     distance = photo_meta["exif_distance_m"]

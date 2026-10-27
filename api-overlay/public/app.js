@@ -196,6 +196,8 @@
     $("pf-name").textContent = me.name; $("pf-email").textContent = me.email;
     $("pf-role").style.display = me.admin ? "inline-block" : "none";
     $("pf-passkey").style.display = passkeysSupported ? "" : "none";
+    $("pf-review").style.display = me.moderator ? "" : "none";
+    if (me.moderator) refreshReviewCount();
     $("pf-passkey-info").textContent = me.passkeys ? "Biometria ativa em " + me.passkeys + (me.passkeys > 1 ? " aparelhos." : " aparelho.") : "";
   }
   async function loadMe() {
@@ -294,15 +296,22 @@
     for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
     return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
-  function passkeyMessage(e, fallback) {
-    return e && e.name === "NotAllowedError" ? "Cancelado ou não reconhecido. Tente de novo." : fallback;
+  // What went wrong, in words, with the technical detail at the end so it can be reported.
+  function serverDetail(r) { return "servidor " + r.status + (r.data && (r.data.message || r.data.error) ? " – " + (r.data.message || r.data.error) : ""); }
+  function passkeyMessage(e, fallback, withDetail) {
+    var name = e && e.name;
+    if (name === "NotAllowedError") return "Cancelado ou não reconhecido pelo aparelho. Tente de novo.";
+    if (name === "InvalidStateError") return "Este aparelho já tem biometria ativa nesta conta.";
+    if (name === "NotSupportedError") return "Este aparelho ou navegador não aceita biometria (passkeys). Verifique se há bloqueio de tela (digital, rosto ou PIN).";
+    if (name === "SecurityError") return "O navegador bloqueou a biometria para este endereço (precisa ser https).";
+    return withDetail ? fallback + " (" + (e && (e.message || e.name) || "erro desconhecido") + ")." : fallback;
   }
 
   async function addPasskey() {
     $("pf-passkey").disabled = true; $("pf-passkey-info").textContent = "";
     try {
       var o = await api("/api/v1/passkeys/registration_options", "POST");
-      if (!o.ok) throw new Error("options");
+      if (!o.ok) throw new Error(serverDetail(o));
       var pk = o.data;
       pk.challenge = fromB64(pk.challenge); pk.user.id = fromB64(pk.user.id);
       (pk.excludeCredentials || []).forEach(function (c) { c.id = fromB64(c.id); });
@@ -312,10 +321,10 @@
         response: { attestationObject: toB64(cred.response.attestationObject), clientDataJSON: toB64(cred.response.clientDataJSON) },
         clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}
       } });
-      if (!r.ok) throw new Error("save");
+      if (!r.ok) throw new Error(serverDetail(r));
       me.passkeys = (me.passkeys || 0) + 1; applyAuth(); toast("Biometria ativada!");
     } catch (e) {
-      $("pf-passkey-info").textContent = passkeyMessage(e, "Não foi possível ativar a biometria neste aparelho.");
+      $("pf-passkey-info").textContent = passkeyMessage(e, "Não foi possível ativar a biometria", true);
     }
     $("pf-passkey").disabled = false;
   }
@@ -325,7 +334,7 @@
     authError(""); $("au-passkey").disabled = true;
     try {
       var o = await api("/api/v1/passkeys/authentication_options", "POST");
-      if (!o.ok) throw new Error("options");
+      if (!o.ok) throw new Error(serverDetail(o));
       var pk = o.data; pk.challenge = fromB64(pk.challenge);
       (pk.allowCredentials || []).forEach(function (c) { c.id = fromB64(c.id); });
       var cred = await navigator.credentials.get({ publicKey: pk });
@@ -339,7 +348,7 @@
       } });
       if (r.ok) signedIn(r.data.user); else authError("Biometria não reconhecida. Entre com e-mail e senha.");
     } catch (e) {
-      authError(passkeyMessage(e, "Não foi possível usar a biometria agora."));
+      authError(passkeyMessage(e, "Não foi possível usar a biometria", true));
     }
     $("au-passkey").disabled = false;
   }
@@ -479,6 +488,104 @@
     this.textContent = all ? "Ver menos" : "Ver todas";
   };
   $("dt-follow").onclick = function () { toast("Em breve"); };
+
+
+  // ---- Moderation (admins and moderators): held reports and flagged photos ----
+  var REASON_TEXT = {
+    not_trash: "não é lixo", privacy: "privacidade", inappropriate: "inadequada", duplicate: "duplicada", wrong_location: "local errado"
+  };
+  function reasonText(r) {
+    if (r.kind === "flagged") {
+      var parts = Object.keys(r.flags || {}).map(function (k) { return (REASON_TEXT[k] || k) + (r.flags[k] > 1 ? " ×" + r.flags[k] : ""); });
+      return "Denunciada: " + (parts.join(", ") || "sem motivo") + (r.hidden ? " (já escondida)" : "");
+    }
+    if (r.reason === "metadata_mismatch") {
+      var far = r.exif_distance_m ? " (a foto foi tirada a " + (r.exif_distance_m >= 1000 ? (r.exif_distance_m / 1000).toFixed(1) + " km" : r.exif_distance_m + " m") + " do pino)" : "";
+      return "A foto parece ter sido tirada longe do local marcado ou em outra data" + far + ".";
+    }
+    if (r.reason === "low_confidence") return "A IA ficou em dúvida" + (r.ai_confidence ? " (" + Math.round(r.ai_confidence * 100) + "% de confiança)" : "") + ".";
+    if (r.reason === "failed") return "Falha técnica no processamento" + (r.hold_reason ? ": " + r.hold_reason : "") + ".";
+    return "Aguardando revisão.";
+  }
+
+  function reviewCard(r) {
+    var card = el("div", null, "rv-card");
+    var photo = el("div", null, "rv-photo");
+    if (r.photo_url) {
+      var img = document.createElement("img"); img.src = photoPath(r.photo_url); img.alt = "Foto enviada"; img.loading = "lazy"; photo.appendChild(img);
+    } else {
+      photo.appendChild(el("div", "Foto ainda não protegida (rostos e placas não foram borrados). Ela não é mostrada e não pode ser aprovada.", "rv-nophoto"));
+    }
+    photo.appendChild(el("span", r.kind === "flagged" ? "Denunciada" : "Em revisão", "rv-tag"));
+    card.appendChild(photo);
+    card.appendChild(el("div", reasonText(r), "rv-reason"));
+
+    var meta = el("div", null, "rv-meta");
+    meta.appendChild(document.createTextNode((r.uploader ? r.uploader.name + " (" + r.uploader.email + ")" : "Anônimo") + " · " + shortDate(r.taken_at) + " · " + r.lat.toFixed(4) + ", " + r.lng.toFixed(4) + " · "));
+    var see = el("button", "ver no mapa", "link"); see.type = "button";
+    see.onclick = function () { show("review", false); goPage("map"); map.jumpTo({ center: [r.lng, r.lat], zoom: 17 }); };
+    meta.appendChild(see);
+    card.appendChild(meta);
+
+    var slider = null;
+    if (r.kind === "held") {
+      var box = el("div", null, "rv-sev");
+      var label = el("label"); label.appendChild(el("span", "Nível de sujeira")); var value = el("b"); label.appendChild(value);
+      slider = document.createElement("input"); slider.type = "range"; slider.min = 0; slider.max = 100; slider.value = r.severity != null ? r.severity : 50;
+      var paint = function () { var l = levelOf(+slider.value); value.textContent = l.label + " · " + slider.value; box.style.setProperty("--lvl", l.color); };
+      slider.oninput = paint; paint();
+      box.appendChild(label); box.appendChild(slider); card.appendChild(box);
+    }
+
+    var err = el("div", null, "error"); err.setAttribute("role", "alert");
+    var actions = el("div", null, "rv-actions");
+    var yes = el("button", r.kind === "held" ? "Aprovar e publicar" : "Manter no mapa", "btn primary"); yes.type = "button";
+    var no = el("button", r.kind === "held" ? "Rejeitar" : "Remover", "btn danger"); no.type = "button";
+    if (r.kind === "held" && !r.photo_url) yes.disabled = true;
+
+    async function act(path, body, done) {
+      yes.disabled = no.disabled = true; err.textContent = "";
+      try {
+        var res = await api("/api/v1/admin/reviews/" + r.id + "/" + path, "POST", body || {});
+        if (!res.ok) { err.textContent = res.status === 403 ? "Você não tem permissão." : (res.data.message || "Não foi possível agora."); yes.disabled = no.disabled = false; return; }
+        card.remove(); toast(done); refreshReviewCount(); loadHeat();
+        if (!$("rv-body").querySelector(".rv-card")) loadReviews();
+      } catch (e) { err.textContent = "Sem conexão. Tente de novo."; yes.disabled = no.disabled = false; }
+    }
+    yes.onclick = function () { act("approve", slider ? { severity: +slider.value } : {}, r.kind === "held" ? "Publicado no mapa." : "Mantida no mapa."); };
+    var armTimer = null;
+    no.onclick = function () { // two taps: the first only arms it
+      if (!no.classList.contains("armed")) {
+        no.classList.add("armed"); no.textContent = "Toque de novo para confirmar";
+        armTimer = setTimeout(function () { no.classList.remove("armed"); no.textContent = r.kind === "held" ? "Rejeitar" : "Remover"; }, 3500);
+        return;
+      }
+      clearTimeout(armTimer);
+      act("reject", {}, r.kind === "held" ? "Rejeitada." : "Removida do mapa.");
+    };
+    actions.appendChild(yes); actions.appendChild(no);
+    card.appendChild(actions); card.appendChild(err);
+    return card;
+  }
+
+  async function loadReviews() {
+    var body = $("rv-body"); body.replaceChildren(el("div", "Carregando…", "rv-empty"));
+    var res = await api("/api/v1/admin/reviews").catch(function () { return null; });
+    body.replaceChildren();
+    if (!res || !res.ok) { body.appendChild(el("div", res && res.status === 403 ? "Você não tem permissão para moderar." : "Não foi possível carregar a fila agora.", "rv-empty")); return; }
+    var d = res.data;
+    $("pf-review-count").textContent = (d.counts.held + d.counts.flagged) || "";
+    if (!d.held.length && !d.flagged.length) { body.appendChild(el("div", "Nada para revisar por enquanto. 🎉", "rv-empty")); return; }
+    if (d.held.length) { body.appendChild(el("h3", "Em revisão (" + d.counts.held + ")")); d.held.forEach(function (r) { body.appendChild(reviewCard(r)); }); }
+    if (d.flagged.length) { body.appendChild(el("h3", "Fotos denunciadas (" + d.counts.flagged + ")")); d.flagged.forEach(function (r) { body.appendChild(reviewCard(r)); }); }
+  }
+  async function refreshReviewCount() {
+    var res = await api("/api/v1/admin/reviews").catch(function () { return null; });
+    if (res && res.ok) $("pf-review-count").textContent = (res.data.counts.held + res.data.counts.flagged) || "";
+  }
+  $("pf-review").onclick = function () { show("review", true, "flex"); loadReviews(); };
+  $("rv-back").onclick = function () { show("review", false); };
+  $("rv-refresh").onclick = loadReviews;
 
   // ---- Report a photo: upload, then poll until the AI has scored it ----
   var memoryToken = null;
@@ -772,7 +879,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (reporting) closeReport(); else if ($("detail").style.display === "flex") closePlace();
+    if (reporting) closeReport(); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {

@@ -34,6 +34,7 @@
         <div id="pf-avatar" class="avatar" aria-hidden="true"></div>
         <div><b id="pf-name"></b><small id="pf-email"></small><span id="pf-role" class="role-badge" style="display:none">Administrador</span></div>
       </div>
+      <button id="pf-review" class="btn primary" type="button" style="display:none">🛡️ Moderação <span id="pf-review-count" class="count-badge"></span></button>
       <button id="pf-passkey" class="btn outline" type="button" style="display:none">🔐 Ativar biometria neste aparelho</button>
       <div id="pf-passkey-info" class="pf-info"></div>
       <button id="pf-logout" class="btn plain" type="button">Sair</button>
@@ -165,6 +166,21 @@
         <div id="au-google" class="au-google"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="review" class="screen" role="dialog" aria-label="Moderação">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="rv-back" class="icon-btn" type="button" aria-label="Voltar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Moderação</h2>
+      <button id="rv-refresh" class="icon-btn" type="button" aria-label="Atualizar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.4M4 5v3.6h3.6"/><path d="M4 13a8 8 0 0 0 14.5 4.4M20 19v-3.6h-3.6"/></svg>
+      </button>
+    </div>
+    <div id="rv-body" class="rv-body"></div>
   </div>
 </div>
 

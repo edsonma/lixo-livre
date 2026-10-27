@@ -48,6 +48,12 @@ module Api
         render(json: { error: "forbidden" }, status: :forbidden) unless current_user.admin?
       end
 
+      def require_moderator!
+        return render(json: { error: "login_required" }, status: :unauthorized) unless current_user
+
+        render(json: { error: "forbidden" }, status: :forbidden) unless current_user.privileged?
+      end
+
       # A browser sends Origin on every cross-site write. With a session cookie in play, a write that
       # comes from another site is refused (the cookie is SameSite=Lax too: two locks, not one).
       def refuse_cross_origin_writes
@@ -67,7 +73,7 @@ module Api
       end
 
       def serialize_user(user)
-        { id: user.id, name: user.name, email: user.email, role: user.role, admin: user.admin?,
+        { id: user.id, name: user.name, email: user.email, role: user.role, admin: user.admin?, moderator: user.privileged?,
           passkeys: user.passkeys.count, google: user.provider == "google" }
       end
 

@@ -122,7 +122,7 @@ Anyone can see the map. **Reporting needs an account**: the + button only appear
 | Fingerprint / face | Passkeys (WebAuthn). Logged in, tap *Ativar biometria neste aparelho* in Perfil; next time, *Entrar com biometria* needs no email. The server only stores a public key. |
 | Instagram | Not offered: Meta shut down the API that let ordinary accounts log in. Facebook login could be added later. |
 
-Roles are `user`, `moderator`, `admin`. Emails listed in `ADMIN_EMAILS` become admins at sign-up or next login, or run `bin/rails users:promote EMAIL=...`. The role is exposed to the page (`admin: true`) and `require_admin!` is ready for admin endpoints; there is no admin screen yet.
+Roles are `user`, `moderator`, `admin`. Emails listed in `ADMIN_EMAILS` become admins at sign-up or next login, or run `bin/rails users:promote EMAIL=...`. The role is exposed to the page (`admin: true`) and `require_admin!` is ready for admin endpoints; admins and moderators get a **Moderação** button in Perfil: held reports (photo taken far from the pin, AI unsure, technical failure) with a severity slider and *Aprovar e publicar* / *Rejeitar*, and photos people flagged (*Manter* / *Remover*). A photo whose privacy step never finished is never shown, even to admins, and cannot be approved.
 
 Writes from another website are refused (`Origin` check, plus SameSite cookies). The first time a logged-in person reports from a device that nobody owns, the device (and its earlier anonymous reports) becomes theirs.
 
@@ -262,6 +262,9 @@ means writing a new adapter and nothing else.
 | POST | `/api/v1/passkeys/authentication_options`, `/passkeys/authenticate` | web | Log in with fingerprint / face (WebAuthn), no email needed |
 | POST | `/api/v1/passkeys/registration_options`, `/passkeys` | web | Logged in: add a passkey to this account |
 | GET, DELETE | `/api/v1/passkeys`, `/api/v1/passkeys/:id` | web | List and remove this account's passkeys |
+| GET | `/api/v1/admin/reviews` | admin | Moderation queue: `held` (reports the pipeline would not publish) and `flagged` (published photos people reported) |
+| POST | `/api/v1/admin/reviews/:id/approve` | admin | Held: `{ severity: 0-100 }` publishes it. Flagged: keeps it and dismisses the flags |
+| POST | `/api/v1/admin/reviews/:id/reject` | admin | Held: rejects it and deletes the photo. Flagged: takes it down |
 | GET | `/api/v1/status` | demo page, monitors | Demo flag, map center, counts |
 | GET | `/api/v1/heatmap?bbox=w,s,e,n` | web | GeoJSON cells in the viewport |
 | GET | `/api/v1/places/:h3_index` | web | One map cell: latest report, monthly cleanliness history, photos |

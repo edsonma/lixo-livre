@@ -20,6 +20,15 @@ Rails.application.routes.draw do
       post "me/trashes/:id/publish", to: "me#publish"
       delete "me/trashes/:id", to: "me#destroy"
 
+      namespace :admin do
+        resources :reviews, only: :index do
+          member do
+            post :approve
+            post :reject
+          end
+        end
+      end
+
       resource :session, only: %i[show create destroy]
       post "session/google", to: "google_sessions#create"
       post "users", to: "registrations#create"
