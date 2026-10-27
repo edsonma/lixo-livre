@@ -72,6 +72,34 @@ class TrashVisionAdaptersTest < ActiveSupport::TestCase
     assert_includes parts.last[:text], "Allowed types"
   end
 
+  test "a model that refuses a forced tool call is asked again letting it choose, and remembered" do
+    answers = [[400, { "error" => { "message" => 'tool_choice: type "tool" and "any" are not supported for this model.' } }],
+               [200, claude_reply("is_trash" => true, "severity" => 50, "types" => [], "confidence" => 0.9)],
+               [200, claude_reply("is_trash" => true, "severity" => 50, "types" => [], "confidence" => 0.9)]]
+    sent = []
+    http = lambda do |url, headers, payload|
+      sent << payload
+      status, body = answers.shift
+      [status, JSON.generate(body)]
+    end
+    adapter = TrashVision::Adapters::Anthropic.new(env: { "ANTHROPIC_API_KEY" => SECRET }, transport: http)
+
+    adapter.call(IMAGE)
+    adapter.call(IMAGE)
+
+    assert_equal [{ type: "tool", name: "report_trash" }, { type: "auto" }, { type: "auto" }], sent.map { |b| b[:tool_choice] }
+    assert_includes sent.last[:messages].first[:content].last[:text], "report_trash"
+  end
+
+  test "other 400 errors from Claude are not retried" do
+    calls = 0
+    http = ->(*) { calls += 1; [400, JSON.generate("error" => { "message" => "credit balance is too low" })] }
+    adapter = TrashVision::Adapters::Anthropic.new(env: { "ANTHROPIC_API_KEY" => SECRET }, transport: http)
+
+    assert_raises(TrashVision::Adapters::RequestFailed) { adapter.call(IMAGE) }
+    assert_equal 1, calls
+  end
+
   test "the model and base URL can be changed with environment variables" do
     http, sent = transport(body: claude_reply("is_trash" => false, "confidence" => 0.8))
     env = { "ANTHROPIC_API_KEY" => SECRET, "TRASH_VISION_MODEL" => "claude-haiku-5-5", "ANTHROPIC_BASE_URL" => "https://proxy.example" }
