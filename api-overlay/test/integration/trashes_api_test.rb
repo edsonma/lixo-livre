@@ -5,7 +5,10 @@ class TrashesApiTest < ActionDispatch::IntegrationTest
     { "X-Device-Token" => device.token }
   end
 
-  def upload(device: create_device, **overrides)
+  # Reporting needs an account: by default the request is made by a logged-in user (the device's owner,
+  # or a new one). login: false makes it as a visitor.
+  def upload(device: create_device, login: true, **overrides)
+    sign_in(device&.user || create_user) if login
     params = {
       photo: uploaded_photo("plain.jpg"), lat: -15.7942, lng: -47.8825,
       taken_at: 1.hour.ago.iso8601, extra_info: "pile of bags"
@@ -39,10 +42,40 @@ class TrashesApiTest < ActionDispatch::IntegrationTest
     assert_equal user, Trash.find(response.parsed_body["id"]).user
   end
 
-  test "POST from an anonymous device leaves the user empty" do
-    upload
+  test "POST needs a login: visitors are told to log in and nothing is stored" do
+    assert_no_difference("Trash.count") { upload(login: false) }
 
-    assert_nil Trash.find(response.parsed_body["id"]).user
+    assert_response :unauthorized
+    assert_equal "login_required", response.parsed_body["error"]
+  end
+
+  test "POST from a device nobody owns claims it for the logged-in user, keeping its earlier reports" do
+    device = create_device
+    earlier = create_trash(device: device)
+    user = create_user
+    sign_in user
+
+    post "/api/v1/trashes", params: { photo: uploaded_photo, lat: -15.79, lng: -47.88, taken_at: 1.hour.ago.iso8601 },
+                            headers: auth(device)
+
+    assert_response :accepted
+    assert_equal user, device.reload.user
+    assert_equal user, earlier.reload.user
+    assert_equal user, Trash.find(response.parsed_body["id"]).user
+  end
+
+  test "POST with the token of a device that belongs to somebody else is refused" do
+    owner = create_user
+    device = create_device(user: owner)
+    sign_in create_user
+
+    assert_no_difference("Trash.count") do
+      post "/api/v1/trashes", params: { photo: uploaded_photo, lat: -15.79, lng: -47.88, taken_at: 1.hour.ago.iso8601 },
+                              headers: auth(device)
+    end
+
+    assert_response :unauthorized
+    assert_equal owner, device.reload.user
   end
 
   test "POST needs a known device token" do

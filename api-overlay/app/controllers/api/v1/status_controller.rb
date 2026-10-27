@@ -8,6 +8,7 @@ module Api
           status: "ok",
           demo_mode: DemoMode.enabled?,
           center: { lat: lat, lng: lng },
+          auth: { google_client_id: GoogleIdentity.client_id },
           counts: { reports: Trash.for_heatmap.count, heat_cells: HeatCell.count }
         }
       end

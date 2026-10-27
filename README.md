@@ -111,6 +111,21 @@ and a working upload endpoint, without any AI provider. Step by step in
 
 Demo mode uses a fake AI and a detector that blurs nothing. Do not point real users at it.
 
+## Accounts and login
+
+Anyone can see the map. **Reporting needs an account**: the + button only appears when logged in, and `POST /trashes` and `/me/*` answer 401 `login_required` otherwise. The page is three swipeable screens, **Explorar** (left, the community feed, coming next), **Mapa** (middle) and **Perfil** (right); on the map, swipe from the very edge of the screen, or use the bottom tabs.
+
+| Way in | How it works |
+|---|---|
+| Email + password | Devise keeps the account and the encrypted password. The session is an HttpOnly, SameSite=Lax cookie. |
+| Google | The "Sign in with Google" button gives the page an ID token; the server checks it with Google (right app, verified email) and creates or links the account. Set `GOOGLE_CLIENT_ID`. |
+| Fingerprint / face | Passkeys (WebAuthn). Logged in, tap *Ativar biometria neste aparelho* in Perfil; next time, *Entrar com biometria* needs no email. The server only stores a public key. |
+| Instagram | Not offered: Meta shut down the API that let ordinary accounts log in. Facebook login could be added later. |
+
+Roles are `user`, `moderator`, `admin`. Emails listed in `ADMIN_EMAILS` become admins at sign-up or next login, or run `bin/rails users:promote EMAIL=...`. The role is exposed to the page (`admin: true`) and `require_admin!` is ready for admin endpoints; there is no admin screen yet.
+
+Writes from another website are refused (`Origin` check, plus SameSite cookies). The first time a logged-in person reports from a device that nobody owns, the device (and its earlier anonymous reports) becomes theirs.
+
 ## Severity scale
 
 The AI gives each report a `severity` from **0 (spotless) to 100 (large illegal dump)**. Rough guide: about 20 a few
@@ -239,6 +254,14 @@ means writing a new adapter and nothing else.
 | Method | Path | Used by | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/devices` | mobile | Returns the anonymous token |
+| GET | `/api/v1/session` | web | Who is logged in: `{ "user": { id, name, email, role, admin, passkeys, google } }` or `{ "user": null }` |
+| POST | `/api/v1/users` | web | Sign up: `name`, `email`, `password` (8+ characters). Logs in |
+| POST | `/api/v1/session` | web | Log in with `email` and `password` (401 `invalid_credentials`) |
+| DELETE | `/api/v1/session` | web | Log out |
+| POST | `/api/v1/session/google` | web | Log in with the `credential` from "Sign in with Google" (needs `GOOGLE_CLIENT_ID`) |
+| POST | `/api/v1/passkeys/authentication_options`, `/passkeys/authenticate` | web | Log in with fingerprint / face (WebAuthn), no email needed |
+| POST | `/api/v1/passkeys/registration_options`, `/passkeys` | web | Logged in: add a passkey to this account |
+| GET, DELETE | `/api/v1/passkeys`, `/api/v1/passkeys/:id` | web | List and remove this account's passkeys |
 | GET | `/api/v1/status` | demo page, monitors | Demo flag, map center, counts |
 | GET | `/api/v1/heatmap?bbox=w,s,e,n` | web | GeoJSON cells in the viewport |
 | GET | `/api/v1/places/:h3_index` | web | One map cell: latest report, monthly cleanliness history, photos |

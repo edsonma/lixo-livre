@@ -29,6 +29,9 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
    | `SEED_DEMO_DATA` | `true` | Loads fake reports at start, only if there are none yet. |
    | `TRASH_VISION_PROVIDER` | `anthropic` | Optional: use a real AI for the analysis (works with `DEMO_MODE`). Also set `ANTHROPIC_API_KEY`. For `openai` set `OPENAI_API_KEY` and `TRASH_VISION_MODEL`. |
    | `EXIF_MAX_DISTANCE_M` | `1000` | Optional: how far (meters) a photo's EXIF GPS may be from the chosen spot before the report is held for review. Raise it (e.g. `50000`) when testing with gallery photos. |
+   | `ADMIN_EMAILS` | `you@example.com` | Optional, comma separated. These emails become admins when they sign up or log in. Or run `bin/rails users:promote EMAIL=you@example.com` in the Railway shell. |
+   | `GOOGLE_CLIENT_ID` | `123-abc.apps.googleusercontent.com` | Optional: shows the "Continuar com o Google" button. Create an *OAuth client ID* of type *Web application* in Google Cloud Console (APIs & Services → Credentials) and add your Railway domain (`https://<your-domain>`) under *Authorized JavaScript origins*. No client secret is needed. |
+   | `APP_ORIGIN` | `https://<your-domain>` | Optional: the site's public origin, used by passkeys (fingerprint / face). Defaults to the address of the request, which is right on Railway. |
    | `AUTO_PUBLISH` | `true` | Optional. Skip the "Publicar" step: reports go to the map as soon as the AI validates them. |
    | `DEMO_COUNT` | `220` | Optional. |
    | `DEMO_CENTER` | `-23.55,-46.63` | Optional, `lat,lng`. Default is Brasília. |

@@ -53,7 +53,7 @@ cd api
 
 # PostGIS adapter replaces the plain postgresql adapter
 # Add only the gems the generated Gemfile does not already have (it may list image_processing)
-for g in activerecord-postgis-adapter h3 rack-cors rack-attack image_processing ruby-vips
+for g in activerecord-postgis-adapter h3 rack-cors rack-attack image_processing ruby-vips devise webauthn
     if not grep -Eq "^[[:space:]]*gem ['\"]"$g"['\"]" Gemfile
         bundle add $g
         or exit 1

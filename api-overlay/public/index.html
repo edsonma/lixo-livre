@@ -8,9 +8,44 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div id="map"></div>
+<div id="pager">
+  <section id="page-explore" class="page tab-page" aria-label="Explorar">
+    <header class="page-head"><h1>Explorar</h1></header>
+    <div class="empty-state">
+      <div class="emoji" aria-hidden="true">📸</div>
+      <h2>Fotos da comunidade</h2>
+      <p>Em breve: o feed com as fotos de lixo reportadas perto de você, com curtidas, comentários e a opção de seguir locais.</p>
+      <button id="explore-map" class="btn outline" type="button">Ver o mapa</button>
+    </div>
+  </section>
+  <section id="page-map" class="page" aria-label="Mapa">
+    <div id="map"></div>
+    <i class="edge edge-l" aria-hidden="true"></i><i class="edge edge-r" aria-hidden="true"></i>
+  </section>
+  <section id="page-profile" class="page tab-page" aria-label="Perfil">
+    <header class="page-head"><h1>Perfil</h1></header>
+    <div id="pf-guest" class="pf-card">
+      <h2>Entre para reportar lixo</h2>
+      <p>Qualquer pessoa pode ver o mapa. Para enviar fotos e ajudar a limpar o bairro, entre ou crie uma conta.</p>
+      <button id="pf-login" class="btn primary" type="button">Entrar ou criar conta</button>
+    </div>
+    <div id="pf-user" class="pf-card" style="display:none">
+      <div class="pf-who">
+        <div id="pf-avatar" class="avatar" aria-hidden="true"></div>
+        <div><b id="pf-name"></b><small id="pf-email"></small><span id="pf-role" class="role-badge" style="display:none">Administrador</span></div>
+      </div>
+      <button id="pf-passkey" class="btn outline" type="button" style="display:none">🔐 Ativar biometria neste aparelho</button>
+      <div id="pf-passkey-info" class="pf-info"></div>
+      <button id="pf-logout" class="btn plain" type="button">Sair</button>
+    </div>
+  </section>
+</div>
 <header id="topbar">
   <div class="brand-row">
+    <button id="acct" class="bell acct" type="button" aria-label="Conta: entrar ou criar conta">
+      <svg id="acct-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      <span id="acct-initial" class="acct-initial" style="display:none"></span>
+    </button>
     <div class="brand">
       <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 38s13-11.4 13-21A13 13 0 0 0 7 17c0 9.6 13 21 13 21z" fill="#1b7f3b"/><circle cx="20" cy="17" r="8.5" fill="#fff"/><path d="M15.5 13.5h9M18 12h4M16.2 14.5l1 8h5.6l1-8z" fill="none" stroke="#1b7f3b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
       Lixo Livre
@@ -100,6 +135,37 @@
   </div>
   <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
   <input id="photo" type="file" accept="image/*" hidden>
+</div>
+
+<div id="auth" class="screen" role="dialog" aria-label="Entrar">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="au-back" class="icon-btn" type="button" aria-label="Fechar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2 id="au-title">Entrar</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="au-body">
+      <p id="au-why" class="au-why"></p>
+      <div class="au-tabs" role="tablist">
+        <button id="au-tab-in" class="on" type="button" role="tab" aria-selected="true">Entrar</button>
+        <button id="au-tab-up" type="button" role="tab" aria-selected="false">Criar conta</button>
+      </div>
+      <form id="au-form" novalidate>
+        <label id="au-name-row" style="display:none">Nome<input id="au-name" autocomplete="name" maxlength="80"></label>
+        <label>E-mail<input id="au-email" type="email" autocomplete="username webauthn" inputmode="email" autocapitalize="off" spellcheck="false"></label>
+        <label>Senha<input id="au-pass" type="password" autocomplete="current-password" minlength="8"></label>
+        <div id="au-error" class="error" role="alert"></div>
+        <button id="au-submit" class="btn primary" type="submit">Entrar</button>
+      </form>
+      <div id="au-alt" class="au-alt">
+        <div class="au-or"><span>ou</span></div>
+        <button id="au-passkey" class="btn outline" type="button" style="display:none">🔐 Entrar com biometria</button>
+        <div id="au-google" class="au-google"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="detail" class="screen" role="dialog" aria-label="Detalhes do local">

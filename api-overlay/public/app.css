@@ -1,4 +1,5 @@
   html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  body { overflow: hidden; }
   #map { position: absolute; inset: 0; }
   .box { position: absolute; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.3); padding: 10px 12px; font-size: 13px; }
   #demo { top: 142px; left: 12px; z-index: 3; background: #fff3cd; color: #7a5b00; display: none; }
@@ -131,3 +132,51 @@
   .screen .dt-photos.all { flex-wrap: wrap; overflow: visible; }
   .screen .dt-photos img { flex: none; width: 76px; height: 76px; object-fit: cover; border-radius: 12px; border: 3px solid transparent; cursor: pointer; background: #e9eeea; }
   .screen .dt-photos img.on { border-color: var(--green); }
+
+  /* ---- Swipe pages: Explorar | Mapa | Perfil ---- */
+  #pager { position: fixed; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+  #pager::-webkit-scrollbar { display: none; }
+  .page { flex: 0 0 100%; width: 100%; height: 100%; position: relative; box-sizing: border-box; scroll-snap-align: start; scroll-snap-stop: always; overflow-y: auto; }
+  #page-map { overflow: hidden; }
+  /* the map eats horizontal drags, so a thin strip on each edge hands them to the pager */
+  .edge { position: absolute; top: 0; bottom: 0; width: 14px; z-index: 4; touch-action: pan-x; }
+  .edge-l { left: 0; }
+  .edge-r { right: 0; }
+  body:not([data-page="map"]) #topbar, body:not([data-page="map"]) #chips, body:not([data-page="map"]) #demo { display: none; }
+  .tab-page { background: #f4f7f5; padding: calc(12px + env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom)); color: var(--ink); }
+  .tab-page > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+  .page-head h1 { font-size: 24px; margin: 8px 0 16px; }
+  .empty-state { text-align: center; background: #fff; border-radius: 20px; padding: 32px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .empty-state .emoji { font-size: 44px; }
+  .empty-state h2 { margin: 8px 0 6px; font-size: 19px; }
+  .empty-state p, .pf-card p { color: var(--muted); line-height: 1.5; margin: 0 0 16px; }
+  .pf-card { background: #fff; border-radius: 20px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .pf-card h2 { margin: 0 0 6px; font-size: 19px; }
+  .pf-who { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .pf-who b { display: block; font-size: 18px; }
+  .pf-who small { display: block; color: var(--muted); margin-top: 2px; word-break: break-all; }
+  .avatar { flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; }
+  .role-badge { display: inline-block; margin-top: 6px; background: #e8f4ea; color: var(--green-dark); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .pf-info { color: var(--muted); font-size: 13px; margin: 8px 2px 4px; min-height: 1em; }
+  .btn { display: block; width: 100%; font: inherit; font-size: 16px; font-weight: 600; padding: 14px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; margin-top: 10px; box-sizing: border-box; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.primary { background: var(--green); color: #fff; }
+  .btn.outline { background: #fff; color: var(--green); border-color: var(--green); }
+  .btn.plain { background: #eef1ee; color: var(--ink); }
+  /* account button in the top bar */
+  #topbar .acct { left: 0; right: auto; }
+  .acct-initial { width: 30px; height: 30px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; }
+  /* login screen */
+  .screen .au-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 2px 16px; }
+  .au-why { color: var(--muted); margin: 4px 0 12px; line-height: 1.4; }
+  .au-why:empty { display: none; }
+  .au-tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .au-tabs button { flex: 1; background: none; border: 0; padding: 12px; font: inherit; font-size: 16px; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; }
+  .au-tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--green); }
+  #au-form label { display: block; font-size: 13px; color: var(--muted); margin-top: 12px; }
+  #au-form input { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: var(--ink); background: #f1f4f2; border: 1.5px solid transparent; border-radius: 12px; padding: 13px 14px; margin-top: 5px; }
+  #au-form input:focus { outline: none; border-color: var(--green); background: #fff; }
+  #au-form .error { margin-top: 12px; min-height: 1em; }
+  .au-or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 20px 0 6px; }
+  .au-or::before, .au-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .au-google { display: flex; justify-content: center; margin-top: 12px; min-height: 0; }

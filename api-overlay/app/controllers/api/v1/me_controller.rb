@@ -1,6 +1,7 @@
 module Api
   module V1
     class MeController < BaseController
+      before_action :require_login!
       before_action :require_device!
 
       # GET /api/v1/me/trashes   the "my pictures" feed in the mobile app (all statuses)

@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Devise needs the :user mapping to sign people in; the controllers under Api::V1 do the work.
+  devise_for :users, skip: :all
+
   namespace :api do
     namespace :v1 do
       get "status", to: "status#show"
@@ -16,7 +19,16 @@ Rails.application.routes.draw do
       get "me/trashes/:id", to: "me#show"
       post "me/trashes/:id/publish", to: "me#publish"
       delete "me/trashes/:id", to: "me#destroy"
-      # later: resource :session, resources :users (login)
+
+      resource :session, only: %i[show create destroy]
+      post "session/google", to: "google_sessions#create"
+      post "users", to: "registrations#create"
+      get "passkeys", to: "passkeys#index"
+      post "passkeys", to: "passkeys#create"
+      delete "passkeys/:id", to: "passkeys#destroy"
+      post "passkeys/registration_options", to: "passkeys#registration_options"
+      post "passkeys/authentication_options", to: "passkeys#authentication_options"
+      post "passkeys/authenticate", to: "passkeys#authenticate"
     end
   end
 end

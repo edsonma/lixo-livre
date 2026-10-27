@@ -1,6 +1,7 @@
 module Api
   module V1
     class TrashesController < BaseController
+      before_action :require_login!, only: :create
       before_action :require_device!, only: :create
 
       # GET /api/v1/trashes?lat=&lng=&radius=   (photos near a clicked hotspot)
@@ -22,7 +23,7 @@ module Api
       # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info
       def create
         trash = @device.trashes.new(
-          user: @device.user,
+          user: current_user,
           lonlat: Trash.point(params.require(:lng), params.require(:lat)),
           taken_at: params.require(:taken_at),
           extra_info: params[:extra_info],

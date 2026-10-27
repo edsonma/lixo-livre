@@ -9,7 +9,11 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
   INSIDE = [55, 40, 40, 32].freeze # inside the redaction box on the 200x150 fixture
   BBOX = "-48.0,-16.0,-47.7,-15.6".freeze
 
-  setup { @device = create_device }
+  setup do
+    @user = create_user
+    @device = create_device(user: @user)
+    sign_in @user
+  end
 
   # The fixture's EXIF says: taken 2026-10-20 14:30, at -15.7942, -47.8825.
   def upload_exif_photo(lat: -15.7942, lng: -47.8825)

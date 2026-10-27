@@ -1,7 +1,11 @@
 require "test_helper"
 
 class MeApiTest < ActionDispatch::IntegrationTest
-  setup { @device = create_device }
+  setup do
+    @user = create_user
+    @device = create_device(user: @user)
+    sign_in @user
+  end
 
   def feed
     get "/api/v1/me/trashes", headers: { "X-Device-Token" => @device.token }

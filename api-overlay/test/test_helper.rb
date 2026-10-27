@@ -6,6 +6,7 @@ require "stringio"
 
 # Helpers shared by every test.
 module TrashTestHelpers
+  PASSWORD = "password123".freeze
   BRASILIA = { lng: -47.8825, lat: -15.7942 }.freeze # the GPS position inside test/fixtures/files/exif_gps.jpg
 
   # What the fake AI vision provider answers unless a test overrides it.
@@ -15,7 +16,7 @@ module TrashTestHelpers
   end
 
   def create_user(**attrs)
-    User.create!({ email: "user-#{SecureRandom.hex(4)}@example.com", name: "Test User" }.merge(attrs))
+    User.create!({ email: "user-#{SecureRandom.hex(4)}@example.com", name: "Test User", password: PASSWORD }.merge(attrs))
   end
 
   def create_device(user: nil)
@@ -95,4 +96,8 @@ class ActiveSupport::TestCase
     TrashVision.reset_provider!
     PrivacyDetector.reset_provider!
   end
+end
+
+class ActionDispatch::IntegrationTest
+  include Devise::Test::IntegrationHelpers # sign_in(user): the next request is made as that user
 end

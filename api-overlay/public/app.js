@@ -1,5 +1,7 @@
 (async function () {
   var $ = function (id) { return document.getElementById(id); };
+  $("pager").scrollLeft = $("pager").clientWidth; // the pages are Explorar | Mapa | Perfil: start on the map
+  document.body.dataset.page = "map";
   // severity is 0-100
   var status = { center: { lat: -15.7942, lng: -47.8825 }, demo_mode: false };
   try { status = await (await fetch("/api/v1/status")).json(); } catch (e) {}
@@ -143,9 +145,206 @@
     var t = $("toast"); t.textContent = msg; t.style.display = "block";
     clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.style.display = "none"; }, 2200);
   }
-  ["nav-explore", "nav-alerts", "nav-profile", "bell"].forEach(function (id) {
+  ["nav-alerts", "bell"].forEach(function (id) {
     $(id).onclick = function () { toast("Em breve"); };
   });
+
+  // ---- Pages: swipe left to Explorar, right to Perfil ----
+  var PAGES = ["explore", "map", "profile"], pager = $("pager"), currentPage = "map";
+  function syncPage() {
+    var i = Math.max(0, Math.min(PAGES.length - 1, Math.round(pager.scrollLeft / Math.max(1, pager.clientWidth))));
+    if (PAGES[i] === currentPage) return;
+    currentPage = PAGES[i];
+    document.body.dataset.page = currentPage;
+    PAGES.forEach(function (name) {
+      var tab = $("nav-" + name), on = name === currentPage;
+      tab.classList.toggle("on", on);
+      if (on) tab.setAttribute("aria-current", "page"); else tab.removeAttribute("aria-current");
+    });
+  }
+  function goPage(name, instant) {
+    pager.scrollTo({ left: PAGES.indexOf(name) * pager.clientWidth, behavior: instant ? "auto" : "smooth" });
+  }
+  pager.addEventListener("scroll", syncPage, { passive: true });
+  window.addEventListener("resize", function () { goPage(currentPage, true); });
+  $("nav-map").onclick = $("explore-map").onclick = function () { goPage("map"); };
+  $("nav-explore").onclick = function () { goPage("explore"); };
+  $("nav-profile").onclick = function () { goPage("profile"); };
+
+  // ---- Accounts: email + password, Google, and passkeys (fingerprint / face) ----
+  var me = null, authMode = "in", googleLoaded = false;
+  var passkeysSupported = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+
+  async function api(path, method, body) {
+    var res = await fetch(path, { method: method || "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    var data = await res.json().catch(function () { return {}; });
+    return { ok: res.ok, status: res.status, data: data };
+  }
+  function firstName(user) { return String(user.name || user.email).split(" ")[0]; }
+
+  // What the page shows depends on being logged in: the + button, the account icon, the profile page.
+  function applyAuth() {
+    $("report-btn").style.display = me ? "" : "none"; // only logged-in people can report
+    $("acct-icon").style.display = me ? "none" : "";
+    $("acct-initial").style.display = me ? "flex" : "none";
+    $("acct").setAttribute("aria-label", me ? "Conta de " + me.name : "Conta: entrar ou criar conta");
+    $("pf-guest").style.display = me ? "none" : "";
+    $("pf-user").style.display = me ? "" : "none";
+    if (!me) return;
+    var initial = firstName(me).charAt(0).toUpperCase();
+    $("acct-initial").textContent = initial; $("pf-avatar").textContent = initial;
+    $("pf-name").textContent = me.name; $("pf-email").textContent = me.email;
+    $("pf-role").style.display = me.admin ? "inline-block" : "none";
+    $("pf-passkey").style.display = passkeysSupported ? "" : "none";
+    $("pf-passkey-info").textContent = me.passkeys ? "Biometria ativa em " + me.passkeys + (me.passkeys > 1 ? " aparelhos." : " aparelho.") : "";
+  }
+  async function loadMe() {
+    try { var r = await api("/api/v1/session"); me = r.ok ? r.data.user : null; } catch (e) { me = null; }
+    applyAuth();
+  }
+
+  function authError(msg) { $("au-error").textContent = msg || ""; }
+  function setAuthMode(mode) {
+    authMode = mode;
+    $("au-tab-in").classList.toggle("on", mode === "in"); $("au-tab-up").classList.toggle("on", mode === "up");
+    $("au-tab-in").setAttribute("aria-selected", mode === "in"); $("au-tab-up").setAttribute("aria-selected", mode === "up");
+    show("au-name-row", mode === "up");
+    $("au-submit").textContent = mode === "up" ? "Criar conta" : "Entrar";
+    $("au-title").textContent = mode === "up" ? "Criar conta" : "Entrar";
+    $("au-pass").setAttribute("autocomplete", mode === "up" ? "new-password" : "current-password");
+    show("au-alt", mode === "in");
+    authError("");
+  }
+  function openAuth(why, mode) {
+    setAuthMode(mode || "in");
+    $("au-why").textContent = why || "";
+    show("au-passkey", passkeysSupported, "block");
+    show("auth", true, "flex");
+    setupGoogle();
+  }
+  function closeAuth() { show("auth", false); $("au-pass").value = ""; authError(""); }
+
+  function signedIn(user) {
+    me = user; applyAuth(); closeAuth();
+    toast("Olá, " + firstName(user) + "!");
+  }
+  function failure(r, fallback) {
+    if (r.status === 429) return "Muitas tentativas. Tente de novo em alguns minutos.";
+    if (r.status === 401 && r.data.error === "invalid_credentials") return "E-mail ou senha incorretos.";
+    var errs = r.data.errors || {};
+    if (errs.email) return "Esse e-mail é inválido ou já tem conta. Tente entrar.";
+    if (errs.password) return "A senha precisa ter pelo menos 8 caracteres.";
+    if (r.status === 400) return "Preencha e-mail e senha.";
+    return fallback;
+  }
+
+  $("au-form").onsubmit = async function (e) {
+    e.preventDefault();
+    var email = $("au-email").value.trim(), pass = $("au-pass").value;
+    if (!email || !pass) return authError("Preencha e-mail e senha.");
+    if (authMode === "up" && pass.length < 8) return authError("A senha precisa ter pelo menos 8 caracteres.");
+    authError(""); $("au-submit").disabled = true;
+    try {
+      var r = authMode === "up"
+        ? await api("/api/v1/users", "POST", { name: $("au-name").value.trim(), email: email, password: pass })
+        : await api("/api/v1/session", "POST", { email: email, password: pass });
+      if (r.ok) signedIn(r.data.user); else authError(failure(r, "Não foi possível entrar agora."));
+    } catch (err) { authError("Sem conexão. Tente de novo."); }
+    $("au-submit").disabled = false;
+  };
+  $("au-tab-in").onclick = function () { setAuthMode("in"); };
+  $("au-tab-up").onclick = function () { setAuthMode("up"); };
+  $("au-back").onclick = closeAuth;
+  $("acct").onclick = function () { if (me) goPage("profile"); else openAuth(); };
+  $("pf-login").onclick = function () { openAuth("Entre para reportar lixo no mapa."); };
+  $("pf-logout").onclick = async function () {
+    try { await api("/api/v1/session", "DELETE"); } catch (e) {}
+    me = null; saveToken(""); applyAuth();
+    if (reporting) closeReport();
+    goPage("map"); toast("Você saiu.");
+  };
+
+  // Google: the "Sign in with Google" button gives us an ID token; the server checks it with Google.
+  function setupGoogle() {
+    var clientId = status.auth && status.auth.google_client_id;
+    if (!clientId || googleLoaded) return;
+    googleLoaded = true;
+    var s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+    s.onload = function () {
+      google.accounts.id.initialize({ client_id: clientId, callback: async function (resp) {
+        var r = await api("/api/v1/session/google", "POST", { credential: resp.credential });
+        if (r.ok) signedIn(r.data.user); else authError("Não foi possível entrar com o Google.");
+      } });
+      google.accounts.id.renderButton($("au-google"), { theme: "outline", size: "large", shape: "pill", text: "continue_with", locale: "pt-BR", width: 280 });
+    };
+    s.onerror = function () { googleLoaded = false; };
+    document.head.appendChild(s);
+  }
+
+  // Passkeys: base64url <-> bytes, because the server speaks JSON and the browser speaks ArrayBuffers.
+  function fromB64(text) {
+    var b64 = String(text).replace(/-/g, "+").replace(/_/g, "/"), pad = (4 - b64.length % 4) % 4;
+    var bin = atob(b64 + "====".slice(0, pad)), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  function toB64(buffer) {
+    var bytes = new Uint8Array(buffer), bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function passkeyMessage(e, fallback) {
+    return e && e.name === "NotAllowedError" ? "Cancelado ou não reconhecido. Tente de novo." : fallback;
+  }
+
+  async function addPasskey() {
+    $("pf-passkey").disabled = true; $("pf-passkey-info").textContent = "";
+    try {
+      var o = await api("/api/v1/passkeys/registration_options", "POST");
+      if (!o.ok) throw new Error("options");
+      var pk = o.data;
+      pk.challenge = fromB64(pk.challenge); pk.user.id = fromB64(pk.user.id);
+      (pk.excludeCredentials || []).forEach(function (c) { c.id = fromB64(c.id); });
+      var cred = await navigator.credentials.create({ publicKey: pk });
+      var r = await api("/api/v1/passkeys", "POST", { nickname: (navigator.platform || "Aparelho"), credential: {
+        id: cred.id, rawId: toB64(cred.rawId), type: cred.type,
+        response: { attestationObject: toB64(cred.response.attestationObject), clientDataJSON: toB64(cred.response.clientDataJSON) },
+        clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}
+      } });
+      if (!r.ok) throw new Error("save");
+      me.passkeys = (me.passkeys || 0) + 1; applyAuth(); toast("Biometria ativada!");
+    } catch (e) {
+      $("pf-passkey-info").textContent = passkeyMessage(e, "Não foi possível ativar a biometria neste aparelho.");
+    }
+    $("pf-passkey").disabled = false;
+  }
+  $("pf-passkey").onclick = addPasskey;
+
+  async function passkeyLogin() {
+    authError(""); $("au-passkey").disabled = true;
+    try {
+      var o = await api("/api/v1/passkeys/authentication_options", "POST");
+      if (!o.ok) throw new Error("options");
+      var pk = o.data; pk.challenge = fromB64(pk.challenge);
+      (pk.allowCredentials || []).forEach(function (c) { c.id = fromB64(c.id); });
+      var cred = await navigator.credentials.get({ publicKey: pk });
+      var r = await api("/api/v1/passkeys/authenticate", "POST", { credential: {
+        id: cred.id, rawId: toB64(cred.rawId), type: cred.type,
+        response: {
+          authenticatorData: toB64(cred.response.authenticatorData), clientDataJSON: toB64(cred.response.clientDataJSON),
+          signature: toB64(cred.response.signature), userHandle: cred.response.userHandle ? toB64(cred.response.userHandle) : null
+        },
+        clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}
+      } });
+      if (r.ok) signedIn(r.data.user); else authError("Biometria não reconhecida. Entre com e-mail e senha.");
+    } catch (e) {
+      authError(passkeyMessage(e, "Não foi possível usar a biometria agora."));
+    }
+    $("au-passkey").disabled = false;
+  }
+  $("au-passkey").onclick = passkeyLogin;
+  loadMe();
 
   // Hides the map-screen chrome while a report is being made (the report steps use the whole screen).
   function chrome(on) {
@@ -509,6 +708,7 @@
   }
 
   function openReport() {
+    if (!me) return openAuth("Entre para reportar lixo no mapa.");
     resetReport();
     reporting = true; placed = null;
     goToPlace();
@@ -643,6 +843,10 @@
       form.append("taken_at", taken.toISOString());
       var res = await fetch("/api/v1/trashes", { method: "POST", headers: { "X-Device-Token": token }, body: form });
       var body = await res.json().catch(function () { return {}; });
+      if (res.status === 401 && body.error === "login_required") {
+        me = null; applyAuth(); closeReport(); openAuth("Sua sessão expirou. Entre de novo para enviar a foto.");
+        return;
+      }
       if (res.status === 401) { saveToken(""); throw new Error("Sessão expirada. Tente enviar de novo."); }
       if (!res.ok) {
         var msgs = body.errors ? Object.keys(body.errors).map(function (k) { return k + " " + body.errors[k].join(", "); }).join("; ") : "Erro " + res.status;
