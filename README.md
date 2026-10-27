@@ -128,8 +128,8 @@ Writes from another website are refused (`Origin` check, plus SameSite cookies).
 
 ## Severity scale
 
-The AI gives each report a `severity` from **0 (spotless) to 100 (large illegal dump)**. Rough guide: about 20 a few
-items, about 50 a clear pile, 80 or more a big dump or a hazard. The UI labels it in bands of 20 (*Muito leve*,
+The AI gives each report a `severity` from **0 (spotless) to 100 (large illegal dump)**. The AI judges it from the amount of trash, how far it is spread and how many different kinds are mixed. Rough guide: about 20 a few
+items, 50-70 a clear pile or a lot of mixed loose litter (bags are not required), 80 or more a big dump, bulky waste or a hazard. The wording lives in `TrashVision::PROMPT`. The UI labels it in bands of 20 (*Muito leve*,
 *Leve*, *Moderada*, *Grave*, *Muito grave*). A heat cell's `score` is the sum of its reports' severity, halved every
 14 days. Vendors that think in 1-5 stars need to convert in their adapter: `TrashVision` accepts any 0-100 value, so a 4 would be read as "almost spotless".
 

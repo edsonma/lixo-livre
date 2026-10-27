@@ -140,6 +140,10 @@ class TrashVisionTest < ActiveSupport::TestCase
 
   test "the shared prompt exists for adapters to reuse" do
     assert_includes TrashVision::PROMPT, "is_trash"
+
+    # The scale is judged by amount, spread and variety, not by the presence of bags
+    assert_includes TrashVision::PROMPT, "different kinds"
+    assert_includes TrashVision::PROMPT, "do not score it"
   end
 
   # --- defaults ---
