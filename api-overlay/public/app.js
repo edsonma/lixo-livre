@@ -6,7 +6,7 @@
   var status = { center: { lat: -15.7942, lng: -47.8825 }, demo_mode: false };
   try { status = await (await fetch("/api/v1/status")).json(); } catch (e) {}
 
-  document.getElementById("demo").style.display = status.demo_mode ? "block" : "none";
+  document.getElementById("demo").style.display = status.demo_mode ? "inline-block" : "none";
 
   var map = new maplibregl.Map({
     container: "map",
