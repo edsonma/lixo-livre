@@ -42,6 +42,8 @@ class TrashVision
       (cans, paper, glass, food waste, cloth, bulky pieces...); 80 or more a large illegal dump, bulky waste (furniture,
       mattresses, appliances), construction debris, or a health or safety hazard (broken glass, medical waste, chemicals,
       dead animals).
+      Organic waste (food scraps, rotting produce, yard waste, animal waste) counts fully and raises the score: it attracts
+      pests, smells and spreads, so a pile of it is at least as serious as the same amount of dry litter.
       Plastic bags are not required: a wide spread of random loose items is as bad as bagged garbage, so do not score it
       lower because there are no bags. Variety and spread raise the score.
       Omit severity if is_trash is false.

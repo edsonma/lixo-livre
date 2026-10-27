@@ -144,6 +144,7 @@ class TrashVisionTest < ActiveSupport::TestCase
     # The scale is judged by amount, spread and variety, not by the presence of bags
     assert_includes TrashVision::PROMPT, "different kinds"
     assert_includes TrashVision::PROMPT, "do not score it"
+    assert_includes TrashVision::PROMPT, "Organic waste"
   end
 
   # --- defaults ---
