@@ -45,8 +45,18 @@
         <div><b id="st-pub">0</b><span>Publicadas</span></div>
         <div><b id="st-wait">0</b><span>Pendentes</span></div>
       </div>
-      <h3>Minhas fotos</h3>
+      <div id="pf-impact" class="pf-impact"></div>
+      <div class="pf-tabs" role="tablist">
+        <button type="button" class="on" data-tab="all">Todas</button>
+        <button type="button" data-tab="pub">Publicadas</button>
+        <button type="button" data-tab="wait">Pendentes</button>
+        <button type="button" data-tab="places">Locais</button>
+      </div>
+      <div class="pf-sort"><label for="pf-sort">Ordenar</label>
+        <select id="pf-sort"><option value="new">Mais recentes</option><option value="dirty">Mais sujas</option><option value="clean">Mais limpas</option></select>
+        <button id="pf-mine" type="button" class="chip-mini">📍 Só minhas fotos no mapa</button></div>
       <div id="feed-grid" class="feed-grid"></div>
+      <div id="places-list" class="places-list" style="display:none"></div>
       <div id="feed-empty" class="rv-empty" style="display:none">Você ainda não enviou fotos.<br>Toque no + para reportar lixo.</div>
     </div>
   </section>
@@ -202,6 +212,8 @@
     </div>
     <div class="an-actions">
       <button id="mp-primary" class="primary" type="button" style="display:none"></button>
+      <button id="mp-revisit" class="outline" type="button" style="display:none">🔁 Revisitar este local</button>
+      <button id="mp-share" class="outline" type="button" style="display:none">📤 Compartilhar antes e depois</button>
       <button id="mp-secondary" class="outline" type="button" style="display:none"></button>
     </div>
     <div id="mp-error" class="error" role="alert"></div>

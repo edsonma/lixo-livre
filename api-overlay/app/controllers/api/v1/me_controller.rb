@@ -61,6 +61,7 @@ module Api
           taken_at: trash.taken_at,
           lat: trash.lonlat.y,
           lng: trash.lonlat.x,
+          h3_index: trash.h3_index,
           published: trash.published?,
           can_publish: trash.publishable?,
           photo_ready: ready,

@@ -52,7 +52,10 @@
   var filterKey = "todos";
   function applyFilter() {
     if (!map.getLayer("heat")) return;
-    var expr = filterKey === "todos" ? null : ["==", ["get", "level"], filterKey];
+    var parts = [];
+    if (filterKey !== "todos") parts.push(["==", ["get", "level"], filterKey]);
+    if (typeof mineOnly !== "undefined" && mineOnly) parts.push(["in", ["get", "h3"], ["literal", myCells().concat(["-"])]]);
+    var expr = parts.length ? ["all"].concat(parts) : null;
     map.setFilter("heat", expr); map.setFilter("pins", expr);
   }
 
@@ -524,26 +527,102 @@
     feed = res.data; renderFeed();
   }
 
+  var feedTab = "all", feedSort = "new", mineOnly = false;
+
+  function isPending(r) { return !r.published && r.stage !== "not_trash" && r.stage !== "still_dirty" && r.stage !== "nothing_to_clean"; }
+  function weekOf(d) { return Math.floor((new Date(d).getTime() + 3 * 86400000) / (7 * 86400000)); } // weeks start on Monday
+
+  // Places helped, points and the weekly streak, from my own reports.
+  function impactOf(list) {
+    var pub = list.filter(function (r) { return r.published; }), cells = {}, points = 0;
+    pub.forEach(function (r) { if (r.h3_index) cells[r.h3_index] = true; points += r.kind === "cleanup" ? 30 : 10; });
+    var weeks = {}; pub.forEach(function (r) { weeks[weekOf(r.taken_at)] = true; });
+    var w = weekOf(new Date()), streak = 0;
+    if (!weeks[w]) w--; // this week may not have a report yet
+    while (weeks[w]) { streak++; w--; }
+    return { places: Object.keys(cells).length, points: points, streak: streak };
+  }
+
+  function renderImpact() {
+    var i = impactOf(feed), box = $("pf-impact"); box.replaceChildren();
+    [[i.places, "locais ajudados"], [i.points, "pontos"], [i.streak, "semanas seguidas"]].forEach(function (x) {
+      var d = el("div"); d.appendChild(el("b", String(x[0]))); d.appendChild(el("span", x[1])); box.appendChild(d);
+    });
+  }
+
+  function sortedFeed(list) {
+    var out = list.slice();
+    if (feedSort === "dirty") out.sort(function (a, b) { return (b.severity == null ? -1 : b.severity) - (a.severity == null ? -1 : a.severity); });
+    else if (feedSort === "clean") out.sort(function (a, b) { return (a.severity == null ? 101 : a.severity) - (b.severity == null ? 101 : b.severity); });
+    return out; // "new": the server already sends newest first
+  }
+
+  function groupPlaces(list) {
+    var groups = {};
+    list.forEach(function (r) { if (r.h3_index) (groups[r.h3_index] = groups[r.h3_index] || []).push(r); });
+    return Object.keys(groups).map(function (h3) {
+      var rs = groups[h3].sort(function (a, b) { return new Date(a.taken_at) - new Date(b.taken_at); });
+      return { h3: h3, reports: rs, first: rs[0], last: rs[rs.length - 1] };
+    }).sort(function (a, b) { return new Date(b.last.taken_at) - new Date(a.last.taken_at); });
+  }
+
+  function myCells() { var o = {}; feed.forEach(function (r) { if (r.published && r.h3_index) o[r.h3_index] = true; }); return Object.keys(o); }
+
   function renderFeed() {
     var grid = $("feed-grid"); grid.replaceChildren();
     $("st-total").textContent = feed.length;
     $("st-pub").textContent = feed.filter(function (r) { return r.published; }).length;
-    $("st-wait").textContent = feed.filter(function (r) { return !r.published && r.stage !== "not_trash"; }).length;
+    $("st-wait").textContent = feed.filter(isPending).length;
+    renderImpact();
+    document.querySelectorAll(".pf-tabs button").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === feedTab); });
+    var places = feedTab === "places";
+    show("feed-grid", !places, "grid"); show("places-list", places, "flex");
+    var list = feed.filter(function (r) { return feedTab === "pub" ? r.published : feedTab === "wait" ? isPending(r) : true; });
     show("feed-empty", !feed.length);
-    feed.forEach(function (r) {
+    if (places) return renderPlaces();
+    sortedFeed(list).forEach(function (r) {
       var cell = el("button", null, "feed-cell"); cell.type = "button";
-      cell.setAttribute("aria-label", "Foto de " + shortDate(r.taken_at) + (STATE_TEXT[r.stage] ? ", " + STATE_TEXT[r.stage] : ""));
+      cell.setAttribute("aria-label", "Foto de " + shortDate(r.taken_at) + (r.severity != null ? ", nota " + r.severity : "") + (STATE_TEXT[r.stage] ? ", " + STATE_TEXT[r.stage] : ""));
       if (r.thumb_url) {
         var img = document.createElement("img"); img.src = photoPath(r.thumb_url); img.alt = ""; img.loading = "lazy"; cell.appendChild(img);
       } else {
         cell.appendChild(el("span", "⏳", "wait"));
       }
-      if (r.severity != null) { var dot = el("i", null, "feed-dot"); dot.style.background = levelOf(r.severity).color; cell.appendChild(dot); }
-      if (STATE_TEXT[r.stage]) cell.appendChild(el("span", STATE_TEXT[r.stage], "feed-state"));
+      if (r.severity != null) { var sc = el("i", String(r.severity), "feed-score"); sc.style.background = levelOf(r.severity).color; cell.appendChild(sc); }
+      if (STATE_TEXT[r.stage] && r.stage !== "published") cell.appendChild(el("span", STATE_TEXT[r.stage], "feed-state"));
       cell.onclick = function () { openMyPhoto(r); };
       grid.appendChild(cell);
     });
   }
+
+  function renderPlaces() {
+    var box = $("places-list"); box.replaceChildren();
+    var groups = groupPlaces(feed.filter(function (r) { return r.published; }));
+    if (!groups.length) { box.appendChild(el("div", "Seus locais publicados aparecem aqui.", "rv-empty")); return; }
+    groups.forEach(function (g) {
+      var row = el("button", null, "place-row"); row.type = "button";
+      var pic = g.last.thumb_url ? document.createElement("img") : el("span", "📍", "ph");
+      if (g.last.thumb_url) { pic.src = photoPath(g.last.thumb_url); pic.alt = ""; pic.loading = "lazy"; }
+      row.appendChild(pic);
+      var txt = el("div"); var title = el("b", g.reports.length + (g.reports.length > 1 ? " fotos" : " foto") + " neste local");
+      txt.appendChild(title); txt.appendChild(el("small", "Última em " + shortDate(g.last.taken_at)));
+      row.appendChild(txt);
+      var lvl = el("span", g.last.severity != null ? levelOf(g.last.severity).label + " · " + g.last.severity : "", "lvl");
+      if (g.last.severity != null) lvl.style.color = levelOf(g.last.severity).color;
+      row.appendChild(lvl);
+      row.onclick = function () { openPlace(g.h3); };
+      box.appendChild(row);
+      addressParts(g.last.lat, g.last.lng).then(function (p) { if (p) title.textContent = (p.street || p.area) + " · " + g.reports.length + (g.reports.length > 1 ? " fotos" : " foto"); });
+    });
+  }
+
+  document.querySelectorAll(".pf-tabs button").forEach(function (b) { b.onclick = function () { feedTab = b.dataset.tab; renderFeed(); }; });
+  $("pf-sort").onchange = function () { feedSort = this.value; renderFeed(); };
+  $("pf-mine").onclick = function () {
+    mineOnly = !mineOnly; this.classList.toggle("on", mineOnly);
+    applyFilter();
+    if (mineOnly) { var c = myCells(); toast(c.length ? "Mostrando só os locais das suas fotos." : "Você ainda não tem fotos publicadas."); goPage("map"); }
+  };
 
   var myPhoto = null;
   function myError(msg) { $("mp-error").textContent = msg || ""; }
@@ -573,8 +652,62 @@
     primary.textContent = r.published ? "Ver no mapa" : "Publicar no Lixo Livre";
     show("mp-secondary", r.stage !== "analyzing" && r.stage !== "protecting_photo", "block");
     secondary.textContent = "Excluir foto"; secondary.classList.remove("armed");
+    show("mp-revisit", !!r.published, "block");
+    var group = r.h3_index ? groupPlaces(feed.filter(function (x) { return x.h3_index === r.h3_index && x.published && x.thumb_url; })) : [];
+    show("mp-share", group.length && group[0].reports.length > 1, "block");
     show("myphoto", true, "flex");
   }
+
+  $("mp-revisit").onclick = function () {
+    if (!myPhoto) return;
+    var at = [myPhoto.lng, myPhoto.lat]; show("myphoto", false); myPhoto = null; goPage("map");
+    openReport("dirty", at);
+  };
+
+  // Before / after card: the first and the latest photo of this place, as a picture to share.
+  function loadImg(url) {
+    return new Promise(function (resolve, reject) {
+      var i = new Image(); i.onload = function () { resolve(i); }; i.onerror = reject; i.src = url;
+    });
+  }
+  function drawCover(g, img, x, y, w, h) {
+    var k = Math.max(w / img.naturalWidth, h / img.naturalHeight), iw = w / k, ih = h / k;
+    g.drawImage(img, (img.naturalWidth - iw) / 2, (img.naturalHeight - ih) / 2, iw, ih, x, y, w, h);
+  }
+  $("mp-share").onclick = async function () {
+    if (!myPhoto) return;
+    var button = this; button.disabled = true; myError("");
+    try {
+      var g1 = groupPlaces(feed.filter(function (x) { return x.h3_index === myPhoto.h3_index && x.published && x.photo_url; }))[0];
+      var before = g1.first, after = g1.last;
+      var imgs = await Promise.all([loadImg(photoPath(before.photo_url)), loadImg(photoPath(after.photo_url))]);
+      var W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+      var g = c.getContext("2d");
+      g.fillStyle = "#14231a"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#fff"; g.font = "700 56px system-ui, sans-serif"; g.fillText("Lixo Livre", 60, 100);
+      g.font = "400 30px system-ui, sans-serif"; g.fillStyle = "#b9c8bd"; g.fillText("Antes e depois deste local", 60, 146);
+      [[before, imgs[0], "ANTES"], [after, imgs[1], "DEPOIS"]].forEach(function (x, idx) {
+        var px = 60, py = 190 + idx * 550, w = 960, h = 500, lv = x[0].severity != null ? levelOf(x[0].severity) : null;
+        drawCover(g, x[1], px, py, w, h);
+        g.fillStyle = lv ? lv.color : "#555"; g.fillRect(px, py, 330, 70);
+        g.fillStyle = "#fff"; g.font = "700 34px system-ui, sans-serif";
+        g.fillText(x[2] + (x[0].severity != null ? " · " + x[0].severity + "/100" : ""), px + 18, py + 47);
+        g.font = "400 26px system-ui, sans-serif"; g.fillText(shortDate(x[0].taken_at), px + w - 190, py + h - 20);
+      });
+      var blob = await new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.9); });
+      if (!blob) throw new Error("blob");
+      var file = new File([blob], "lixo-livre-antes-e-depois.jpg", { type: "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Lixo Livre", text: "Antes e depois no Lixo Livre" });
+      } else {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast("Imagem salva.");
+      }
+    } catch (e) {
+      if (!e || e.name !== "AbortError") myError("Não foi possível criar a imagem agora.");
+    }
+    button.disabled = false;
+  };
 
   function ownRequest(method, suffix) {
     return deviceToken().then(function (token) {
