@@ -29,7 +29,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
       PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       original = decode(file_fixture("exif_gps.jpg").binread)
 
-      perform_enqueued_jobs { upload_exif_photo }
+      with_env("AUTO_PUBLISH" => "false") { perform_enqueued_jobs { upload_exif_photo } } # manual "Publicar" step
       trash = Trash.last
 
       assert_predicate trash, :validated?
@@ -59,6 +59,16 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
 
       get "/api/v1/trashes", params: { lat: -15.7942, lng: -47.8825 }
       assert_equal [trash.id], response.parsed_body.map { |t| t["id"] }
+    end
+  end
+
+  test "by default the protected, scored photo is on the map without any further step" do
+    travel_to NOW do
+      perform_enqueued_jobs { upload_exif_photo }
+
+      get "/api/v1/heatmap", params: { bbox: BBOX }
+
+      assert_equal 1, response.parsed_body["features"].size
     end
   end
 

@@ -56,4 +56,22 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
 
     assert_response :success
   end
+
+  test "a recently cleaned cell stays as a green pin even with no score left" do
+    cell(lng: -47.88, lat: -15.79, score: 0).update!(cleaned_at: 3.days.ago)
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    feature = response.parsed_body["features"].first
+    assert_equal true, feature["properties"]["cleaned"]
+    assert_equal 0, feature["properties"]["score"]
+  end
+
+  test "a cleanup from long ago is forgotten" do
+    cell(lng: -47.88, lat: -15.79, score: 0).update!(cleaned_at: 60.days.ago)
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    assert_empty response.parsed_body["features"]
+  end
 end

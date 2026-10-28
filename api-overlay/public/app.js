@@ -475,6 +475,7 @@
     if (data.history.length) chart.appendChild(chartSvg(data.history));
     else chart.appendChild(el("div", "Ainda sem histórico neste local.", "none"));
 
+    if (data.cleaned_at) $("dt-desc").textContent = "✅ Marcado como limpo em " + shortDate(data.cleaned_at) + ". " + $("dt-desc").textContent;
     $("dt-title").textContent = "Local no mapa";
     $("dt-sub").textContent = data.center.lat.toFixed(5) + ", " + data.center.lng.toFixed(5);
     var parts = await addressParts(data.center.lat, data.center.lng);
@@ -491,18 +492,26 @@
     this.textContent = all ? "Ver menos" : "Ver todas";
   };
   $("dt-follow").onclick = function () { toast("Em breve"); };
+  $("dt-clean").onclick = function () {
+    if (!place) return;
+    var at = [place.center.lng, place.center.lat];
+    closePlace(); goPage("map");
+    openReport("cleanup", at);
+  };
 
 
 
   // ---- "Minhas fotos": everything I sent, as a 3-column grid (like a profile on Instagram) ----
   var feed = [], feedLoading = false, STATE_TEXT = {
-    protecting_photo: "Protegendo", analyzing: "Analisando", scored: "Publicar", in_review: "Em revisão", not_trash: "Sem lixo"
+    protecting_photo: "Protegendo", analyzing: "Analisando", scored: "Publicar", in_review: "Em revisão", not_trash: "Sem lixo", still_dirty: "Ainda sujo", nothing_to_clean: "Sem registro"
   };
   var STATUS_LINE = {
     published: "Publicada no mapa. Obrigado por ajudar!",
     scored: "A IA já analisou. Falta você publicar no mapa.",
     in_review: "Em revisão: aparece no mapa depois de aprovada.",
     not_trash: "A IA não encontrou lixo nessa foto.",
+    still_dirty: "A foto ainda mostra lixo: o local continua sujo.",
+    nothing_to_clean: "Não havia lixo registrado neste local.",
     analyzing: "Analisando…", protecting_photo: "Protegendo a privacidade da foto…"
   };
 
@@ -562,7 +571,7 @@
     primary.disabled = secondary.disabled = false;
     show("mp-primary", r.can_publish || r.published, "block");
     primary.textContent = r.published ? "Ver no mapa" : "Publicar no Lixo Livre";
-    show("mp-secondary", !r.published && r.stage !== "analyzing" && r.stage !== "protecting_photo", "block");
+    show("mp-secondary", r.stage !== "analyzing" && r.stage !== "protecting_photo", "block");
     secondary.textContent = "Excluir foto"; secondary.classList.remove("armed");
     show("myphoto", true, "flex");
   }
@@ -595,7 +604,7 @@
     if (!myPhoto) return;
     var button = this;
     if (!button.classList.contains("armed")) { // two taps: the first only arms it
-      button.classList.add("armed"); button.textContent = "Toque de novo para excluir";
+      button.classList.add("armed"); button.textContent = myPhoto.published ? "Toque de novo: sai do mapa" : "Toque de novo para excluir";
       armDelete = setTimeout(function () { button.classList.remove("armed"); button.textContent = "Excluir foto"; }, 3500);
       return;
     }
@@ -603,7 +612,7 @@
     try {
       var res = await ownRequest("DELETE");
       if (res.ok || res.status === 204) return finishMyPhoto("Foto excluída.");
-      myError(res.status === 422 ? "Fotos já publicadas não podem ser excluídas." : ownFailure(res));
+      myError(ownFailure(res));
     } catch (e) { myError("Sem conexão. Tente de novo."); }
     button.disabled = false;
   };
@@ -861,6 +870,12 @@
     if (!box.children.length) box.appendChild(el("div", "Nenhum item específico identificado.", "an-none"));
     $("an-address").textContent = "Local escolhido no mapa";
     $("an-coords").textContent = r.lat.toFixed(5) + ", " + r.lng.toFixed(5);
+    var done = !!(r.published || r.stage === "published"), cleanup = r.kind === "cleanup";
+    $("an-title").textContent = done ? (cleanup ? "Limpeza confirmada" : "Foto publicada") : "Análise da imagem";
+    $("an-note").textContent = done ? (cleanup ? "Obrigado! Este local aparece como limpo no mapa." : "Já está no mapa. Obrigado por ajudar!") : "";
+    show("an-note", done, "block");
+    $("an-publish").textContent = done ? "Ver no mapa" : "Publicar no Lixo Livre";
+    $("an-discard").textContent = done ? "Concluir" : "Voltar";
     anMessage(""); $("an-publish").disabled = false; $("an-discard").disabled = false;
     show("report", false); show("analysis", true, "flex");
     addressOf(r.lat, r.lng).then(function (text) { if (text && draft === r) $("an-address").textContent = text; });
@@ -873,6 +888,11 @@
 
   $("an-publish").onclick = async function () {
     if (!draft) return;
+    if (draft.published || draft.stage === "published") { // already on the map: just go and look at it
+      var at = [draft.lng, draft.lat]; draft = null; closeReport(); loadHeat();
+      map.jumpTo({ center: at, zoom: 17 }); [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+      return;
+    }
     anMessage(""); $("an-publish").disabled = true; $("an-discard").disabled = true;
     try {
       var res = await ownReportRequest("POST", "/publish");
@@ -892,6 +912,7 @@
   // "Voltar": the report was never published, so it is deleted and the person is back on the map.
   $("an-discard").onclick = $("an-back").onclick = async function () {
     if (!draft) return closeReport();
+    if (draft.published || draft.stage === "published") { draft = null; closeReport(); loadHeat(); return; } // it stays on the map
     anMessage(""); $("an-publish").disabled = true; $("an-discard").disabled = true;
     try {
       var res = await ownReportRequest("DELETE");
@@ -933,10 +954,13 @@
     map.easeTo({ center: placed, padding: { bottom: sheetPadding() }, duration: 300 });
   }
 
-  function openReport() {
+  var reportKind = "dirty";
+  function openReport(kind, at) {
     if (!me) return openAuth("Entre para reportar lixo no mapa.");
     resetReport();
+    reportKind = kind === "cleanup" ? "cleanup" : "dirty";
     reporting = true; placed = null;
+    if (at) map.jumpTo({ center: at, zoom: 17 });
     goToPlace();
   }
   function closeReport() {
@@ -956,11 +980,11 @@
     if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
   }
 
-  $("report-btn").onclick = openReport;
+  $("report-btn").onclick = function () { openReport(); };
   $("place-ok").onclick = goToPhoto;
   $("place-cancel").onclick = closeReport;
   $("cam-back").onclick = goToPlace;
-  $("again").onclick = openReport;
+  $("again").onclick = function () { openReport(); };
   $("done").onclick = function () { closeReport(); loadHeat(); };
 
   $("shutter").onclick = function () {
@@ -1029,7 +1053,12 @@
     if (r.stage === "protecting_photo") return setStatus(true, "Protegendo sua privacidade…");
     if (r.stage === "analyzing") return setStatus(true, "Analisando…");
     if (r.stage === "scored") return showAnalysis(r);
-    if (r.stage === "published") return setStatus(false, "Publicado no mapa. Obrigado por ajudar!");
+    if (r.stage === "published") {
+      [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+      return showAnalysis(r);
+    }
+    if (r.stage === "still_dirty") return setStatus(false, "A foto ainda mostra lixo, então o local continua sujo no mapa. Tire uma foto do local já limpo.");
+    if (r.stage === "nothing_to_clean") return setStatus(false, "Não há registros de lixo recentes neste local para marcar como limpo.");
     if (r.stage === "not_trash") return setStatus(false, "A IA não encontrou lixo nessa foto. Tente outra mais de perto.");
     return setStatus(false, "Sua foto ficou em revisão. Ela aparece no mapa depois de aprovada.");
   }
@@ -1064,6 +1093,7 @@
       var form = new FormData();
       form.append("photo", file);
       form.append("lat", c.lat); form.append("lng", c.lng);
+      form.append("kind", reportKind);
       // A gallery photo was usually taken earlier: its file date is the best guess (the server also reads the EXIF).
       var taken = file.lastModified && file.lastModified > 946684800000 && file.lastModified <= Date.now() ? new Date(file.lastModified) : new Date();
       form.append("taken_at", taken.toISOString());

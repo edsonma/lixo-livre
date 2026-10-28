@@ -139,10 +139,12 @@ class TrashTest < ActiveSupport::TestCase
     assert_raises(Trash::NotPublishable) { create_published_trash.discard_draft! }
   end
 
-  test "auto_publish? reads AUTO_PUBLISH" do
-    with_env("AUTO_PUBLISH" => nil) { assert_not Trash.auto_publish? }
-    with_env("AUTO_PUBLISH" => "false") { assert_not Trash.auto_publish? }
+  test "auto_publish? is on unless AUTO_PUBLISH says no" do
+    with_env("AUTO_PUBLISH" => nil) { assert Trash.auto_publish? }
     with_env("AUTO_PUBLISH" => " TRUE ") { assert Trash.auto_publish? }
+    with_env("AUTO_PUBLISH" => "false") { assert_not Trash.auto_publish? }
+    with_env("AUTO_PUBLISH" => " Off ") { assert_not Trash.auto_publish? }
+    with_env("AUTO_PUBLISH" => "0") { assert_not Trash.auto_publish? }
   end
 
   test "for_heatmap only has validated, visible, sanitized reports" do

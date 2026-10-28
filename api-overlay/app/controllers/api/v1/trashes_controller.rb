@@ -20,13 +20,14 @@ module Api
         render json: serialize_trash(Trash.for_heatmap.find(params[:id]))
       end
 
-      # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info
+      # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info, kind ("dirty", or "cleanup" for "Já foi limpo")
       def create
         trash = @device.trashes.new(
           user: current_user,
           lonlat: Trash.point(params.require(:lng), params.require(:lat)),
           taken_at: params.require(:taken_at),
           extra_info: params[:extra_info],
+          kind: params[:kind].presence || "dirty",
           photo: params[:photo]
         )
         trash.save!

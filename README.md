@@ -198,9 +198,21 @@ a guarantee: keep the flag button, and show moderators only sanitized photos (`s
 
 ### Publishing
 
-A report is scored by the AI first and appears on the map only after its author taps **Publicar** on the analysis
-screen (`published_at`). Reports that are scored but never published are private and are deleted after 7 days. Set
-`AUTO_PUBLISH=true` to skip that step and publish as soon as the AI validates (for clients without the analysis screen).
+Reports are approved for the heatmap **by the AI score**, with no manual step (`AUTO_PUBLISH` defaults to on):
+
+| AI confidence | Result |
+|---|---|
+| 0.8 or more | published, full weight |
+| 0.6 to 0.8 | published, weight x0.6 |
+| below 0.6 | held for moderation |
+
+Cell score (`HeatScore`): reports decay with a 14-day half-life; one report per person per day counts; each extra
+person confirming adds 15% (up to +45%); a person's repeats do not add up.
+**Cleanup reports** (`POST /trashes` with `kind=cleanup`, button "Já foi limpo"): the AI must see a clean place
+(severity <= 15, confidence >= 0.8) and the cell must have recent dirty reports; then earlier reports stop counting
+and the cell shows as cleaned for 30 days (`cleaned: true`). Rejections come back as stages `still_dirty` /
+`nothing_to_clean`. An author can withdraw a published report (`DELETE /me/trashes/:id`), which re-scores the cell.
+Set `AUTO_PUBLISH=false` to restore the manual **Publicar** step.
 
 ### Plugging in an AI provider
 
@@ -275,7 +287,7 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/me/feed` | web | The logged-in account's own reports from any device, newest first (up to 90), each with `thumb_url` (360px square) for the profile grid |
 | GET | `/api/v1/me/trashes/:id` | mobile, demo page | Poll one report after upload: `stage` (`protecting_photo` → `analyzing` → `scored` / `not_trash` / `in_review`; after publishing, `published`), `done`, `severity` |
 | POST | `/api/v1/me/trashes/:id/publish` | analysis screen | "Publicar no Lixo Livre": puts a scored report on the map (422 if it is not scored, or already published) |
-| DELETE | `/api/v1/me/trashes/:id` | analysis screen | "Voltar": deletes a report that was never published (422 once published) |
+| DELETE | `/api/v1/me/trashes/:id` | analysis screen | "Voltar" / "Excluir foto": deletes a report; if it was published it leaves the map and the cell is re-scored |
 | POST | `/api/v1/trashes/:id/flags` | both | Report a bad or private photo |
 
 After `POST /trashes` (202 with the new `id`), poll `GET /me/trashes/:id` every 1-2 seconds until `done` is true, then show

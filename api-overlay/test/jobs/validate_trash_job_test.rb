@@ -28,25 +28,25 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
     assert_not_nil trash.validated_at
   end
 
-  test "a validated report waits for its author: it is not on the map until published" do
+  test "a validated report goes to the map right away: the AI's score is the approval" do
     trash = sanitized_trash
 
     ValidateTrashJob.perform_now(trash.id)
+
+    assert_not_nil trash.reload.published_at
+    assert_includes Trash.for_heatmap.pluck(:id), trash.id
+  end
+
+  test "AUTO_PUBLISH=false brings back the manual step: validated reports wait for their author" do
+    trash = sanitized_trash
+
+    with_env("AUTO_PUBLISH" => "false") { ValidateTrashJob.perform_now(trash.id) }
 
     trash.reload
     assert_predicate trash, :validated?
     assert_nil trash.published_at
     assert_predicate trash, :publishable?
     assert_not_includes Trash.for_heatmap.pluck(:id), trash.id
-  end
-
-  test "AUTO_PUBLISH=true puts a validated report on the map right away" do
-    trash = sanitized_trash
-
-    with_env("AUTO_PUBLISH" => "true") { ValidateTrashJob.perform_now(trash.id) }
-
-    assert_not_nil trash.reload.published_at
-    assert_includes Trash.for_heatmap.pluck(:id), trash.id
   end
 
   test "validating re-scores the heat cell" do
@@ -159,5 +159,84 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
 
   test "ignores a report that no longer exists" do
     assert_nothing_raised { ValidateTrashJob.perform_now(0) }
+  end
+
+  # --- "Já foi limpo": a photo that says a reported place is clean now ---
+
+  def cleanup_trash(**attrs)
+    sanitized_trash(kind: "cleanup", **attrs)
+  end
+
+  test "a cleanup the AI confirms goes to the map with severity 0" do
+    create_published_trash(severity: 80) # something to clean, in the same cell
+    @vision_answer = vision_result(is_trash: false, severity: nil, types: [], confidence: 0.93)
+    trash = cleanup_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    trash.reload
+    assert_predicate trash, :validated?
+    assert_equal 0, trash.severity
+    assert_empty trash.trash_types
+    assert_not_nil trash.published_at
+  end
+
+  test "a few leftover items still count as cleaned" do
+    create_published_trash(severity: 80)
+    @vision_answer = vision_result(severity: ValidateTrashJob::CLEANED_MAX_SEVERITY, confidence: 0.9)
+    trash = cleanup_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    assert_predicate trash.reload, :validated?
+    assert_equal ValidateTrashJob::CLEANED_MAX_SEVERITY, trash.severity
+  end
+
+  test "a cleanup photo that still shows trash is rejected as still_dirty" do
+    create_published_trash(severity: 80)
+    @vision_answer = vision_result(severity: 60, confidence: 0.95)
+    trash = cleanup_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    trash.reload
+    assert_predicate trash, :rejected?
+    assert_equal "still_dirty", trash.ai_payload["reason"]
+    assert_nil trash.published_at
+  end
+
+  test "a cleanup where nothing was reported is rejected without paying for the AI" do
+    trash = cleanup_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    assert_equal 0, @vision_calls
+    assert_predicate trash.reload, :rejected?
+    assert_equal "nothing_to_clean", trash.ai_payload["reason"]
+  end
+
+  test "a cleanup needs a surer AI than a report: 0.7 goes to review" do
+    create_published_trash(severity: 80)
+    @vision_answer = vision_result(is_trash: false, severity: nil, types: [], confidence: 0.7)
+    trash = cleanup_trash
+
+    ValidateTrashJob.perform_now(trash.id)
+
+    assert_predicate trash.reload, :needs_review?
+    assert_not Trash.for_heatmap.exists?(trash.id)
+  end
+
+  test "an accepted cleanup clears the cell and the heat map keeps it as a green pin" do
+    dirty = create_published_trash(severity: 80, taken_at: 2.days.ago)
+    RefreshHeatCellJob.perform_now(dirty.h3_index)
+    @vision_answer = vision_result(is_trash: false, severity: nil, types: [], confidence: 0.95)
+    trash = cleanup_trash
+
+    perform_enqueued_jobs { ValidateTrashJob.perform_now(trash.id) }
+
+    cell = HeatCell.find_by!(h3_index: dirty.h3_index)
+    assert_in_delta 0, cell.score, 0.01
+    assert_not_nil cell.cleaned_at
+    assert_equal true, cell.to_feature[:properties][:cleaned]
   end
 end

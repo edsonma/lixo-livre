@@ -80,6 +80,7 @@ module Api
       def serialize_trash(trash)
         {
           id: trash.id,
+          kind: trash.kind,
           severity: trash.severity,
           trash_types: trash.trash_types,
           extra_info: trash.extra_info,

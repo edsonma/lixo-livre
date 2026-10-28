@@ -1,5 +1,5 @@
 class HeatCell < ApplicationRecord
-  HALF_LIFE_DAYS = 14 # a report loses half its weight every 14 days
+  HALF_LIFE_DAYS = HeatScore::HALF_LIFE_DAYS # a report loses half its weight every 14 days
 
   validates :h3_index, presence: true, uniqueness: { scope: :resolution }
 
@@ -10,19 +10,26 @@ class HeatCell < ApplicationRecord
     )
   }
 
-  # severity (0-100) * 0.5^(age_days / half_life); a cell's score is the sum over its reports
+  # severity (0-100) * 0.5^(age_days / half_life) for one report. How a whole cell is scored
+  # (confidence, one-person-a-day, confirmations, cleanups) is in HeatScore.
   def self.weight(severity, taken_at, now: Time.current)
-    age_days = [(now - taken_at) / 1.day, 0].max
-    severity * (0.5**(age_days / HALF_LIFE_DAYS))
+    severity * HeatScore.decay(taken_at, now: now)
   end
 
   def recompute!
-    rows = Trash.for_heatmap.where(h3_index: h3_index).pluck(:severity, :taken_at)
+    rows = Trash.for_heatmap.where(h3_index: h3_index)
+                .pluck(:severity, :taken_at, :ai_confidence, :kind, :user_id, :device_id)
+                .map do |severity, taken_at, confidence, kind, user_id, device_id|
+      HeatScore::Row.new(severity: severity, taken_at: taken_at, confidence: confidence, kind: kind,
+                         reporter: user_id ? "u#{user_id}" : "d#{device_id}")
+    end
+    result = HeatScore.call(rows)
 
     self.resolution = Trash::H3_RESOLUTION
     self.lonlat ||= center_point
-    self.score = rows.sum { |severity, taken_at| self.class.weight(severity, taken_at) }
-    self.reports_count = rows.size
+    self.score = result.score
+    self.reports_count = result.count
+    self.cleaned_at = result.cleaned_at
     self.computed_at = Time.current
     save!
   end
@@ -30,7 +37,7 @@ class HeatCell < ApplicationRecord
   def to_feature
     {
       type: "Feature",
-      properties: { h3: h3_index, score: score.round(2), count: reports_count },
+      properties: { h3: h3_index, score: score.round(2), count: reports_count, cleaned: cleaned_at.present? && score < 2 },
       geometry: { type: "Point", coordinates: [lonlat.x, lonlat.y] }
     }
   end

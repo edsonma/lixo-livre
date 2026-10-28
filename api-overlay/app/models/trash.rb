@@ -3,6 +3,9 @@ class Trash < ApplicationRecord
   TYPES = %w[plastic paper glass metal organic construction_debris
              electronics bulky_items textile hazardous mixed other].freeze
 
+  # "dirty": a report of trash. "cleanup": a photo showing that a reported place is clean now.
+  KINDS = %w[dirty cleanup].freeze
+
   PHOTO_CONTENT_TYPES = %w[image/jpeg image/png image/webp image/heic image/heif].freeze
   MAX_PHOTO_BYTES = 15.megabytes
 
@@ -29,6 +32,7 @@ class Trash < ApplicationRecord
 
   validates :photo, :lonlat, :taken_at, presence: true
   validates :severity, inclusion: { in: SEVERITY_RANGE }, allow_nil: true
+  validates :kind, inclusion: { in: KINDS }
   validate :trash_types_are_known
   validate :photo_is_acceptable
 
@@ -37,6 +41,7 @@ class Trash < ApplicationRecord
   # Step 1 of the pipeline. SanitizePhotoJob enqueues ValidateTrashJob when it is done.
   after_create_commit { SanitizePhotoJob.perform_later(id) }
   after_commit :refresh_heat_cell, if: :affects_heatmap?
+  after_destroy_commit :refresh_heat_cell, if: -> { published_at.present? && h3_index.present? } # a withdrawn report leaves the map
 
   scope :visible, -> { where(hidden_at: nil) }
   scope :published, -> { where.not(published_at: nil) }
@@ -63,10 +68,19 @@ class Trash < ApplicationRecord
 
   class NotPublishable < StandardError; end
 
-  # With AUTO_PUBLISH=true a report goes straight to the map when the AI validates it, with no
-  # "Publicar" step (for clients that do not show the analysis screen).
+  # A report goes to the map as soon as the AI validates it (the AI's confidence decides how much it
+  # weighs, see HeatScore). AUTO_PUBLISH=false brings back the manual "Publicar" step for the author.
   def self.auto_publish?
-    DemoMode::TRUE_VALUES.include?(ENV["AUTO_PUBLISH"].to_s.strip.downcase)
+    !%w[false 0 no off].include?(ENV["AUTO_PUBLISH"].to_s.strip.downcase)
+  end
+
+  def cleanup?
+    kind == "cleanup"
+  end
+
+  # Is there something to clean here? A cleanup only makes sense where trash was reported.
+  def dirty_reports_nearby?
+    Trash.for_heatmap.where(h3_index: h3_index, kind: "dirty").where.not(id: id).exists?
   end
 
   def published?
@@ -88,6 +102,11 @@ class Trash < ApplicationRecord
   def discard_draft!
     raise NotPublishable, "report #{id} is already published" if published?
 
+    destroy!
+  end
+
+  # The author takes a report back, published or not. A published one leaves the map and the cell is re-scored.
+  def withdraw!
     destroy!
   end
 

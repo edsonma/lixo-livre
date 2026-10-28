@@ -163,14 +163,28 @@ class MeApiTest < ActionDispatch::IntegrationTest
     assert_not Trash.exists?(trash.id)
   end
 
-  test "a published report cannot be thrown away through this endpoint" do
+  test "an author can take back a published report: it leaves the map and the place is re-scored" do
     trash = create_published_trash(device: @device)
 
-    delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+    assert_enqueued_with(job: RefreshHeatCellJob, args: [trash.h3_index]) do
+      delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+    end
 
-    assert_response :unprocessable_entity
-    assert_equal "already_published", response.parsed_body["error"]
-    assert Trash.exists?(trash.id)
+    assert_response :no_content
+    assert_not Trash.exists?(trash.id)
+    assert_not_includes Trash.for_heatmap.pluck(:id), trash.id
+  end
+
+  test "a cleanup that was turned down says why" do
+    trash = create_trash(device: @device, kind: "cleanup")
+    trash.update_columns(sanitized_at: Time.current, ai_status: "rejected", ai_payload: { "reason" => "still_dirty" })
+    assert_equal "still_dirty", show_report(trash.id)["stage"]
+
+    trash.update_columns(ai_payload: { "reason" => "nothing_to_clean" })
+    assert_equal "nothing_to_clean", show_report(trash.id)["stage"]
+
+    trash.update_columns(ai_payload: {})
+    assert_equal "not_trash", show_report(trash.id)["stage"]
   end
 
   test "show reports not_trash and in_review as finished" do

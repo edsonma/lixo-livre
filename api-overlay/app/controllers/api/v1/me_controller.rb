@@ -39,12 +39,11 @@ module Api
         render json: { error: "not_publishable", message: e.message }, status: :unprocessable_entity
       end
 
-      # DELETE /api/v1/me/trashes/:id   "Voltar": throw away a report that was not published
+      # DELETE /api/v1/me/trashes/:id   "Voltar" / "Excluir": the author takes a report back. If it was
+      # on the map it leaves it, and the place is re-scored.
       def destroy
-        @device.trashes.find(params[:id]).discard_draft!
+        @device.trashes.find(params[:id]).withdraw!
         head :no_content
-      rescue Trash::NotPublishable => e
-        render json: { error: "already_published", message: e.message }, status: :unprocessable_entity
       end
 
       private
@@ -54,6 +53,7 @@ module Api
         {
           id: trash.id,
           ai_status: trash.ai_status,
+          kind: trash.kind,
           stage: stage_of(trash),
           done: !trash.pending?,
           severity: trash.severity,
@@ -69,10 +69,16 @@ module Api
         }
       end
 
+      # A cleanup can be turned down for its own reasons; anything else rejected is "not trash".
+      def rejected_stage(trash)
+        reason = (trash.ai_payload || {})["reason"]
+        %w[still_dirty nothing_to_clean].include?(reason) ? reason : "not_trash"
+      end
+
       def stage_of(trash)
         case trash.ai_status
         when "validated" then trash.published? ? "published" : "scored"
-        when "rejected" then "not_trash"
+        when "rejected" then rejected_stage(trash)
         when "needs_review" then "in_review"
         else trash.sanitized_at ? "analyzing" : "protecting_photo"
         end

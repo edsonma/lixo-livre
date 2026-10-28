@@ -19,6 +19,7 @@ module Api
           h3: h3,
           center: { lat: latest.lonlat.y, lng: latest.lonlat.x },
           score: cell&.score&.round(2),
+          cleaned_at: cell&.cleaned_at,
           reports_count: reports.count,
           latest: serialize_trash(latest),
           history: PlaceHistory.monthly(reports.pluck(:severity, :taken_at)),

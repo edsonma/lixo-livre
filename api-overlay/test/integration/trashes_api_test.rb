@@ -89,6 +89,20 @@ class TrashesApiTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "POST can send a cleanup (Já foi limpo), and a normal report is a dirty one" do
+    upload
+    assert_equal "dirty", Trash.find(response.parsed_body["id"]).kind
+
+    upload(kind: "cleanup")
+    assert_equal "cleanup", Trash.find(response.parsed_body["id"]).kind
+  end
+
+  test "POST refuses an unknown kind" do
+    assert_no_difference("Trash.count") { upload(kind: "banana") }
+
+    assert_response :unprocessable_entity
+  end
+
   test "POST without a photo is rejected" do
     assert_no_difference("Trash.count") { upload(photo: nil) }
 
