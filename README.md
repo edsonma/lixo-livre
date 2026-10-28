@@ -280,6 +280,10 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/status` | demo page, monitors | Demo flag, map center, counts |
 | GET | `/api/v1/heatmap?bbox=w,s,e,n` | web | GeoJSON cells in the viewport |
 | GET | `/api/v1/places/:h3_index` | web | One map cell: latest report, monthly cleanliness history, photos |
+| GET | `/api/v1/heatmap?bbox=&days=7\|30\|90&type=plastic` | web | Same as before; `days` / `type` re-score the cells live from the matching reports (`HeatQuery`); each feature has a `trend` (`worse` / `better` / `stable`, 14-day change) |
+| GET | `/api/v1/rankings?lat=&lng=&radius_km=` | web | Worst places around a point (score, trend, distance) and regions (H3 res 7) ranked by average score |
+| GET / POST / DELETE | `/api/v1/follows`, `/api/v1/follows/:h3_index` | web (login) | Follow a place; `places/:h3` also returns `following` and `trend` |
+| GET / POST | `/api/v1/notifications`, `/api/v1/notifications/read` | web (login) | In-app alerts when a followed place gets worse (+15 points) or is cleaned; `unread` count |
 | GET | `/api/v1/trashes?lat=&lng=&radius=` | web, mobile | Photos near a point |
 | GET | `/api/v1/trashes/:id` | both | One report |
 | POST | `/api/v1/trashes` | mobile | Upload photo + `lat`, `lng`, `taken_at`, `extra_info` |

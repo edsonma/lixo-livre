@@ -256,3 +256,15 @@
   .place-row .rank { width: 28px; text-align: center; font-weight: 800; color: var(--muted); flex: none; }
   .dt-trend { margin: 2px 0 8px; }
   .place-row .meta { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+  /* ---- notifications ---- */
+  .bell { position: relative; }
+  .bell-count { position: absolute; top: 2px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #d92b2b; color: #fff; font: 700 11px/17px system-ui, sans-serif; text-align: center; box-sizing: border-box; }
+  .nav-item { position: relative; }
+  .nav-item .bell-count { top: 0; right: calc(50% - 22px); }
+  .al-item { display: flex; gap: 12px; align-items: center; background: #fff; border: 0; border-radius: 14px; padding: 12px; text-align: left; cursor: pointer; width: 100%; box-shadow: 0 1px 6px rgba(0,0,0,.08); margin-bottom: 8px; }
+  .al-item.unread { box-shadow: inset 4px 0 0 var(--green), 0 1px 6px rgba(0,0,0,.08); }
+  .al-item .ico { font-size: 26px; flex: none; }
+  .al-item b { display: block; font-size: 14.5px; }
+  .al-item small { color: var(--muted); font-size: 12.5px; }
+  #dt-follow.on { background: var(--green); color: #fff; }

@@ -11,6 +11,11 @@ Rails.application.routes.draw do
       get "heatmap", to: "heatmap#index"
       get "places/:h3_index", to: "places#show"
       get "rankings", to: "rankings#index"
+      get "follows", to: "follows#index"
+      post "follows", to: "follows#create"
+      delete "follows/:h3_index", to: "follows#destroy"
+      get "notifications", to: "notifications#index"
+      post "notifications/read", to: "notifications#read_all"
 
       resources :trashes, only: %i[index show create] do
         resources :flags, only: :create

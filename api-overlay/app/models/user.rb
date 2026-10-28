@@ -8,6 +8,8 @@ class User < ApplicationRecord
   has_many :devices, dependent: :nullify
   has_many :trashes, dependent: :nullify
   has_many :passkeys, dependent: :destroy
+  has_many :follows, dependent: :destroy
+  has_many :notifications, dependent: :destroy
 
   before_validation :set_defaults
   before_save :promote_if_listed

@@ -22,6 +22,7 @@ module Api
           cleaned_at: cell&.cleaned_at,
           trend: HeatQuery.cells_from({ h3 => place_rows(h3) }).first&.trend,
           reports_count: reports.count,
+          following: current_user ? current_user.follows.exists?(h3_index: h3) : false,
           latest: serialize_trash(latest),
           history: PlaceHistory.monthly(reports.pluck(:severity, :taken_at)),
           photos: reports.limit(PHOTOS).map { |t| serialize_trash(t) }
