@@ -20,6 +20,13 @@
     }
   });
   map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+  // "Go to my location": centers the map on the GPS position, shows a blue dot and follows while the person moves.
+  var geolocate = new maplibregl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true, timeout: 10000 },
+    trackUserLocation: true, showAccuracyCircle: true, fitBoundsOptions: { maxZoom: 16 }
+  });
+  map.addControl(geolocate, "bottom-right");
+  geolocate.on("error", function () { toast("Não foi possível obter sua localização. Verifique a permissão de GPS."); });
   window.__lixo = { map: map }; // a handle for the browser tests
 
   var EMPTY = { type: "FeatureCollection", features: [] };
