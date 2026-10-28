@@ -1,5 +1,6 @@
   html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
   body { overflow: hidden; }
+  html, body { overscroll-behavior: none; } /* no pull-to-refresh or edge-swipe navigation at the page level */
   #map { position: absolute; inset: 0; }
   .box { position: absolute; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.3); padding: 10px 12px; font-size: 13px; }
   .demo-tag { align-self: center; background: #fff3cd; color: #7a5b00; font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px; border-radius: 999px; }
