@@ -20,11 +20,18 @@ module Api
           center: { lat: latest.lonlat.y, lng: latest.lonlat.x },
           score: cell&.score&.round(2),
           cleaned_at: cell&.cleaned_at,
+          trend: HeatQuery.cells_from({ h3 => place_rows(h3) }).first&.trend,
           reports_count: reports.count,
           latest: serialize_trash(latest),
           history: PlaceHistory.monthly(reports.pluck(:severity, :taken_at)),
           photos: reports.limit(PHOTOS).map { |t| serialize_trash(t) }
         }
+      end
+
+      private
+
+      def place_rows(h3)
+        HeatQuery.group(Trash.for_heatmap.where(h3_index: h3))[h3] || []
       end
     end
   end

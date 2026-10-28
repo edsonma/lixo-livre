@@ -11,12 +11,12 @@
 <div id="pager">
   <section id="page-explore" class="page tab-page" aria-label="Explorar">
     <header class="page-head"><h1>Explorar</h1></header>
-    <div class="empty-state">
-      <div class="emoji" aria-hidden="true">📸</div>
-      <h2>Fotos da comunidade</h2>
-      <p>Em breve: o feed com as fotos de lixo reportadas perto de você, com curtidas, comentários e a opção de seguir locais.</p>
-      <button id="explore-map" class="btn outline" type="button">Ver o mapa</button>
-    </div>
+    <div class="ex-bar"><span id="ex-where">Perto de você</span><button id="ex-refresh" class="chip-mini" type="button">Atualizar</button></div>
+    <h3 class="ex-h">Piores locais perto de você</h3>
+    <div id="ex-worst" class="places-list"></div>
+    <h3 class="ex-h">Ranking por região</h3>
+    <div id="ex-regions" class="places-list"></div>
+    <p class="ex-note">Em breve: o feed da comunidade, com curtidas e comentários. <button id="explore-map" class="link" type="button">Ver o mapa</button></p>
   </section>
   <section id="page-map" class="page" aria-label="Mapa">
     <div id="map"></div>
@@ -85,6 +85,13 @@
 </header>
 <div id="pin"></div>
 
+<div id="chips2" role="group" aria-label="Filtrar por período e tipo">
+  <button class="chip mini" data-days="" aria-pressed="true" type="button">Tudo</button>
+  <button class="chip mini" data-days="7" aria-pressed="false" type="button">7 dias</button>
+  <button class="chip mini" data-days="30" aria-pressed="false" type="button">30 dias</button>
+  <button class="chip mini" data-days="90" aria-pressed="false" type="button">90 dias</button>
+  <select id="type-filter" aria-label="Tipo de lixo"><option value="">Todos os tipos</option></select>
+</div>
 <div id="chips" role="group" aria-label="Filtrar por nível de sujeira">
   <button class="chip" data-level="todos" aria-pressed="true" type="button"><span class="dot"></span>Todos</button>
   <button class="chip" data-level="limpo" aria-pressed="false" type="button" style="--c:#2e9e4f"><span class="dot"></span>Limpo</button>
@@ -252,6 +259,7 @@
       </div>
       <div id="dt-title" class="dt-title">Carregando…</div>
       <div id="dt-sub" class="dt-sub"></div>
+      <div id="dt-trend" class="dt-trend" style="display:none"></div>
       <p id="dt-desc" class="dt-desc"></p>
       <h3>Evolução da limpeza</h3>
       <div id="dt-chart" class="dt-chart"></div>
