@@ -38,6 +38,8 @@
       <button id="pf-passkey" class="btn outline" type="button" style="display:none">🔐 Ativar biometria neste aparelho</button>
       <div id="pf-passkey-info" class="pf-info"></div>
       <button id="pf-logout" class="btn plain" type="button">Sair</button>
+      <div class="pf-legal"><button type="button" class="link" data-legal="terms">Termos de Uso</button> · <button type="button" class="link" data-legal="privacy">Política de Privacidade</button></div>
+      <button id="pf-delete" class="btn plain danger" type="button">Excluir minha conta</button>
     </div>
     <div id="pf-feed" class="pf-feed" style="display:none">
       <div class="pf-stats">
@@ -185,6 +187,7 @@
         <label id="au-name-row" style="display:none">Nome<input id="au-name" autocomplete="name" maxlength="80"></label>
         <label>E-mail<input id="au-email" type="email" autocomplete="username webauthn" inputmode="email" autocapitalize="off" spellcheck="false"></label>
         <label>Senha<input id="au-pass" type="password" autocomplete="current-password" minlength="8"></label>
+        <label id="au-terms-row" class="au-consent" style="display:none"><input id="au-terms" type="checkbox"><span>Li e aceito os <button type="button" class="link" data-legal="terms">Termos de Uso</button> e a <button type="button" class="link" data-legal="privacy">Política de Privacidade</button>.</span></label>
         <div id="au-error" class="error" role="alert"></div>
         <button id="au-submit" class="btn primary" type="submit">Entrar</button>
       </form>
@@ -193,6 +196,28 @@
         <button id="au-passkey" class="btn outline" type="button" style="display:none">🔐 Entrar com biometria</button>
         <div id="au-google" class="au-google"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="legal" class="screen" role="dialog" aria-label="Termos e privacidade">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="lg-back" class="icon-btn" type="button" aria-label="Fechar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2 id="lg-title">Termos de Uso</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="au-tabs" role="tablist">
+      <button id="lg-tab-terms" class="on" type="button" role="tab" data-legal="terms">Termos de Uso</button>
+      <button id="lg-tab-privacy" type="button" role="tab" data-legal="privacy">Privacidade</button>
+    </div>
+    <div id="lg-body" class="lg-body"></div>
+    <div id="lg-accept-box" class="an-actions" style="display:none">
+      <label class="au-consent"><input id="lg-check" type="checkbox"><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>
+      <button id="lg-accept" class="primary" type="button" disabled>Aceitar e continuar</button>
+      <div id="lg-error" class="error" role="alert"></div>
     </div>
   </div>
 </div>
@@ -329,6 +354,7 @@
   <div id="error" class="error" role="alert"></div>
 </div>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="legal.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

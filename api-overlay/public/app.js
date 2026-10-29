@@ -230,13 +230,14 @@
     $("au-submit").textContent = mode === "up" ? "Criar conta" : "Entrar";
     $("au-title").textContent = mode === "up" ? "Criar conta" : "Entrar";
     $("au-pass").setAttribute("autocomplete", mode === "up" ? "new-password" : "current-password");
-    show("au-alt", mode === "in");
+    show("au-terms-row", mode === "up", "flex");
+    show("au-passkey", mode === "in" && passkeysSupported, "block");
+    show("au-alt", true);
     authError("");
   }
   function openAuth(why, mode) {
     setAuthMode(mode || "in");
     $("au-why").textContent = why || "";
-    show("au-passkey", passkeysSupported, "block");
     show("auth", true, "flex");
     setupGoogle();
   }
@@ -247,6 +248,7 @@
     toast("Olá, " + firstName(user) + "!");
   }
   function failure(r, fallback) {
+    if (r.data && r.data.error === "terms_required") return "É preciso aceitar os Termos de Uso e a Política de Privacidade.";
     if (r.status === 429) return "Muitas tentativas. Tente de novo em alguns minutos.";
     if (r.status === 401 && r.data.error === "invalid_credentials") return "E-mail ou senha incorretos.";
     var errs = r.data.errors || {};
@@ -261,10 +263,11 @@
     var email = $("au-email").value.trim(), pass = $("au-pass").value;
     if (!email || !pass) return authError("Preencha e-mail e senha.");
     if (authMode === "up" && pass.length < 8) return authError("A senha precisa ter pelo menos 8 caracteres.");
+    if (authMode === "up" && !$("au-terms").checked) return authError("Para criar a conta, marque que leu e aceita os Termos de Uso e a Política de Privacidade.");
     authError(""); $("au-submit").disabled = true;
     try {
       var r = authMode === "up"
-        ? await api("/api/v1/users", "POST", { name: $("au-name").value.trim(), email: email, password: pass })
+        ? await api("/api/v1/users", "POST", { name: $("au-name").value.trim(), email: email, password: pass, accepted_terms: true })
         : await api("/api/v1/session", "POST", { email: email, password: pass });
       if (r.ok) signedIn(r.data.user); else authError(failure(r, "Não foi possível entrar agora."));
     } catch (err) { authError("Sem conexão. Tente de novo."); }
@@ -291,8 +294,12 @@
     s.src = "https://accounts.google.com/gsi/client"; s.async = true;
     s.onload = function () {
       google.accounts.id.initialize({ client_id: clientId, callback: async function (resp) {
-        var r = await api("/api/v1/session/google", "POST", { credential: resp.credential });
-        if (r.ok) signedIn(r.data.user); else authError("Não foi possível entrar com o Google.");
+        var r = await api("/api/v1/session/google", "POST", { credential: resp.credential, accepted_terms: authMode === "up" && $("au-terms").checked });
+        if (r.ok) signedIn(r.data.user);
+        else if (r.data && r.data.error === "terms_required") {
+          setAuthMode("up");
+          authError("Esta conta Google ainda não existe aqui. Marque que aceita os Termos e a Política de Privacidade e toque no botão do Google de novo.");
+        } else authError("Não foi possível entrar com o Google.");
       } });
       google.accounts.id.renderButton($("au-google"), { theme: "outline", size: "large", shape: "pill", text: "continue_with", locale: "pt-BR", width: 280 });
     };
@@ -763,6 +770,57 @@
     button.disabled = false;
   };
   $("mp-back").onclick = function () { show("myphoto", false); myPhoto = null; };
+
+  // ---- Terms of Use and Privacy Policy ----
+  var legalTab = "terms", afterAccept = null;
+  function showLegal(tab, acceptMode) {
+    legalTab = tab === "privacy" ? "privacy" : "terms";
+    var doc = window.LEGAL(status.legal)[legalTab], body = $("lg-body"); body.replaceChildren();
+    $("lg-title").textContent = doc.title;
+    $("lg-tab-terms").classList.toggle("on", legalTab === "terms"); $("lg-tab-privacy").classList.toggle("on", legalTab === "privacy");
+    doc.sections.forEach(function (sec) { body.appendChild(el("h3", sec[0])); body.appendChild(el("p", sec[1])); });
+    body.appendChild(el("p", "Versão de " + ((status.legal && status.legal.version) || ""), "lg-version"));
+    body.scrollTop = 0;
+    if (acceptMode !== undefined) { show("lg-accept-box", acceptMode, "flex"); }
+    show("legal", true, "flex");
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-legal]");
+    if (!t) return;
+    e.preventDefault();
+    showLegal(t.dataset.legal, t.classList.contains("link") ? false : undefined);
+  });
+  $("lg-back").onclick = function () { show("legal", false); afterAccept = null; };
+  $("lg-check").onchange = function () { $("lg-accept").disabled = !this.checked; };
+
+  // People who signed up before the terms existed (or when they change) accept once, before reporting.
+  function askConsent(next) {
+    afterAccept = next || null;
+    $("lg-check").checked = false; $("lg-accept").disabled = true; $("lg-error").textContent = "";
+    showLegal("terms", true);
+  }
+  $("lg-accept").onclick = async function () {
+    this.disabled = true; $("lg-error").textContent = "";
+    var r = await api("/api/v1/consent", "POST", { accepted_terms: true }).catch(function () { return null; });
+    if (!r || !r.ok) { this.disabled = false; $("lg-error").textContent = "Não foi possível registrar agora. Tente de novo."; return; }
+    me = r.data.user; applyAuth(); show("legal", false);
+    var next = afterAccept; afterAccept = null; if (next) next();
+  };
+
+  var armDeleteAccount = null;
+  $("pf-delete").onclick = async function () {
+    var b = this;
+    if (!b.classList.contains("armed")) {
+      b.classList.add("armed"); b.textContent = "Toque de novo: apaga conta e fotos";
+      armDeleteAccount = setTimeout(function () { b.classList.remove("armed"); b.textContent = "Excluir minha conta"; }, 4000);
+      return;
+    }
+    clearTimeout(armDeleteAccount); b.disabled = true;
+    var r = await api("/api/v1/account", "DELETE").catch(function () { return null; });
+    b.disabled = false; b.classList.remove("armed"); b.textContent = "Excluir minha conta";
+    if (!r || !(r.ok || r.status === 204)) return toast("Não foi possível excluir agora. Tente de novo.");
+    me = null; saveToken(""); applyAuth(); feed = []; goPage("map"); loadHeat(); toast("Conta excluída.");
+  };
 
   // ---- Following a place, and the notifications it brings ----
   function setFollowButton(following) {
@@ -1248,6 +1306,7 @@
   var reportKind = "dirty";
   function openReport(kind, at) {
     if (!me) return openAuth("Entre para reportar lixo no mapa.");
+    if (!me.terms_ok) return askConsent(function () { openReport(kind, at); });
     resetReport();
     reportKind = kind === "cleanup" ? "cleanup" : "dirty";
     reporting = true; placed = null;
@@ -1313,7 +1372,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (reporting) closeReport(); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
+    if (reporting) closeReport(); else if ($("legal").style.display === "flex") show("legal", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {
@@ -1390,6 +1449,9 @@
       form.append("taken_at", taken.toISOString());
       var res = await fetch("/api/v1/trashes", { method: "POST", headers: { "X-Device-Token": token }, body: form });
       var body = await res.json().catch(function () { return {}; });
+      if (res.status === 403 && body.error === "terms_required") {
+        $("send").disabled = false; return askConsent(function () { $("send").click(); });
+      }
       if (res.status === 401 && body.error === "login_required") {
         me = null; applyAuth(); closeReport(); openAuth("Sua sessão expirou. Entre de novo para enviar a foto.");
         return;

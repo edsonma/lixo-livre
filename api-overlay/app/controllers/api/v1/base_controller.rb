@@ -42,6 +42,11 @@ module Api
         end
       end
 
+      # Reporting also needs the current Terms and Privacy Policy accepted (older accounts are asked once).
+      def require_terms!
+        render(json: { error: "terms_required" }, status: :forbidden) unless current_user&.terms_current?
+      end
+
       def require_admin!
         return render(json: { error: "login_required" }, status: :unauthorized) unless current_user
 
@@ -74,7 +79,7 @@ module Api
 
       def serialize_user(user)
         { id: user.id, name: user.name, email: user.email, role: user.role, admin: user.admin?, moderator: user.privileged?,
-          passkeys: user.passkeys.count, google: user.provider == "google" }
+          passkeys: user.passkeys.count, google: user.provider == "google", terms_ok: user.terms_current? }
       end
 
       def serialize_trash(trash)

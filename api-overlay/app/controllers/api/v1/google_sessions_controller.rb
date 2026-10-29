@@ -6,9 +6,14 @@ module Api
       def create
         identity = GoogleIdentity.verify(params.require(:credential))
         user = User.find_by(provider: "google", uid: identity.uid) || User.find_by(email: identity.email)
+        if user.nil? && !Terms.accepted_param?(params[:accepted_terms])
+          return render json: { error: "terms_required" }, status: :unprocessable_entity # a new account needs consent first
+        end
+
         user ||= User.new(email: identity.email, name: identity.name, password: Devise.friendly_token)
         user.provider ||= "google"
         user.uid ||= identity.uid
+        user.accept_terms if user.new_record?
         user.save!
 
         sign_in(:user, user, store: true)

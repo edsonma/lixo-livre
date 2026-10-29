@@ -37,6 +37,8 @@ Rails.application.routes.draw do
       end
 
       resource :session, only: %i[show create destroy]
+      post "consent", to: "consents#create"
+      delete "account", to: "accounts#destroy"
       post "session/google", to: "google_sessions#create"
       post "users", to: "registrations#create"
       get "passkeys", to: "passkeys#index"

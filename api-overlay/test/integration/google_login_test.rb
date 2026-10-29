@@ -3,9 +3,9 @@ require "test_helper"
 class GoogleLoginTest < ActionDispatch::IntegrationTest
   Identity = GoogleIdentity::Identity
 
-  def login_with(identity)
+  def login_with(identity, accepted: true)
     GoogleIdentity.stub(:verify, identity) do
-      post "/api/v1/session/google", params: { credential: "token" }.to_json, headers: { "Content-Type" => "application/json" }
+      post "/api/v1/session/google", params: { credential: "token", accepted_terms: accepted }.to_json, headers: { "Content-Type" => "application/json" }
     end
   end
 
@@ -57,5 +57,19 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
 
     assert_response :service_unavailable
     assert_equal "google_not_configured", response.parsed_body["error"]
+  end
+
+  test "a new account needs the terms accepted, an existing one does not" do
+    login_with(Identity.new(uid: "g-9", email: "fresh@example.com", name: "Fresh"), accepted: false)
+    assert_response :unprocessable_entity
+    assert_equal "terms_required", response.parsed_body["error"]
+    assert_nil User.find_by(email: "fresh@example.com")
+
+    login_with(Identity.new(uid: "g-9", email: "fresh@example.com", name: "Fresh"))
+    assert_response :success
+    assert_predicate User.find_by!(email: "fresh@example.com"), :terms_current?
+
+    login_with(Identity.new(uid: "g-9", email: "fresh@example.com", name: "Fresh"), accepted: false)
+    assert_response :success
   end
 end

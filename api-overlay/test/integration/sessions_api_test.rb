@@ -13,7 +13,7 @@ class SessionsApiTest < ActionDispatch::IntegrationTest
   # --- sign up ---
 
   test "signing up creates the account and logs it in" do
-    json_post "/api/v1/users", { name: "Maria", email: "Maria@Example.com", password: "longenough1" }
+    json_post "/api/v1/users", { name: "Maria", email: "Maria@Example.com", password: "longenough1", accepted_terms: true }
 
     assert_response :created
     body = response.parsed_body["user"]
@@ -22,22 +22,22 @@ class SessionsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "sign up needs a valid email, a password of at least 8 characters, and a free email" do
-    json_post "/api/v1/users", { email: "not-an-email", password: "longenough1" }
+    json_post "/api/v1/users", { email: "not-an-email", password: "longenough1", accepted_terms: true }
     assert_response :unprocessable_entity
 
-    json_post "/api/v1/users", { email: "a@example.com", password: "short" }
+    json_post "/api/v1/users", { email: "a@example.com", password: "short", accepted_terms: true }
     assert_response :unprocessable_entity
 
-    json_post "/api/v1/users", { email: "a@example.com" }
+    json_post "/api/v1/users", { email: "a@example.com", accepted_terms: true }
     assert_response :bad_request
 
     create_user(email: "taken@example.com")
-    json_post "/api/v1/users", { email: "TAKEN@example.com", password: "longenough1" }
+    json_post "/api/v1/users", { email: "TAKEN@example.com", password: "longenough1", accepted_terms: true }
     assert_response :unprocessable_entity
   end
 
   test "the name defaults to the first part of the email" do
-    json_post "/api/v1/users", { email: "zeca@example.com", password: "longenough1" }
+    json_post "/api/v1/users", { email: "zeca@example.com", password: "longenough1", accepted_terms: true }
 
     assert_equal "zeca", response.parsed_body.dig("user", "name")
   end
@@ -92,7 +92,7 @@ class SessionsApiTest < ActionDispatch::IntegrationTest
 
   test "emails in ADMIN_EMAILS become admins when they sign up" do
     with_env("ADMIN_EMAILS" => "boss@example.com, other@example.com") do
-      json_post "/api/v1/users", { email: "Boss@Example.com", password: "longenough1" }
+      json_post "/api/v1/users", { email: "Boss@Example.com", password: "longenough1", accepted_terms: true }
     end
 
     assert_equal true, response.parsed_body.dig("user", "admin")
@@ -112,7 +112,7 @@ class SessionsApiTest < ActionDispatch::IntegrationTest
 
   test "other people are not admins" do
     with_env("ADMIN_EMAILS" => "boss@example.com") do
-      json_post "/api/v1/users", { email: "someone@example.com", password: "longenough1" }
+      json_post "/api/v1/users", { email: "someone@example.com", password: "longenough1", accepted_terms: true }
     end
 
     assert_equal false, response.parsed_body.dig("user", "admin")

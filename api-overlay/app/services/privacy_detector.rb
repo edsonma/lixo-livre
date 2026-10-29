@@ -29,14 +29,30 @@ class PrivacyDetector
       @provider = nil
     end
 
-    # Development, test and DEMO_MODE detect nothing so the pipeline runs end to end. Anywhere else
-    # it refuses to run, so a deployment without a real detector never publishes unblurred photos.
+    # PRIVACY_DETECTOR=anthropic (or "none") picks the detector. With TRASH_VISION_PROVIDER=anthropic set
+    # it is Claude automatically, also in DEMO_MODE, so a real AI never runs on photos without it.
+    # nil when nothing is configured. Tests and development never call an API on their own.
+    def from_env(env = ENV)
+      name = env["PRIVACY_DETECTOR"].to_s.strip.downcase
+      name = "anthropic" if name.empty? && env["TRASH_VISION_PROVIDER"].to_s.strip.downcase == "anthropic" && !Rails.env.test?
+      case name
+      when "", "none" then nil
+      when "anthropic" then Anthropic.new(env: env)
+      else raise NotConfigured, "PRIVACY_DETECTOR=#{name.inspect} is not known. Use anthropic or none"
+      end
+    end
+
+    # Development, test and DEMO_MODE detect nothing (unless a real detector is configured) so the
+    # pipeline runs end to end. Anywhere else it refuses to run, so a deployment without a real
+    # detector never publishes unblurred photos.
     def default_provider(local: DemoMode.fakes_allowed?)
+      detector = from_env
+      return detector if detector
       return ->(_bytes) { [] } if local
 
       lambda do |_bytes|
-        raise NotConfigured, "Set PrivacyDetector.provider to a face and license plate detector " \
-                             "(or DEMO_MODE=true to skip detection, which blurs nothing)"
+        raise NotConfigured, "Set PRIVACY_DETECTOR=anthropic (with ANTHROPIC_API_KEY), or PrivacyDetector.provider to your own " \
+                             "face and license plate detector (or DEMO_MODE=true to skip detection, which blurs nothing)"
       end
     end
 
