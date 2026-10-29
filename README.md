@@ -214,6 +214,10 @@ and the cell shows as cleaned for 30 days (`cleaned: true`). Rejections come bac
 `nothing_to_clean`. An author can withdraw a published report (`DELETE /me/trashes/:id`), which re-scores the cell.
 Set `AUTO_PUBLISH=false` to restore the manual **Publicar** step.
 
+### Privacy: faces, plates and consent
+
+With `TRASH_VISION_PROVIDER=anthropic` the same Claude key also finds faces and license plates (`PrivacyDetector::Anthropic`, `PRIVACY_DETECTOR=none` to disable) before a photo can be published; if it fails, the photo stays private for review. Sign-up requires accepting the Terms and Privacy Policy (`POST /users` and a new Google account need `accepted_terms: true`; the version and date are stored; `POST /consent` for older accounts; reporting returns 403 `terms_required` until accepted). `DELETE /api/v1/account` deletes the account and its reports. `bin/rails db:backup` uploads a database dump to a bucket (see docs/DEPLOY_RAILWAY.md).
+
 ### Plugging in an AI provider
 
 **Ready-made (no code):** set environment variables and redeploy.

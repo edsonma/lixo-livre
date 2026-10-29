@@ -33,6 +33,8 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
    | `GOOGLE_CLIENT_ID` | `123-abc.apps.googleusercontent.com` | Optional: shows the "Continuar com o Google" button. Create an *OAuth client ID* of type *Web application* in Google Cloud Console (APIs & Services → Credentials) and add your Railway domain (`https://<your-domain>`) under *Authorized JavaScript origins*. No client secret is needed. |
    | `APP_ORIGIN` | `https://<your-domain>` | Optional: the site's public origin, used by passkeys (fingerprint / face). Defaults to the address of the request, which is right on Railway. |
    | `AUTO_PUBLISH` | `false` | Optional. On by default (the AI score approves reports for the heatmap). Set `false` to require the manual "Publicar" step. |
+   | `PRIVACY_DETECTOR` | `anthropic` | Blurs faces and license plates with Claude. Automatic when `TRASH_VISION_PROVIDER=anthropic` (also in `DEMO_MODE`); set `none` to turn it off. Optional `PRIVACY_DETECTOR_MODEL` (default `claude-sonnet-5-5`). |
+   | `LEGAL_NAME`, `LEGAL_EMAIL` | your name or company, a contact email | Shown in the Terms and Privacy Policy as the data controller and the contact for LGPD requests. Fill both before launch. |
    | `DEMO_COUNT` | `220` | Optional. |
    | `DEMO_CENTER` | `-23.55,-46.63` | Optional, `lat,lng`. Default is Brasília. |
    | `RAILS_LOG_TO_STDOUT` | `true` | Optional, logs in the Railway panel. |
@@ -66,10 +68,36 @@ Note: if the photo carries GPS in its EXIF and it is far from `lat`/`lng`, the r
 ## Going beyond a demo
 
 - `DEMO_MODE=false`, `SEED_DEMO_DATA` removed, `bin/rails demo:reset` once to clear the fake data.
-- Real `TrashVision.provider` and `PrivacyDetector.provider` (see the README).
+- Real AI: `TRASH_VISION_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` also turns on the face and license plate detector (`PRIVACY_DETECTOR`). With `DEMO_MODE=false` and no detector, uploads stay in review instead of being published.
 - Photos on S3-compatible storage: `ACTIVE_STORAGE_SERVICE=s3`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_ENDPOINT` for R2 or similar. Then the volume is no longer needed.
 - Run `./setup.fish` locally and commit `api/` so `Gemfile.lock` pins the gem versions.
 - A separate worker for jobs, a non-root `USER` in the Dockerfile, and restrict CORS origins.
+
+## Cheap photo storage
+
+Photos can live in any S3-compatible bucket (`ACTIVE_STORAGE_SERVICE=s3`). Cheapest options, by free tier:
+
+| | Free | Beyond free | Notes |
+|---|---|---|---|
+| Cloudflare R2 | 10 GB, 1M writes and 10M reads a month | $0.015/GB-month, **no egress fees** | Best fit: photos are read a lot. Needs a card to enable. |
+| Backblaze B2 | first 10 GB, no card to sign up | about $0.007/GB-month; egress free up to 3x what you store | Cheapest per GB. |
+
+R2 setup: Cloudflare dashboard → R2 → create bucket `lixo-livre-photos` → *Manage API tokens* → Object Read & Write. Then set `ACTIVE_STORAGE_SERVICE=s3`, `S3_BUCKET`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`. For B2 use its S3 endpoint (`https://s3.<region>.backblazeb2.com`) and an application key. Keep the bucket private: the app serves the photos.
+
+## Backups
+
+The database is the part you cannot recreate (accounts, reports, scores). `bin/rails db:backup` makes a compressed `pg_dump` and uploads it to a bucket, keeping the newest 14.
+
+1. Create a **second, private bucket** for backups (for example `lixo-livre-backups`), ideally in a different provider or account than the photos.
+2. In Railway add a service from the same repo, set its start command to `bin/rails db:backup`, and a **Cron Schedule** (for example `0 6 * * *`, daily). Give it the same `DATABASE_URL`/`PG*` variables, the `S3_*` credentials and `BACKUP_BUCKET`. Optional: `BACKUP_PREFIX` (default `db/`), `BACKUP_KEEP` (default 14).
+3. Run it once by hand and check the file appears in the bucket. A backup nobody tested is not a backup: restore one into a scratch database now and then with `pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" file.dump`.
+4. Also turn on Railway's own volume backups for the Postgres service as a second copy.
+
+If `pg_dump` fails with "server version mismatch", the database image is newer than the client in the app image: use a `postgis/postgis` tag matching the Debian client (15), or install a newer `postgresql-client` in the Dockerfile.
+
+## Terms and privacy
+
+The app asks people to accept the Terms of Use and Privacy Policy when they create an account (and once for accounts created before they existed). The text is in `public/legal.js`, the accepted version and date are stored on the user. When you change the text materially, change `Terms::VERSION` (`app/models/terms.rb`) and everyone is asked again before their next report. The texts are a starting draft: have a lawyer review them. People can delete their account and photos from Perfil.
 
 ## Troubleshooting
 
