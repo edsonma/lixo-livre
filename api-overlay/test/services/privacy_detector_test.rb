@@ -68,4 +68,10 @@ class PrivacyDetectorTest < ActiveSupport::TestCase
   test "the production default refuses to run until a real detector is configured" do
     assert_raises(PrivacyDetector::NotConfigured) { PrivacyDetector.default_provider(local: false).call("x") }
   end
+
+  test "SKIP_PRIVACY_DETECTOR turns detection off, even in production" do
+    with_env("SKIP_PRIVACY_DETECTOR" => "true", "PRIVACY_DETECTOR" => "anthropic", "ANTHROPIC_API_KEY" => "k") do
+      assert_equal [], PrivacyDetector.default_provider(local: false).call("x")
+    end
+  end
 end

@@ -45,7 +45,17 @@ class PrivacyDetector
     # Development, test and DEMO_MODE detect nothing (unless a real detector is configured) so the
     # pipeline runs end to end. Anywhere else it refuses to run, so a deployment without a real
     # detector never publishes unblurred photos.
+    # SKIP_PRIVACY_DETECTOR=true turns detection off everywhere (nothing is blurred, nothing is sent to an AI for it).
+    def skip?(env = ENV)
+      %w[1 true yes on].include?(env["SKIP_PRIVACY_DETECTOR"].to_s.strip.downcase)
+    end
+
     def default_provider(local: DemoMode.fakes_allowed?)
+      if skip?
+        Rails.logger.warn("[privacy] SKIP_PRIVACY_DETECTOR is on: faces and license plates are NOT blurred")
+        return ->(_bytes) { [] }
+      end
+
       detector = from_env
       return detector if detector
       return ->(_bytes) { [] } if local

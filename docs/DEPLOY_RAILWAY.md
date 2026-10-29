@@ -34,6 +34,7 @@ The AI is fake and nothing is blurred, so this is for trying and showing the pro
    | `APP_ORIGIN` | `https://<your-domain>` | Optional: the site's public origin, used by passkeys (fingerprint / face). Defaults to the address of the request, which is right on Railway. |
    | `AUTO_PUBLISH` | `false` | Optional. On by default (the AI score approves reports for the heatmap). Set `false` to require the manual "Publicar" step. |
    | `PRIVACY_DETECTOR` | `anthropic` | Blurs faces and license plates with Claude. Automatic when `TRASH_VISION_PROVIDER=anthropic` (also in `DEMO_MODE`); set `none` to turn it off. Optional `PRIVACY_DETECTOR_MODEL` (default `claude-sonnet-5-5`). |
+   | `SKIP_PRIVACY_DETECTOR` | `true` | Optional. Skips face and license plate detection entirely (nothing is blurred, no extra AI call). Not for real users. |
    | `LEGAL_NAME`, `LEGAL_EMAIL` | your name or company, a contact email | Shown in the Terms and Privacy Policy as the data controller and the contact for LGPD requests. Fill both before launch. |
    | `DEMO_COUNT` | `220` | Optional. |
    | `DEMO_CENTER` | `-23.55,-46.63` | Optional, `lat,lng`. Default is Brasília. |
