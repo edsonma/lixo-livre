@@ -23,40 +23,46 @@
     <i class="edge edge-l" aria-hidden="true"></i><i class="edge edge-r" aria-hidden="true"></i>
   </section>
   <section id="page-profile" class="page tab-page" aria-label="Perfil">
-    <header class="page-head"><h1>Perfil</h1></header>
+    <header id="pf-head" class="page-head"><h1>Perfil</h1></header>
     <div id="pf-guest" class="pf-card">
       <h2>Entre para reportar lixo</h2>
       <p>Qualquer pessoa pode ver o mapa. Para enviar fotos e ajudar a limpar o bairro, entre ou crie uma conta.</p>
       <button id="pf-login" class="btn primary" type="button">Entrar ou criar conta</button>
     </div>
-    <div id="pf-user" class="pf-card" style="display:none">
-      <div class="pf-who">
-        <div id="pf-avatar" class="avatar" aria-hidden="true"></div>
-        <div><b id="pf-name"></b><small id="pf-email"></small><span id="pf-role" class="role-badge" style="display:none">Administrador</span></div>
+    <div id="pf-user" class="ig-profile" style="display:none">
+      <div class="ig-top">
+        <button id="pf-add" class="icon-btn" type="button" aria-label="Reportar lixo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M12 8v8M8 12h8"/></svg>
+        </button>
+        <div class="ig-name"><b id="pf-name"></b><span id="pf-role" class="role-badge" style="display:none">Admin</span><i id="pf-dot" class="ig-dot" style="display:none" aria-label="Novas notificações"></i></div>
+        <button id="pf-menu" class="icon-btn" type="button" aria-label="Configurações">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
       </div>
-      <button id="pf-review" class="btn primary" type="button" style="display:none">🛡️ Moderação <span id="pf-review-count" class="count-badge"></span></button>
-      <button id="pf-passkey" class="btn outline" type="button" style="display:none">🔐 Ativar biometria neste aparelho</button>
-      <div id="pf-passkey-info" class="pf-info"></div>
-      <button id="pf-logout" class="btn plain" type="button">Sair</button>
-      <div class="pf-legal"><button type="button" class="link" data-legal="terms">Termos de Uso</button> · <button type="button" class="link" data-legal="privacy">Política de Privacidade</button></div>
-      <button id="pf-delete" class="btn plain danger" type="button">Excluir minha conta</button>
+      <div class="ig-head">
+        <div class="ig-ring"><div id="pf-avatar" class="avatar" aria-hidden="true"></div></div>
+        <div class="ig-stats">
+          <div><b id="st-total">0</b><span>fotos</span></div>
+          <div><b id="st-places">0</b><span>locais</span></div>
+          <div><b id="st-points">0</b><span>pontos</span></div>
+        </div>
+      </div>
+      <div class="ig-bio"><b id="pf-fullname"></b><div id="pf-bio"></div></div>
+      <div class="ig-actions">
+        <button id="pf-report" class="btn plain" type="button">Reportar lixo</button>
+        <button id="pf-mine" class="btn plain" type="button">Meus locais no mapa</button>
+      </div>
     </div>
     <div id="pf-feed" class="pf-feed" style="display:none">
-      <div class="pf-stats">
-        <div><b id="st-total">0</b><span>Fotos</span></div>
-        <div><b id="st-pub">0</b><span>Publicadas</span></div>
-        <div><b id="st-wait">0</b><span>Pendentes</span></div>
-      </div>
-      <div id="pf-impact" class="pf-impact"></div>
-      <div class="pf-tabs" role="tablist">
-        <button type="button" class="on" data-tab="all">Todas</button>
-        <button type="button" data-tab="pub">Publicadas</button>
-        <button type="button" data-tab="wait">Pendentes</button>
-        <button type="button" data-tab="places">Locais</button>
+      <div id="pf-highlights" class="ig-high"></div>
+      <div class="pf-tabs ig-tabs" role="tablist">
+        <button type="button" class="on" data-tab="all" aria-label="Todas as fotos"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg></button>
+        <button type="button" data-tab="pub" aria-label="Publicadas no mapa"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11.5A7 7 0 0 0 5 9.5C5 15 12 21 12 21z"/><path d="M9 9.5l2.2 2.2L15 8"/></svg></button>
+        <button type="button" data-tab="wait" aria-label="Pendentes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+        <button type="button" data-tab="places" aria-label="Meus locais"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
       </div>
       <div class="pf-sort"><label for="pf-sort">Ordenar</label>
-        <select id="pf-sort"><option value="new">Mais recentes</option><option value="dirty">Mais sujas</option><option value="clean">Mais limpas</option></select>
-        <button id="pf-mine" type="button" class="chip-mini">📍 Só minhas fotos no mapa</button></div>
+        <select id="pf-sort"><option value="new">Mais recentes</option><option value="dirty">Mais sujas</option><option value="clean">Mais limpas</option></select></div>
       <div id="feed-grid" class="feed-grid"></div>
       <div id="places-list" class="places-list" style="display:none"></div>
       <div id="feed-empty" class="rv-empty" style="display:none">Você ainda não enviou fotos.<br>Toque no + para reportar lixo.</div>
@@ -166,6 +172,32 @@
   </div>
   <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
   <input id="photo" type="file" accept="image/*" hidden>
+</div>
+
+<div id="settings" class="screen" role="dialog" aria-label="Configurações">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="set-back" class="icon-btn" type="button" aria-label="Voltar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Configurações</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="set-body">
+      <div class="set-who"><div id="set-avatar" class="avatar" aria-hidden="true"></div><div><b id="set-name"></b><small id="pf-email"></small></div></div>
+      <h3>Sua conta</h3>
+      <button id="pf-review" class="set-row" type="button" style="display:none"><span class="ico">🛡️</span><span>Moderação</span><span id="pf-review-count" class="count-badge"></span></button>
+      <button id="pf-passkey" class="set-row" type="button" style="display:none"><span class="ico">🔐</span><span>Ativar biometria neste aparelho</span></button>
+      <div id="pf-passkey-info" class="pf-info"></div>
+      <button id="set-alerts" class="set-row" type="button"><span class="ico">🔔</span><span>Notificações</span></button>
+      <h3>Legal</h3>
+      <button class="set-row" type="button" data-legal="terms"><span class="ico">📄</span><span>Termos de Uso</span></button>
+      <button class="set-row" type="button" data-legal="privacy"><span class="ico">🔒</span><span>Política de Privacidade</span></button>
+      <h3>Sessão</h3>
+      <button id="pf-logout" class="set-row" type="button"><span class="ico">↩️</span><span>Sair</span></button>
+      <button id="pf-delete" class="set-row danger" type="button"><span class="ico">🗑️</span><span>Excluir minha conta</span></button>
+    </div>
+  </div>
 </div>
 
 <div id="auth" class="screen" role="dialog" aria-label="Entrar">

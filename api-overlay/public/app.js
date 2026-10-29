@@ -203,13 +203,13 @@
     $("acct").setAttribute("aria-label", me ? "Conta de " + me.name : "Conta: entrar ou criar conta");
     $("pf-guest").style.display = me ? "none" : "";
     $("pf-user").style.display = me ? "" : "none";
-    show("pf-feed", !!me);
+    show("pf-feed", !!me); show("pf-head", !me);
     pollAlerts();
-    if (!me) return;
+    if (!me) return show("settings", false);
     if (currentPage === "profile") loadFeed();
     var initial = firstName(me).charAt(0).toUpperCase();
-    $("acct-initial").textContent = initial; $("pf-avatar").textContent = initial;
-    $("pf-name").textContent = me.name; $("pf-email").textContent = me.email;
+    $("acct-initial").textContent = initial; $("pf-avatar").textContent = initial; $("set-avatar").textContent = initial;
+    $("pf-name").textContent = me.name; $("pf-fullname").textContent = me.name; $("set-name").textContent = me.name; $("pf-email").textContent = me.email;
     $("pf-role").style.display = me.admin ? "inline-block" : "none";
     $("pf-passkey").style.display = passkeysSupported ? "" : "none";
     $("pf-review").style.display = me.moderator ? "" : "none";
@@ -564,9 +564,30 @@
   }
 
   function renderImpact() {
-    var i = impactOf(feed), box = $("pf-impact"); box.replaceChildren();
-    [[i.places, "locais ajudados"], [i.points, "pontos"], [i.streak, "semanas seguidas"]].forEach(function (x) {
-      var d = el("div"); d.appendChild(el("b", String(x[0]))); d.appendChild(el("span", x[1])); box.appendChild(d);
+    var i = impactOf(feed);
+    $("st-places").textContent = i.places; $("st-points").textContent = i.points;
+    $("pf-bio").textContent = i.streak ? "🔥 " + i.streak + (i.streak > 1 ? " semanas seguidas ajudando a limpar a cidade" : " semana ajudando a limpar a cidade") : "";
+    renderHighlights();
+  }
+
+  // Like Instagram highlights: one round photo per place I helped, ringed in the color of how dirty it is now.
+  function renderHighlights() {
+    var box = $("pf-highlights"); box.replaceChildren();
+    var add = el("button", null, "hl new"); add.type = "button";
+    add.appendChild(el("div", null, "circle")); add.firstChild.appendChild(el("span", "+")); add.appendChild(el("span", "Novo", "t"));
+    add.onclick = function () { openReport(); };
+    box.appendChild(add);
+    groupPlaces(feed.filter(function (r) { return r.published; })).slice(0, 12).forEach(function (g) {
+      var b = el("button", null, "hl"); b.type = "button";
+      var color = g.last.severity != null ? levelOf(g.last.severity).color : "#b9c4bd";
+      var circle = el("div", null, "circle"); circle.style.setProperty("--ring", color);
+      if (g.last.thumb_url) { var img = document.createElement("img"); img.src = photoPath(g.last.thumb_url); img.alt = ""; img.loading = "lazy"; circle.appendChild(img); }
+      else circle.appendChild(el("span", "📍"));
+      b.appendChild(circle);
+      var label = el("span", "Local", "t"); b.appendChild(label);
+      b.onclick = function () { openPlace(g.h3); };
+      box.appendChild(b);
+      addressParts(g.last.lat, g.last.lng).then(function (p) { if (p) label.textContent = p.street || p.area; });
     });
   }
 
@@ -591,8 +612,6 @@
   function renderFeed() {
     var grid = $("feed-grid"); grid.replaceChildren();
     $("st-total").textContent = feed.length;
-    $("st-pub").textContent = feed.filter(function (r) { return r.published; }).length;
-    $("st-wait").textContent = feed.filter(isPending).length;
     renderImpact();
     document.querySelectorAll(".pf-tabs button").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === feedTab); });
     var places = feedTab === "places";
@@ -771,6 +790,13 @@
   };
   $("mp-back").onclick = function () { show("myphoto", false); myPhoto = null; };
 
+  // ---- Profile header buttons and the settings screen (the ☰ menu) ----
+  $("pf-menu").onclick = function () { show("settings", true, "flex"); };
+  $("set-back").onclick = function () { show("settings", false); };
+  $("pf-add").onclick = $("pf-report").onclick = function () { openReport(); };
+  $("set-alerts").onclick = function () { openAlerts(); };
+  $("pf-logout").addEventListener("click", function () { show("settings", false); });
+
   // ---- Terms of Use and Privacy Policy ----
   var legalTab = "terms", afterAccept = null;
   function showLegal(tab, acceptMode) {
@@ -854,6 +880,7 @@
       var b = $(id); if (!b) return;
       b.textContent = count > 9 ? "9+" : String(count); b.style.display = count ? "" : "none";
     });
+    show("pf-dot", !!count && !!me, "inline-block");
   }
   var alertsTimer = null;
   async function pollAlerts() {
@@ -1372,7 +1399,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (reporting) closeReport(); else if ($("legal").style.display === "flex") show("legal", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
+    if (reporting) closeReport(); else if ($("legal").style.display === "flex") show("legal", false); else if ($("settings").style.display === "flex") show("settings", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {
