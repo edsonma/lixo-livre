@@ -757,7 +757,7 @@
     show("myphoto", false); myPhoto = null; toast(message); loadFeed(); loadHeat();
   }
   function ownFailure(res) {
-    return res.status === 404 ? "Esta foto foi enviada por outro aparelho. Use aquele aparelho para publicar ou excluir." : "Não foi possível agora. Tente de novo.";
+    return res.status === 404 ? "Esta foto não está na sua conta (ou já foi excluída)." : "Não foi possível agora. Tente de novo.";
   }
 
   $("mp-primary").onclick = async function () {

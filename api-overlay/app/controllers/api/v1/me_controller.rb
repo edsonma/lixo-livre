@@ -4,7 +4,7 @@ module Api
       FEED_LIMIT = 90
 
       before_action :require_login!
-      before_action :require_device!, except: :feed
+      before_action :require_device!, only: :trashes # the other actions work on the whole account, from any device
 
       # GET /api/v1/me/trashes   the "my pictures" feed in the mobile app (all statuses)
       # photo_url is only given once the photo has been sanitized (faces and
@@ -27,12 +27,12 @@ module Api
       # stage goes protecting_photo -> analyzing -> scored | not_trash | in_review, and done flips to true.
       # "scored" waits for the author: POST .../publish puts it on the map (stage "published"), DELETE throws it away.
       def show
-        render json: serialize_own_trash(@device.trashes.with_attached_photo.find(params[:id]))
+        render json: serialize_own_trash(own_trashes.with_attached_photo.find(params[:id]))
       end
 
       # POST /api/v1/me/trashes/:id/publish   the author confirmed the AI's result: put it on the map
       def publish
-        trash = @device.trashes.with_attached_photo.find(params[:id])
+        trash = own_trashes.with_attached_photo.find(params[:id])
         trash.publish!
         render json: serialize_own_trash(trash)
       rescue Trash::NotPublishable => e
@@ -42,11 +42,18 @@ module Api
       # DELETE /api/v1/me/trashes/:id   "Voltar" / "Excluir": the author takes a report back. If it was
       # on the map it leaves it, and the place is re-scored.
       def destroy
-        @device.trashes.find(params[:id]).withdraw!
+        own_trashes.find(params[:id]).withdraw!
         head :no_content
       end
 
       private
+
+      # Everything this account reported, from any of its devices, plus what this device sent before the
+      # account claimed it (those reports have no user yet).
+      def own_trashes
+        scope = Trash.where(user_id: current_user.id)
+        @device ? scope.or(Trash.where(device_id: @device.id, user_id: nil)) : scope
+      end
 
       def serialize_own_trash(trash)
         ready = trash.sanitized_at.present?

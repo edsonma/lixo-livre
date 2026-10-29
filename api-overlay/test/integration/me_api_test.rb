@@ -146,10 +146,28 @@ class MeApiTest < ActionDispatch::IntegrationTest
     assert_nil trash.reload.published_at
   end
 
-  test "publishing and discarding need a device token" do
-    trash = create_draft_trash(device: @device)
-    post "/api/v1/me/trashes/#{trash.id}/publish"
-    assert_response :unauthorized
+  test "publishing, discarding and polling work from another device of the same account" do
+    other_device = create_device(user: @user)
+    trash = create_draft_trash(device: other_device, user: @user)
+
+    get "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+    assert_response :success
+
+    publish_report(trash.id)
+    assert_response :success
+    assert_predicate trash.reload, :published?
+
+    delete "/api/v1/me/trashes/#{trash.id}", headers: { "X-Device-Token" => @device.token }
+    assert_response :no_content
+    assert_not Trash.exists?(trash.id)
+  end
+
+  test "it works without any device token, and a login is still needed" do
+    trash = create_draft_trash(device: create_device(user: @user), user: @user)
+    delete "/api/v1/me/trashes/#{trash.id}"
+    assert_response :no_content
+
+    sign_out @user
     delete "/api/v1/me/trashes/#{trash.id}"
     assert_response :unauthorized
   end
