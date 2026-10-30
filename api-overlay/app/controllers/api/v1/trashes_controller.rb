@@ -3,6 +3,7 @@ module Api
     class TrashesController < BaseController
       before_action :require_login!, only: :create
       before_action :require_terms!, only: :create
+      before_action :require_verified_email!, only: :create
       before_action :require_device!, only: :create
 
       # GET /api/v1/trashes?lat=&lng=&radius=   (photos near a clicked hotspot)

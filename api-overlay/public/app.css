@@ -328,3 +328,16 @@
   .set-row.danger.armed { background: #b3261e; color: #fff; border-radius: 10px; }
   .set-row .count-badge { margin-left: auto; background: var(--green); color: #fff; }
   .ig-actions .btn.on { background: var(--green); color: #fff; }
+
+  /* ---- password reset, email confirmation, two-factor ---- */
+  .au-forgot { display: block; margin: -4px 0 8px auto; font-size: 14px; }
+  .au-info { color: var(--green-dark); font-size: 14px; line-height: 1.4; margin: 4px 0; }
+  .au-info:empty { display: none; }
+  .pf-verify { display: flex; flex-direction: column; gap: 4px; background: #fff7e0; color: #5b4300; border-radius: 12px; padding: 12px 14px; margin: 4px 0 12px; font-size: 14px; line-height: 1.35; }
+  .pf-verify .btn { margin: 6px 0 0; padding: 8px; font-size: 14px; border-radius: 10px; }
+  .set-state { margin-left: auto; color: var(--muted); font-size: 14px; }
+  .tf-p { line-height: 1.5; margin: 12px 4px; font-size: 15px; }
+  .tf-secret { display: block; background: #eef1ee; border-radius: 10px; padding: 12px; margin: 8px 4px; font: 600 15px/1.6 ui-monospace, monospace; word-break: break-all; white-space: pre-wrap; user-select: all; }
+  .tf-input { display: block; width: calc(100% - 8px); margin: 6px 4px 8px; box-sizing: border-box; font: 600 22px ui-monospace, monospace; letter-spacing: 4px; text-align: center; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+  .tf-link { text-align: center; text-decoration: none; margin: 8px 4px; width: calc(100% - 8px); }
+  #twofa .btn { width: calc(100% - 8px); margin-left: 4px; margin-right: 4px; }

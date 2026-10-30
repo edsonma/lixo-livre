@@ -211,6 +211,9 @@
     $("acct-initial").textContent = initial; $("pf-avatar").textContent = initial; $("set-avatar").textContent = initial;
     $("pf-name").textContent = me.name; $("pf-fullname").textContent = me.name; $("set-name").textContent = me.name; $("pf-email").textContent = me.email;
     $("pf-role").style.display = me.admin ? "inline-block" : "none";
+    show("pf-verify", !!(status.mail && status.mail.enabled && !me.email_verified), "flex");
+    $("pf-verify-email").textContent = me.email;
+    $("set-2fa-state").textContent = me.two_factor ? "Ativa" : "Desativada";
     $("pf-passkey").style.display = passkeysSupported ? "" : "none";
     $("pf-review").style.display = me.moderator ? "" : "none";
     if (me.moderator) refreshReviewCount();
@@ -222,18 +225,28 @@
   }
 
   function authError(msg) { $("au-error").textContent = msg || ""; }
+  var resetToken = null, otpAsked = false;
+  function authInfo(msg) { $("au-info").textContent = msg || ""; }
   function setAuthMode(mode) {
     authMode = mode;
+    var tabs = mode === "in" || mode === "up", titles = { in: "Entrar", up: "Criar conta", forgot: "Recuperar senha", reset: "Nova senha" };
+    show("au-tabs", tabs, "flex");
     $("au-tab-in").classList.toggle("on", mode === "in"); $("au-tab-up").classList.toggle("on", mode === "up");
     $("au-tab-in").setAttribute("aria-selected", mode === "in"); $("au-tab-up").setAttribute("aria-selected", mode === "up");
     show("au-name-row", mode === "up");
-    $("au-submit").textContent = mode === "up" ? "Criar conta" : "Entrar";
-    $("au-title").textContent = mode === "up" ? "Criar conta" : "Entrar";
-    $("au-pass").setAttribute("autocomplete", mode === "up" ? "new-password" : "current-password");
+    show("au-email-row", mode !== "reset");
+    show("au-pass-row", mode !== "forgot");
+    $("au-pass-label").textContent = mode === "reset" ? "Nova senha (mínimo 8 caracteres)" : "Senha";
+    show("au-otp-row", mode === "in" && otpAsked);
+    show("au-forgot", mode === "in", "block");
+    show("au-tologin", mode === "forgot" || mode === "reset", "block");
+    $("au-submit").textContent = { in: "Entrar", up: "Criar conta", forgot: "Enviar link por e-mail", reset: "Salvar nova senha" }[mode];
+    $("au-title").textContent = titles[mode];
+    $("au-pass").setAttribute("autocomplete", mode === "in" ? "current-password" : "new-password");
     show("au-terms-row", mode === "up", "flex");
     show("au-passkey", mode === "in" && passkeysSupported, "block");
-    show("au-alt", true);
-    authError("");
+    show("au-alt", tabs);
+    authError(""); authInfo("");
   }
   function openAuth(why, mode) {
     setAuthMode(mode || "in");
@@ -241,7 +254,7 @@
     show("auth", true, "flex");
     setupGoogle();
   }
-  function closeAuth() { show("auth", false); $("au-pass").value = ""; authError(""); }
+  function closeAuth() { show("auth", false); $("au-pass").value = ""; $("au-otp").value = ""; otpAsked = false; authError(""); authInfo(""); }
 
   function signedIn(user) {
     me = user; applyAuth(); closeAuth();
@@ -251,6 +264,8 @@
     if (r.data && r.data.error === "terms_required") return "É preciso aceitar os Termos de Uso e a Política de Privacidade.";
     if (r.status === 429) return "Muitas tentativas. Tente de novo em alguns minutos.";
     if (r.status === 401 && r.data.error === "invalid_credentials") return "E-mail ou senha incorretos.";
+    if (r.status === 401 && r.data.error === "invalid_otp") return "Código incorreto ou já usado. Tente o próximo código do app.";
+    if (r.data && r.data.error === "invalid_token") return "Este link expirou ou já foi usado. Peça um novo em “Esqueci minha senha”.";
     var errs = r.data.errors || {};
     if (errs.email) return "Esse e-mail é inválido ou já tem conta. Tente entrar.";
     if (errs.password) return "A senha precisa ter pelo menos 8 caracteres.";
@@ -261,18 +276,43 @@
   $("au-form").onsubmit = async function (e) {
     e.preventDefault();
     var email = $("au-email").value.trim(), pass = $("au-pass").value;
+    if (authMode === "forgot") {
+      if (!email) return authError("Digite seu e-mail.");
+      authError(""); $("au-submit").disabled = true;
+      var f = await api("/api/v1/password/forgot", "POST", { email: email }).catch(function () { return null; });
+      $("au-submit").disabled = false;
+      if (!f || !(f.ok || f.status === 204)) return authError(f && f.status === 429 ? "Muitas tentativas. Tente de novo mais tarde." : "Sem conexão. Tente de novo.");
+      return authInfo(status.mail && status.mail.enabled ? "Se existir uma conta com esse e-mail, enviamos um link para criar uma nova senha. Olhe também o spam." : "O envio de e-mails não está ativo neste servidor.");
+    }
+    if (authMode === "reset") {
+      if (pass.length < 8) return authError("A senha precisa ter pelo menos 8 caracteres.");
+      authError(""); $("au-submit").disabled = true;
+      var rr = await api("/api/v1/password/reset", "POST", { token: resetToken, password: pass }).catch(function () { return null; });
+      $("au-submit").disabled = false;
+      if (!rr) return authError("Sem conexão. Tente de novo.");
+      if (!(rr.ok || rr.status === 204)) return authError(failure(rr, "Não foi possível salvar agora."));
+      resetToken = null; $("au-pass").value = ""; setAuthMode("in"); return authInfo("Senha alterada! Entre com a nova senha.");
+    }
     if (!email || !pass) return authError("Preencha e-mail e senha.");
     if (authMode === "up" && pass.length < 8) return authError("A senha precisa ter pelo menos 8 caracteres.");
     if (authMode === "up" && !$("au-terms").checked) return authError("Para criar a conta, marque que leu e aceita os Termos de Uso e a Política de Privacidade.");
     authError(""); $("au-submit").disabled = true;
     try {
+      var body = authMode === "in" ? { email: email, password: pass } : null;
+      if (authMode === "in" && otpAsked) body.otp = $("au-otp").value.trim();
       var r = authMode === "up"
         ? await api("/api/v1/users", "POST", { name: $("au-name").value.trim(), email: email, password: pass, accepted_terms: true })
-        : await api("/api/v1/session", "POST", { email: email, password: pass });
-      if (r.ok) signedIn(r.data.user); else authError(failure(r, "Não foi possível entrar agora."));
+        : await api("/api/v1/session", "POST", body);
+      if (r.ok) { otpAsked = false; $("au-otp").value = ""; signedIn(r.data.user); }
+      else if (r.status === 401 && r.data.error === "otp_required") {
+        otpAsked = true; show("au-otp-row", true); $("au-otp").focus();
+        authError("Digite o código de 6 dígitos do seu app autenticador (ou um código de recuperação).");
+      } else authError(failure(r, "Não foi possível entrar agora."));
     } catch (err) { authError("Sem conexão. Tente de novo."); }
     $("au-submit").disabled = false;
   };
+  $("au-forgot").onclick = function () { var keep = $("au-email").value; setAuthMode("forgot"); $("au-email").value = keep; };
+  $("au-tologin").onclick = function () { setAuthMode("in"); };
   $("au-tab-in").onclick = function () { setAuthMode("in"); };
   $("au-tab-up").onclick = function () { setAuthMode("up"); };
   $("au-back").onclick = closeAuth;
@@ -376,7 +416,7 @@
     $("au-passkey").disabled = false;
   }
   $("au-passkey").onclick = passkeyLogin;
-  loadMe();
+  loadMe().then(handleEmailLinks);
 
   // Hides the map-screen chrome while a report is being made (the report steps use the whole screen).
   function chrome(on) {
@@ -796,6 +836,65 @@
   $("pf-add").onclick = $("pf-report").onclick = function () { openReport(); };
   $("set-alerts").onclick = function () { openAlerts(); };
   $("pf-logout").addEventListener("click", function () { show("settings", false); });
+
+  // ---- Email confirmation, and the links in emails (?verify=, ?reset=) ----
+  $("pf-verify-resend").onclick = async function () {
+    this.disabled = true;
+    var r = await api("/api/v1/email/resend", "POST").catch(function () { return null; });
+    this.disabled = false;
+    toast(r && (r.ok || r.status === 204) ? "Enviamos o e-mail de novo. Olhe também o spam." : "Não foi possível enviar agora. Tente de novo em instantes.");
+  };
+
+  async function handleEmailLinks() {
+    var q = new URLSearchParams(location.search), verify = q.get("verify"), reset = q.get("reset");
+    if (!verify && !reset) return;
+    try { history.replaceState(history.state, "", location.pathname); } catch (e) {} // the token must not stay in the address bar
+    if (verify) {
+      var r = await api("/api/v1/email/verify", "POST", { token: verify }).catch(function () { return null; });
+      if (r && r.ok) { await loadMe(); toast("E-mail confirmado! Agora você já pode reportar."); }
+      else toast("Este link de confirmação expirou ou já foi usado. Entre e peça um novo no perfil.");
+    } else {
+      resetToken = reset; openAuth("Escolha uma nova senha para a sua conta.", "reset");
+    }
+  }
+
+  // ---- Two-factor login (authenticator app) ----
+  function tfError(msg) { $("tf-error").textContent = msg || ""; }
+  function tfShow(section) { ["tf-off", "tf-setup", "tf-codes", "tf-on"].forEach(function (id) { show(id, id === section); }); tfError(""); }
+  $("set-2fa").onclick = function () { tfShow(me && me.two_factor ? "tf-on" : "tf-off"); $("tf-off-code").value = ""; show("twofa", true, "flex"); };
+  $("tf-back").onclick = function () { show("twofa", false); };
+  $("tf-start").onclick = async function () {
+    this.disabled = true; tfError("");
+    var r = await api("/api/v1/two_factor/setup", "POST").catch(function () { return null; });
+    this.disabled = false;
+    if (!r || !r.ok) return tfError("Não foi possível iniciar agora. Tente de novo.");
+    $("tf-secret").textContent = r.data.secret.replace(/(.{4})/g, "$1 ").trim();
+    $("tf-link").href = r.data.uri; $("tf-code").value = "";
+    tfShow("tf-setup");
+  };
+  $("tf-enable").onclick = async function () {
+    this.disabled = true; tfError("");
+    var r = await api("/api/v1/two_factor/enable", "POST", { code: $("tf-code").value.trim() }).catch(function () { return null; });
+    this.disabled = false;
+    if (!r) return tfError("Sem conexão. Tente de novo.");
+    if (!r.ok) return tfError(r.status === 429 ? "Muitas tentativas. Aguarde alguns minutos." : "Código incorreto. Confira o código atual do app (muda a cada 30 segundos).");
+    me = r.data.user; applyAuth();
+    $("tf-codes-list").textContent = r.data.recovery_codes.join("\n");
+    tfShow("tf-codes");
+  };
+  $("tf-copy").onclick = function () {
+    var text = $("tf-codes-list").textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast("Códigos copiados."); }, function () { toast("Selecione e copie os códigos manualmente."); });
+  };
+  $("tf-done").onclick = function () { $("tf-codes-list").textContent = ""; show("twofa", false); toast("Verificação em duas etapas ativada."); };
+  $("tf-disable").onclick = async function () {
+    this.disabled = true; tfError("");
+    var r = await api("/api/v1/two_factor/disable", "POST", { code: $("tf-off-code").value.trim() }).catch(function () { return null; });
+    this.disabled = false;
+    if (!r) return tfError("Sem conexão. Tente de novo.");
+    if (!r.ok) return tfError("Código incorreto.");
+    me = r.data.user; applyAuth(); show("twofa", false); toast("Verificação em duas etapas desativada.");
+  };
 
   // ---- Terms of Use and Privacy Policy ----
   var legalTab = "terms", afterAccept = null;
@@ -1334,6 +1433,7 @@
   function openReport(kind, at) {
     if (!me) return openAuth("Entre para reportar lixo no mapa.");
     if (!me.terms_ok) return askConsent(function () { openReport(kind, at); });
+    if (status.mail && status.mail.enabled && !me.email_verified) { goPage("profile"); return toast("Confirme seu e-mail para reportar. Veja o aviso no perfil."); }
     resetReport();
     reportKind = kind === "cleanup" ? "cleanup" : "dirty";
     reporting = true; placed = null;
@@ -1399,7 +1499,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (reporting) closeReport(); else if ($("legal").style.display === "flex") show("legal", false); else if ($("settings").style.display === "flex") show("settings", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
+    if (reporting) closeReport(); else if ($("twofa").style.display === "flex") show("twofa", false); else if ($("legal").style.display === "flex") show("legal", false); else if ($("settings").style.display === "flex") show("settings", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.
   document.addEventListener("visibilitychange", function () {
@@ -1476,6 +1576,10 @@
       form.append("taken_at", taken.toISOString());
       var res = await fetch("/api/v1/trashes", { method: "POST", headers: { "X-Device-Token": token }, body: form });
       var body = await res.json().catch(function () { return {}; });
+      if (res.status === 403 && body.error === "email_unverified") {
+        me = Object.assign({}, me, { email_verified: false }); applyAuth(); closeReport(); goPage("profile");
+        return toast("Confirme seu e-mail para reportar. Veja o aviso no perfil.");
+      }
       if (res.status === 403 && body.error === "terms_required") {
         $("send").disabled = false; return askConsent(function () { $("send").click(); });
       }

@@ -8,6 +8,7 @@ module Api
 
         user.accept_terms
         user.save!
+        SendUserEmailJob.perform_later(user.id, "verify") if Mailer.configured?
         sign_in(:user, user, store: true)
         render json: { user: serialize_user(user) }, status: :created
       end

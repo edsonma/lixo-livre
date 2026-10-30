@@ -9,6 +9,7 @@ module Api
           demo_mode: DemoMode.enabled?,
           center: { lat: lat, lng: lng },
           legal: { version: Terms::VERSION, name: ENV["LEGAL_NAME"].presence, email: ENV["LEGAL_EMAIL"].presence },
+          mail: { enabled: Mailer.configured? },
           auth: { google_client_id: GoogleIdentity.client_id },
           counts: { reports: Trash.for_heatmap.count, heat_cells: HeatCell.count }
         }

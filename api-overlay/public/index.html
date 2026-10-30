@@ -47,6 +47,11 @@
           <div><b id="st-points">0</b><span>pontos</span></div>
         </div>
       </div>
+      <div id="pf-verify" class="pf-verify" style="display:none">
+        <b>Confirme seu e-mail</b>
+        <span>Enviamos um link para <span id="pf-verify-email"></span>. Sem confirmar, não dá para reportar.</span>
+        <button id="pf-verify-resend" class="btn plain" type="button">Reenviar e-mail</button>
+      </div>
       <div class="ig-bio"><b id="pf-fullname"></b><div id="pf-bio"></div></div>
       <div class="ig-actions">
         <button id="pf-report" class="btn plain" type="button">Reportar lixo</button>
@@ -189,6 +194,7 @@
       <button id="pf-review" class="set-row" type="button" style="display:none"><span class="ico">🛡️</span><span>Moderação</span><span id="pf-review-count" class="count-badge"></span></button>
       <button id="pf-passkey" class="set-row" type="button" style="display:none"><span class="ico">🔐</span><span>Ativar biometria neste aparelho</span></button>
       <div id="pf-passkey-info" class="pf-info"></div>
+      <button id="set-2fa" class="set-row" type="button"><span class="ico">🔑</span><span>Verificação em duas etapas</span><span id="set-2fa-state" class="set-state"></span></button>
       <button id="set-alerts" class="set-row" type="button"><span class="ico">🔔</span><span>Notificações</span></button>
       <h3>Legal</h3>
       <button class="set-row" type="button" data-legal="terms"><span class="ico">📄</span><span>Termos de Uso</span></button>
@@ -211,18 +217,22 @@
     </div>
     <div class="au-body">
       <p id="au-why" class="au-why"></p>
-      <div class="au-tabs" role="tablist">
+      <div id="au-tabs" class="au-tabs" role="tablist">
         <button id="au-tab-in" class="on" type="button" role="tab" aria-selected="true">Entrar</button>
         <button id="au-tab-up" type="button" role="tab" aria-selected="false">Criar conta</button>
       </div>
       <form id="au-form" novalidate>
         <label id="au-name-row" style="display:none">Nome<input id="au-name" autocomplete="name" maxlength="80"></label>
-        <label>E-mail<input id="au-email" type="email" autocomplete="username webauthn" inputmode="email" autocapitalize="off" spellcheck="false"></label>
-        <label>Senha<input id="au-pass" type="password" autocomplete="current-password" minlength="8"></label>
+        <label id="au-email-row">E-mail<input id="au-email" type="email" autocomplete="username webauthn" inputmode="email" autocapitalize="off" spellcheck="false"></label>
+        <label id="au-pass-row"><span id="au-pass-label">Senha</span><input id="au-pass" type="password" autocomplete="current-password" minlength="8"></label>
+        <label id="au-otp-row" style="display:none">Código de verificação<input id="au-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="6 dígitos ou código de recuperação"></label>
+        <button id="au-forgot" class="link au-forgot" type="button">Esqueci minha senha</button>
         <label id="au-terms-row" class="au-consent" style="display:none"><input id="au-terms" type="checkbox"><span>Li e aceito os <button type="button" class="link" data-legal="terms">Termos de Uso</button> e a <button type="button" class="link" data-legal="privacy">Política de Privacidade</button>.</span></label>
+        <div id="au-info" class="au-info" role="status"></div>
         <div id="au-error" class="error" role="alert"></div>
         <button id="au-submit" class="btn primary" type="submit">Entrar</button>
       </form>
+      <button id="au-tologin" class="link" type="button" style="display:none">← Voltar para entrar</button>
       <div id="au-alt" class="au-alt">
         <div class="au-or"><span>ou</span></div>
         <button id="au-passkey" class="btn outline" type="button" style="display:none">🔐 Entrar com biometria</button>
@@ -282,6 +292,44 @@
       <button id="mp-secondary" class="outline" type="button" style="display:none"></button>
     </div>
     <div id="mp-error" class="error" role="alert"></div>
+  </div>
+</div>
+
+<div id="twofa" class="screen" role="dialog" aria-label="Verificação em duas etapas">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="tf-back" class="icon-btn" type="button" aria-label="Voltar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Duas etapas</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="set-body">
+      <div id="tf-off">
+        <p class="tf-p">Além da senha, o login passa a pedir um código de 6 dígitos de um app autenticador (Google Authenticator, Authy, 1Password…). É opcional e deixa sua conta bem mais segura. Entrar com biometria ou com o Google não pede o código.</p>
+        <button id="tf-start" class="btn primary" type="button">Ativar verificação em duas etapas</button>
+      </div>
+      <div id="tf-setup" style="display:none">
+        <p class="tf-p"><b>1.</b> No app autenticador, adicione uma conta e use esta chave (ou toque no botão se estiver no celular):</p>
+        <code id="tf-secret" class="tf-secret"></code>
+        <a id="tf-link" class="btn outline tf-link" href="#">Abrir no app autenticador</a>
+        <p class="tf-p"><b>2.</b> Digite o código de 6 dígitos que o app mostra:</p>
+        <input id="tf-code" class="tf-input" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
+        <button id="tf-enable" class="btn primary" type="button">Confirmar e ativar</button>
+      </div>
+      <div id="tf-codes" style="display:none">
+        <p class="tf-p"><b>Ativado!</b> Guarde estes códigos de recuperação em um lugar seguro. Cada um funciona uma vez, se você perder o celular. <b>Eles não aparecem de novo.</b></p>
+        <pre id="tf-codes-list" class="tf-secret"></pre>
+        <button id="tf-copy" class="btn outline" type="button">Copiar códigos</button>
+        <button id="tf-done" class="btn primary" type="button">Já guardei</button>
+      </div>
+      <div id="tf-on" style="display:none">
+        <p class="tf-p">✅ A verificação em duas etapas está <b>ativa</b>. Para desativar, digite um código do app ou um código de recuperação:</p>
+        <input id="tf-off-code" class="tf-input" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="código">
+        <button id="tf-disable" class="btn plain danger" type="button">Desativar</button>
+      </div>
+      <div id="tf-error" class="error" role="alert"></div>
+    </div>
   </div>
 </div>
 

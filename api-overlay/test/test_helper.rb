@@ -17,7 +17,7 @@ module TrashTestHelpers
 
   def create_user(**attrs)
     User.create!({ email: "user-#{SecureRandom.hex(4)}@example.com", name: "Test User", password: PASSWORD,
-                   consented_at: Time.current, terms_version: Terms::VERSION }.merge(attrs))
+                   consented_at: Time.current, terms_version: Terms::VERSION, email_verified_at: Time.current }.merge(attrs))
   end
 
   def create_device(user: nil)

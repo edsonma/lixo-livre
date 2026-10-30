@@ -11,6 +11,12 @@ module Api
         user = User.find_for_database_authentication(email: params.require(:email).to_s)
         return render(json: { error: "invalid_credentials" }, status: :unauthorized) unless user&.valid_password?(params.require(:password).to_s)
 
+        if user.otp_enabled? # second step: the 6-digit code from the authenticator app, or a recovery code
+          otp = params[:otp].to_s.strip
+          return render(json: { error: "otp_required" }, status: :unauthorized) if otp.empty?
+          return render(json: { error: "invalid_otp" }, status: :unauthorized) unless user.check_otp(otp)
+        end
+
         sign_in_user(user)
         render json: { user: serialize_user(user) }
       end

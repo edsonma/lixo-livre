@@ -27,7 +27,7 @@ else
   rails new api --api -d postgresql --skip-git --skip-docker --skip-kamal --skip-thruster --skip-solid
   cd api
   # Add only the gems the generated Gemfile does not already have (it may list image_processing)
-  for g in activerecord-postgis-adapter h3 rack-cors rack-attack image_processing ruby-vips devise webauthn; do
+  for g in activerecord-postgis-adapter h3 rack-cors rack-attack image_processing ruby-vips devise webauthn sentry-ruby sentry-rails; do
     grep -Eq "^[[:space:]]*gem ['\"]$g['\"]" Gemfile || bundle add "$g"
   done
   grep -Eq "^[[:space:]]*gem ['\"]aws-sdk-s3['\"]" Gemfile || bundle add aws-sdk-s3 --require=false

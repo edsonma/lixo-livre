@@ -47,6 +47,11 @@ module Api
         render(json: { error: "terms_required" }, status: :forbidden) unless current_user&.terms_current?
       end
 
+      # With email configured (Resend), reporting also needs a confirmed email address.
+      def require_verified_email!
+        render(json: { error: "email_unverified" }, status: :forbidden) if Mailer.configured? && !current_user&.email_verified?
+      end
+
       def require_admin!
         return render(json: { error: "login_required" }, status: :unauthorized) unless current_user
 
@@ -79,7 +84,8 @@ module Api
 
       def serialize_user(user)
         { id: user.id, name: user.name, email: user.email, role: user.role, admin: user.admin?, moderator: user.privileged?,
-          passkeys: user.passkeys.count, google: user.provider == "google", terms_ok: user.terms_current? }
+          passkeys: user.passkeys.count, google: user.provider == "google", terms_ok: user.terms_current?,
+          email_verified: user.email_verified?, two_factor: user.otp_enabled? }
       end
 
       def serialize_trash(trash)

@@ -117,3 +117,23 @@ The app asks people to accept the Terms of Use and Privacy Policy when they crea
 | Map is empty | `SEED_DEMO_DATA` not set, or the map is not near `DEMO_CENTER`. Check `/api/v1/status` for counts. |
 | Photos broken after redeploy | No volume on `/app/api/storage`. |
 | Uploads stay `needs_review` | `DEMO_MODE` is not `true` and no providers are configured. |
+
+
+## Email (Resend), password reset, 2FA and error tracking
+
+Domain used in production: **lixolivre.com**.
+
+1. Create an account at https://resend.com, then **Domains → Add Domain → lixolivre.com**. Add the DNS records (SPF, DKIM, and optionally DMARC) it shows at your registrar and wait for "Verified".
+2. **API Keys → Create** (sending access only).
+3. Railway variables:
+
+   | Variable | Value |
+   | --- | --- |
+   | `RESEND_API_KEY` | `re_...` |
+   | `MAIL_FROM` | `Lixo Livre <no-reply@lixolivre.com>` |
+   | `APP_ORIGIN` | `https://lixolivre.com` (links in emails and passkeys use it) |
+   | `SENTRY_DSN` | optional, from a free project at sentry.io (Ruby/Rails) |
+
+4. Add `lixolivre.com` as a Custom Domain in the Railway service and point DNS as Railway instructs.
+
+Behaviour: with `RESEND_API_KEY` set, new accounts must confirm their e-mail before reporting (existing users are already confirmed), and "Esqueci minha senha" sends a one-hour, single-use link. Without it, none of that is required. Two-factor login (authenticator app, 8 recovery codes) is optional per user under Perfil → Configurações. Passkey and Google sign-in skip the code. Errors go to Sentry only when `SENTRY_DSN` is set; personal data is not sent.

@@ -14,6 +14,7 @@ module Api
         user.provider ||= "google"
         user.uid ||= identity.uid
         user.accept_terms if user.new_record?
+        user.email_verified_at ||= Time.current # Google already verified this address
         user.save!
 
         sign_in(:user, user, store: true)

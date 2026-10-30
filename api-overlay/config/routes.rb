@@ -38,6 +38,13 @@ Rails.application.routes.draw do
 
       resource :session, only: %i[show create destroy]
       post "consent", to: "consents#create"
+      post "email/verify", to: "email_verifications#create"
+      post "email/resend", to: "email_verifications#resend"
+      post "password/forgot", to: "passwords#forgot"
+      post "password/reset", to: "passwords#reset"
+      post "two_factor/setup", to: "two_factors#setup"
+      post "two_factor/enable", to: "two_factors#enable"
+      post "two_factor/disable", to: "two_factors#disable"
       delete "account", to: "accounts#destroy"
       post "session/google", to: "google_sessions#create"
       post "users", to: "registrations#create"
