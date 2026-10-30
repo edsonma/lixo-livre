@@ -183,6 +183,7 @@
   $("nav-map").onclick = $("explore-map").onclick = function () { goPage("map"); };
   $("nav-explore").onclick = function () { goPage("explore"); };
   $("nav-profile").onclick = function () { goPage("profile"); };
+  ["nav-map", "nav-explore", "nav-profile"].forEach(function (id) { $(id).addEventListener("click", function () { show("alerts", false); }); });
 
   // ---- Accounts: email + password, Google, and passkeys (fingerprint / face) ----
   var me = null, authMode = "in", googleLoaded = false;

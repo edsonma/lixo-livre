@@ -341,3 +341,7 @@
   .tf-input { display: block; width: calc(100% - 8px); margin: 6px 4px 8px; box-sizing: border-box; font: 600 22px ui-monospace, monospace; letter-spacing: 4px; text-align: center; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
   .tf-link { text-align: center; text-decoration: none; margin: 8px 4px; width: calc(100% - 8px); }
   #twofa .btn { width: calc(100% - 8px); margin-left: 4px; margin-right: 4px; }
+
+  /* Notificações keeps the bottom bar on screen */
+  body:has(#alerts[style*="flex"]) #nav { z-index: 25; position: fixed; }
+  #alerts .cam { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
