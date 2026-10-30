@@ -1437,6 +1437,7 @@
     resetReport();
     reportKind = kind === "cleanup" ? "cleanup" : "dirty";
     reporting = true; placed = null;
+    goPage("map", true); map.resize(); // started from Perfil/Explorar: the map page must be on screen
     if (at) map.jumpTo({ center: at, zoom: 17 });
     goToPlace();
   }
