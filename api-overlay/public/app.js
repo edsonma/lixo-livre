@@ -169,12 +169,18 @@
     document.body.dataset.page = currentPage;
     if (currentPage === "profile") loadFeed(); // fresh grid every time the profile is opened
     if (currentPage === "explore") loadRankings();
-    PAGES.forEach(function (name) {
-      var tab = $("nav-" + name), on = name === currentPage;
+    markNav();
+  }
+  // Notificações is a screen over the pages, so while it is open its tab is the lit one.
+  function markNav() {
+    var alertsOpen = $("alerts").style.display === "flex";
+    PAGES.concat("alerts").forEach(function (name) {
+      var tab = $("nav-" + name), on = alertsOpen ? name === "alerts" : name === currentPage;
       tab.classList.toggle("on", on);
       if (on) tab.setAttribute("aria-current", "page"); else tab.removeAttribute("aria-current");
     });
   }
+  new MutationObserver(markNav).observe($("alerts"), { attributes: true, attributeFilter: ["style"] });
   function goPage(name, instant) {
     pager.scrollTo({ left: PAGES.indexOf(name) * pager.clientWidth, behavior: instant ? "auto" : "smooth" });
   }
