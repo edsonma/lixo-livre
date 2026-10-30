@@ -66,6 +66,9 @@
     map.setFilter("heat", expr); map.setFilter("pins", expr);
   }
 
+  // A new report is scored in the background: look again a few times so the pin appears without a manual refresh.
+  function loadHeatSoon() { [800, 2500, 6000, 12000, 25000].forEach(function (ms) { setTimeout(loadHeat, ms); }); }
+
   async function loadHeat() {
     var b = map.getBounds();
     var bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
@@ -1372,7 +1375,7 @@
     if (!draft) return;
     if (draft.published || draft.stage === "published") { // already on the map: just go and look at it
       var at = [draft.lng, draft.lat]; draft = null; closeReport(); loadHeat();
-      map.jumpTo({ center: at, zoom: 17 }); [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+      map.jumpTo({ center: at, zoom: 17 }); loadHeatSoon();
       return;
     }
     anMessage(""); $("an-publish").disabled = true; $("an-discard").disabled = true;
@@ -1385,7 +1388,7 @@
       $("again").style.display = "inline-block"; $("done").style.display = "inline-block";
       draft = null;
       // the heat cell is re-scored in the background: look again a little later
-      [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+      loadHeatSoon();
     } catch (e) {
       anMessage(e.message); $("an-publish").disabled = false; $("an-discard").disabled = false;
     }
@@ -1539,7 +1542,7 @@
     if (r.stage === "analyzing") return setStatus(true, "Analisando…");
     if (r.stage === "scored") return showAnalysis(r);
     if (r.stage === "published") {
-      [1500, 5000].forEach(function (ms) { setTimeout(loadHeat, ms); });
+      loadHeatSoon();
       return showAnalysis(r);
     }
     if (r.stage === "still_dirty") return setStatus(false, "A foto ainda mostra lixo, então o local continua sujo no mapa. Tire uma foto do local já limpo.");
