@@ -175,14 +175,22 @@
       if (on) tab.setAttribute("aria-current", "page"); else tab.removeAttribute("aria-current");
     });
   }
+  // Keep the notifications screen (a tab) above the bottom nav: expose the nav's real height to CSS.
+  function syncNavHeight() {
+    var nav = $("nav"); if (nav) document.documentElement.style.setProperty("--nav-h", nav.offsetHeight + "px");
+  }
+  syncNavHeight();
+  window.addEventListener("resize", syncNavHeight);
+  window.addEventListener("load", syncNavHeight);
   function goPage(name, instant) {
     pager.scrollTo({ left: PAGES.indexOf(name) * pager.clientWidth, behavior: instant ? "auto" : "smooth" });
   }
   pager.addEventListener("scroll", syncPage, { passive: true });
   window.addEventListener("resize", function () { goPage(currentPage, true); });
-  $("nav-map").onclick = $("explore-map").onclick = function () { goPage("map"); };
-  $("nav-explore").onclick = function () { goPage("explore"); };
-  $("nav-profile").onclick = function () { goPage("profile"); };
+  // Tapping another tab leaves the notifications screen (which stays open above the nav).
+  $("nav-map").onclick = $("explore-map").onclick = function () { show("alerts", false); goPage("map"); };
+  $("nav-explore").onclick = function () { show("alerts", false); goPage("explore"); };
+  $("nav-profile").onclick = function () { show("alerts", false); goPage("profile"); };
 
   // ---- Accounts: email + password, Google, and passkeys (fingerprint / face) ----
   var me = null, authMode = "in", googleLoaded = false;
