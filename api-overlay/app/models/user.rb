@@ -3,6 +3,8 @@ class User < ApplicationRecord
   # cookies handled by Warden; the controllers under Api::V1 do the signing in (see SessionsController).
   devise :database_authenticatable, :validatable
 
+  NAME_MAX = 100
+
   enum :role, { user: 0, moderator: 1, admin: 2 }, default: :user
 
   has_many :devices, dependent: :nullify
@@ -29,8 +31,23 @@ class User < ApplicationRecord
     self.class.admin_emails.include?(email.to_s.downcase)
   end
 
+  # A listed address becomes admin only once it is proven to be the person's: anyone can type any email at
+  # sign-up, so without this the first one to register the owner's address would be the admin.
+  # Without email delivery (no RESEND_API_KEY) nothing can be verified, so, as elsewhere, the check is off.
+  def admin_eligible?
+    listed_as_admin? && (email_verified? || !Mailer.configured?)
+  end
+
   def privileged?
     admin? || moderator?
+  end
+
+  # Same time as a real password check, for a login with an email that has no account: "no such account"
+  # must not answer faster than "wrong password".
+  def self.fake_password_check(password)
+    @fake_digest ||= BCrypt::Password.create("not-a-real-password", cost: Devise.stretches)
+    @fake_digest.is_password?(password.to_s)
+    false
   end
 
   # --- emails: verification and password reset links are signed, expiring tokens (no column needed) ---
@@ -48,7 +65,22 @@ class User < ApplicationRecord
   end
 
   def verify_email!
-    update_column(:email_verified_at, Time.current) unless email_verified?
+    return if email_verified?
+
+    update_column(:email_verified_at, Time.current)
+    save! if admin_eligible? && !admin? # a listed address that has just proven it is theirs
+  end
+
+  # Google has just proven that this email belongs to its owner, but the account was made with it by
+  # someone who never confirmed it (maybe not the owner). Whatever they set up (password, passkeys,
+  # second factor) must not survive: only the owner, through Google, keeps access.
+  def reset_credentials!
+    transaction do
+      self.password = Devise.friendly_token(32)
+      save!
+      passkeys.destroy_all
+      disable_otp!
+    end
   end
 
   # --- optional two-factor login (TOTP) ---
@@ -115,10 +147,11 @@ class User < ApplicationRecord
 
   def set_defaults
     self.name = email.to_s.split("@").first if name.blank?
+    self.name = name.to_s.strip.slice(0, NAME_MAX) # no one-megabyte names (sign-up, Google, or the part before the @)
     self.webauthn_id ||= WebAuthn.generate_user_id
   end
 
   def promote_if_listed
-    self.role = :admin if listed_as_admin? && !admin?
+    self.role = :admin if admin_eligible? && !admin?
   end
 end

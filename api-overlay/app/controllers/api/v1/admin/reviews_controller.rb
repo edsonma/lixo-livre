@@ -30,7 +30,7 @@ module Api
             severity = Integer(params.require(:severity).to_s, exception: false)
             return render(json: { errors: { severity: ["must be a number from 0 to 100"] } }, status: :unprocessable_entity) unless severity
 
-            trash.approve_after_review!(severity: severity, types: params[:trash_types]&.map(&:to_s), reviewer: current_user)
+            trash.approve_after_review!(severity: severity, types: review_types, reviewer: current_user)
           else
             raise Trash::NotReviewable, "report #{trash.id} has no pending reports" unless trash.flags.pending.exists?
 
@@ -56,6 +56,11 @@ module Api
         end
 
         private
+
+        # nil keeps what the AI found; anything else replaces it (and is checked against the known types by the model)
+        def review_types
+          Array.wrap(params[:trash_types]).map(&:to_s) unless params[:trash_types].nil?
+        end
 
         # An un-protected photo (privacy step did not finish) is never shown, even to admins.
         def serialize_review(trash, kind)

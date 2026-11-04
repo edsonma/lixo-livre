@@ -49,6 +49,20 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
     assert response.parsed_body["errors"].key?("bbox")
   end
 
+  test "a malformed bounding box is a client error, not a crash" do
+    ["1,2,3", "a,b,c,d", "1,2,3,4,5", "1,2,3,", "1,2,3,Infinity", "-48,-16,-47.7,1e999"].each do |bbox|
+      get "/api/v1/heatmap", params: { bbox: bbox }
+
+      assert_response :unprocessable_entity, "bbox #{bbox.inspect}"
+    end
+  end
+
+  test "a box wider than the world (a map zoomed far out) is clamped, not refused" do
+    get "/api/v1/heatmap", params: { bbox: "-200,-100,200,100" }
+
+    assert_response :success
+  end
+
   test "needs no login: the map is public" do
     cell(lng: -47.88, lat: -15.79, score: 1)
 

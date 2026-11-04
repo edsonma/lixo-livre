@@ -5,7 +5,10 @@ module Api
     class GoogleSessionsController < BaseController
       def create
         identity = GoogleIdentity.verify(params.require(:credential))
-        user = User.find_by(provider: "google", uid: identity.uid) || User.find_by(email: identity.email)
+        user = User.find_by(provider: "google", uid: identity.uid)
+        if user.nil? && (user = User.find_by(email: identity.email)) && Mailer.configured? && !user.email_verified?
+          user.reset_credentials! # the email was never confirmed: whoever registered it must not keep a way in
+        end
         if user.nil? && !Terms.accepted_param?(params[:accepted_terms])
           return render json: { error: "terms_required" }, status: :unprocessable_entity # a new account needs consent first
         end

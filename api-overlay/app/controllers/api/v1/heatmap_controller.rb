@@ -8,7 +8,8 @@ module Api
       # Optional: days=7|30|90 (only recent reports) and type=plastic (only that kind of trash).
       # With either, cells are scored live from the reports (HeatQuery); without, from the stored scores.
       def index
-        west, south, east, north = params.require(:bbox).split(",").map(&:to_f)
+        west, south, east, north = parse_bbox
+        return render(json: { error: "invalid_params", message: "bbox must be west,south,east,north" }, status: :unprocessable_entity) unless west
 
         days = params[:days].presence&.to_i
         type = params[:type].presence
@@ -24,6 +25,19 @@ module Api
                         .limit(5_000)
 
         render json: { type: "FeatureCollection", features: cells.map(&:to_feature) }
+      end
+
+      private
+
+      # [west, south, east, north] as numbers, or nil. A map zoomed far out can report longitudes beyond
+      # +-180 (the world repeats), so the values are clamped rather than refused.
+      def parse_bbox
+        parts = params.require(:bbox).to_s.split(",", -1)
+        numbers = parts.map { |part| Float(part, exception: false) }
+        return nil unless numbers.size == 4 && numbers.all? { |n| n&.finite? }
+
+        west, south, east, north = numbers
+        [west.clamp(-180, 180), south.clamp(-90, 90), east.clamp(-180, 180), north.clamp(-90, 90)]
       end
     end
   end

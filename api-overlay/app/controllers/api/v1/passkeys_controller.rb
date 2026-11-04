@@ -48,7 +48,7 @@ module Api
         return render(json: { error: "no_challenge" }, status: :unprocessable_entity) unless challenge
 
         user = service.authenticate(params.require(:credential).to_unsafe_h, challenge)
-        user.save! if user.listed_as_admin? && !user.admin?
+        user.save! if user.admin_eligible? && !user.admin?
         sign_in(:user, user, store: true)
         render json: { user: serialize_user(user) }
       rescue PasskeyService::Failed => e
@@ -63,10 +63,12 @@ module Api
       private
 
       # Anything unexpected (a library mismatch, a bad configuration) is logged and shown to the
-      # logged-in person instead of a blank 500, so it can be fixed.
+      # logged-in person instead of a blank 500, so it can be fixed. A visitor (the login options) only
+      # gets a generic message: library errors say too much about the server.
       def passkey_error(error)
         Rails.logger.error("[passkeys] #{error.class}: #{error.message}\n#{error.backtrace.first(6).join("\n")}")
-        render json: { error: "passkey_error", message: "#{error.class}: #{error.message}".truncate(200) }, status: :internal_server_error
+        message = current_user ? "#{error.class}: #{error.message}".truncate(200) : "unexpected error"
+        render json: { error: "passkey_error", message: message }, status: :internal_server_error
       end
 
       def service

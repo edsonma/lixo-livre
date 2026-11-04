@@ -24,9 +24,15 @@ module Api
 
       # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info, kind ("dirty", or "cleanup" for "Já foi limpo")
       def create
+        lat = Float(params.require(:lat).to_s, exception: false)
+        lng = Float(params.require(:lng).to_s, exception: false)
+        unless lat&.between?(-90, 90) && lng&.between?(-180, 180)
+          return render json: { errors: { position: ["is not a valid latitude and longitude"] } }, status: :unprocessable_entity
+        end
+
         trash = @device.trashes.new(
           user: current_user,
-          lonlat: Trash.point(params.require(:lng), params.require(:lat)),
+          lonlat: Trash.point(lng, lat),
           taken_at: params.require(:taken_at),
           extra_info: params[:extra_info],
           kind: params[:kind].presence || "dirty",

@@ -17,6 +17,11 @@ class Rack::Attack
     req.ip if req.post? && req.path == "/api/v1/users"
   end
 
+  # Flags: a person (or a script) should not be able to bury the moderators.
+  throttle("flags/device", limit: 30, period: 1.hour) do |req|
+    (req.get_header("HTTP_X_DEVICE_TOKEN").presence || req.ip) if req.post? && req.path.match?(%r{\A/api/v1/trashes/\d+/flags\z})
+  end
+
   # Emails and second factor: nobody should be able to flood an inbox or guess codes.
   throttle("password-forgot/ip", limit: 5, period: 1.hour) do |req|
     req.ip if req.post? && req.path == "/api/v1/password/forgot"
@@ -32,6 +37,10 @@ class Rack::Attack
 
   throttle("email-resend/ip", limit: 6, period: 1.hour) do |req|
     req.ip if req.post? && req.path == "/api/v1/email/resend"
+  end
+
+  throttle("email-verify/ip", limit: 20, period: 1.hour) do |req|
+    req.ip if req.post? && req.path == "/api/v1/email/verify"
   end
 
   throttle("login/email", limit: 10, period: 10.minutes) do |req|

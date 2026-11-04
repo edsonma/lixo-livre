@@ -56,7 +56,7 @@ module Api
       end
 
       def serialize_own_trash(trash)
-        ready = trash.sanitized_at.present?
+        ready = trash.sanitized_at.present? && trash.photo.attached? # a rejected or taken-down report has no file any more
         {
           id: trash.id,
           ai_status: trash.ai_status,

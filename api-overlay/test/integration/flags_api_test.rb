@@ -3,7 +3,7 @@ require "test_helper"
 class FlagsApiTest < ActionDispatch::IntegrationTest
   setup { @trash = create_published_trash }
 
-  def flag(trash: @trash, device: create_device, reason: "privacy")
+  def flag(trash: @trash, device: create_device(user: create_user), reason: "privacy")
     post "/api/v1/trashes/#{trash.id}/flags", params: { reason: reason }, headers: { "X-Device-Token" => device.token }
   end
 
@@ -54,6 +54,14 @@ class FlagsApiTest < ActionDispatch::IntegrationTest
 
       assert_response :not_found
     end
+  end
+
+  test "flags from anonymous devices are kept for the moderators but do not hide the photo" do
+    3.times { flag(device: create_device) }
+
+    assert_equal 3, @trash.flags.pending.count
+    get "/api/v1/trashes/#{@trash.id}"
+    assert_response :success
   end
 
   test "three people flagging a photo takes it off the public map" do

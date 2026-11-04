@@ -8,8 +8,10 @@ module Api
       end
 
       def create
+        password = params.require(:password).to_s
         user = User.find_for_database_authentication(email: params.require(:email).to_s)
-        return render(json: { error: "invalid_credentials" }, status: :unauthorized) unless user&.valid_password?(params.require(:password).to_s)
+        User.fake_password_check(password) unless user
+        return render(json: { error: "invalid_credentials" }, status: :unauthorized) unless user&.valid_password?(password)
 
         if user.otp_enabled? # second step: the 6-digit code from the authenticator app, or a recovery code
           otp = params[:otp].to_s.strip
@@ -29,7 +31,7 @@ module Api
       private
 
       def sign_in_user(user)
-        user.save! if user.listed_as_admin? && !user.admin? # ADMIN_EMAILS changed since they signed up
+        user.save! if user.admin_eligible? && !user.admin? # ADMIN_EMAILS changed since they signed up
         user.update_column(:last_sign_in_at, Time.current)
         sign_in(:user, user, store: true)
       end

@@ -33,8 +33,10 @@ class Trash < ApplicationRecord
   validates :photo, :lonlat, :taken_at, presence: true
   validates :severity, inclusion: { in: SEVERITY_RANGE }, allow_nil: true
   validates :kind, inclusion: { in: KINDS }
+  validates :extra_info, length: { maximum: 1000 }, on: :create
   validate :trash_types_are_known
   validate :photo_is_acceptable
+  validate :taken_at_not_in_the_future, on: :create
 
   before_validation :set_h3_index, if: -> { lonlat.present? }
 
@@ -158,6 +160,7 @@ class Trash < ApplicationRecord
       flags.pending.update_all(status: "resolved")
       update!(hidden_at: hidden_at || Time.current)
     end
+    photo.purge_later # a photo's address keeps working after it leaves the map unless the file is deleted
   end
 
   # True when the EXIF data read at upload contradicts the report (see the constants above).
@@ -188,6 +191,12 @@ class Trash < ApplicationRecord
   def trash_types_are_known
     unknown = trash_types - TYPES
     errors.add(:trash_types, "unknown: #{unknown.join(', ')}") if unknown.any?
+  end
+
+  # taken_at is what the person says, and it sets how much the report weighs on the map (older counts less):
+  # a time in the future would make a report outweigh everything else for as long as it lies ahead.
+  def taken_at_not_in_the_future
+    errors.add(:taken_at, "cannot be in the future") if taken_at && taken_at > 1.day.from_now # a day: time zones, wrong phone clocks
   end
 
   def photo_is_acceptable
