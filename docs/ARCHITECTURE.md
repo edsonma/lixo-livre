@@ -63,8 +63,46 @@ the folders under `test/services/`.
 - Keep behaviour changes out of structural commits. These refactors were made in small steps, each of which
   leaves the existing tests untouched.
 
-## Not yet done
+# Web app architecture (`public/`)
 
-`public/app.js` is still one 1,600-line closure. Its sections are marked (`// ---- Section ----`), but they
-share about thirty mutable variables (`me`, `map`, `place`, `draft`, `stream`, ...) and every section calls
-four to six others, so a safe split needs a shared-state module and a browser test harness first.
+The page is plain ES modules with no build step: `index.html` loads `js/main.js` with
+`<script type="module">`. One module per screen, plus a few shared ones.
+
+| Module | Holds |
+|---|---|
+| `main.js` | Calls each module's `boot()` in the order the page has always wired itself |
+| `core.js`, `map.js`, `map_filters.js`, `search.js` | Start-up and server status; the map, heat layer and pins; period/type filters; address search |
+| `navigation.js`, `explore.js`, `place.js`, `my_photos.js`, `settings.js` | The three pages (Explorar, Mapa, Perfil), the place screen, the profile grid |
+| `auth.js`, `passkeys.js`, `email_links.js`, `two_factor.js`, `terms.js`, `account_deletion.js` | Everything about accounts |
+| `notifications.js`, `moderation.js` | Following places and alerts; the moderator queues |
+| `report.js`, `camera.js`, `report_flow.js`, `analysis.js`, `analysis_types.js` | Reporting a photo: place, camera, upload, AI result |
+| `dom.js`, `api.js`, `state.js`, `back_button.js` | Small DOM helpers, JSON requests and the device token, shared state, the phone's back button |
+
+How it fits together:
+
+- A module that needs something from another one `import`s it by name. A variable only its own module writes
+  is a live `export`, so importers always see the current value.
+- A variable that **more than one module writes** lives in `state.js` as `state.x`. Adding a key there is the
+  deliberate way to share mutable state, so it stays visible in one place. Prefer passing values to functions.
+- Code that wires buttons (`$("x").onclick = ...`) runs in the module's `boot()`, never at import time, so
+  import order cannot change behaviour. `main.js` is the single place that decides the order. It matters where
+  two handlers use the same element or event, and `loadMe()` starts only after the earlier wiring.
+- Modules never reach into another screen's DOM. Use the owner's exported function (`openAuth`, `openPlace`).
+
+Served by Rails as static files with `no-cache`, so a deploy is picked up on the next load; the browser
+revalidates each module (a cheap "not modified"). If the number of modules grows a lot, bundle them.
+
+## Testing the web app
+
+`tools/test/frontend_smoke.py` serves `public/` with a small fake API and drives the real screens in headless
+Chromium (boot, tabs, sign-in, profile, settings, moderation, tapping a pin, the whole report flow). For each
+of 35 steps it records the open screen, key texts, the API calls made and console errors.
+
+```fish
+pip install playwright; playwright install chromium     # once
+python3 tools/test/frontend_smoke.py --check tools/test/frontend_smoke.expected.json
+```
+
+It prints `frontend trace identical` or a diff. When you change behaviour on purpose, regenerate the expected
+file (`python3 tools/test/frontend_smoke.py > tools/test/frontend_smoke.expected.json`) and review the diff.
+Run it before and after any refactor of `public/js`.

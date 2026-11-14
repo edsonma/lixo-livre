@@ -327,9 +327,16 @@ bin/rails test test/integration                   # API + end-to-end privacy pip
 | Folder | Covers |
 |---|---|
 | `test/services` | `Demo::Mode`, `Demo::Plan`, `Demo::Seeder`, `Ops::PipelineRecovery`, `Photos::Sanitizer` and `Photos::ExifPreserver` (EXIF kept but cleaned: no preview image, maker note or private fields; rotation, resize, alpha, mosaic where asked and nowhere else), `Photos::Metadata` (both byte orders, truncated and fuzzed input), `Photos::PrivacyRegion`, `Photos::PrivacyDetector`, `TrashVision`, `Geo` |
+| `test/use_cases`, `test/queries`, `test/serializers` | the login, registration, report and moderation use cases; the moderation queues; the JSON shapes |
 | `test/models` | validations, scopes, EXIF cross-check, flag auto-hide, heat score and decay, device claiming |
 | `test/jobs` | `SanitizePhotoJob` (original deleted, retries, fail-closed), `ValidateTrashJob`, heat cell jobs |
 | `test/integration` | every endpoint (including `/status` and the seeded demo data), plus `photo_privacy_pipeline_test.rb`: upload a photo with GPS in its EXIF and follow it to the map |
+
+The web app has its own browser test, which needs no Rails or database (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#testing-the-web-app)):
+
+```fish
+python3 tools/test/frontend_smoke.py --check tools/test/frontend_smoke.expected.json
+```
 
 The AI and detector are replaced by fakes in `test/test_helper.rb` (`TrashVision.provider`,
 `Photos::PrivacyDetector.provider`), so tests need no network and no API keys.
