@@ -10,13 +10,6 @@ import { goPage } from "./navigation.js";
 import { setFollowButton } from "./notifications.js";
 import { openReport } from "./report_flow.js";
 
-// Meters per pixel at this zoom, times ~40px: clicking selects roughly that area.
-function radiusFor() {
-  var lat = map.getCenter().lat * Math.PI / 180;
-  var mpp = 156543.03 * Math.cos(lat) / Math.pow(2, map.getZoom());
-  return Math.max(10, Math.min(500, Math.round(mpp * 40)));
-}
-
 var MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export var place = null;

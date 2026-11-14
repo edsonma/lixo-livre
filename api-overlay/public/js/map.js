@@ -21,8 +21,6 @@ var LEVELS = [
 
 export function levelOf(score) { return LEVELS.find(function (l) { return score < l.max; }); }
 
-function levelLabel(s) { return levelOf(s).label; }
-
 // Round pin with a trash can, one image per level, drawn here so there is nothing to download.
 function pinImage(color) {
   var size = 72, c = document.createElement("canvas"); c.width = c.height = size;
