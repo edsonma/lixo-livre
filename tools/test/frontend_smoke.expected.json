@@ -1,0 +1,1489 @@
+[
+ {
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/session",
+   "GET /api/v1/status"
+  ],
+  "errors": [
+   "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  ],
+  "step": "boot as guest",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "map pins render",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/rankings"
+  ],
+  "errors": [],
+  "step": "tab Explorar",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-explore"
+   ],
+   "open": [],
+   "page": "explore",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "tab Perfil (guest)",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "tab Mapa",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "bell as guest asks to sign in",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "auth"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close auth",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "open account",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "auth"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "switch to sign up",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "auth"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Criar conta",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "switch to sign in",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "auth"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [
+   "POST /api/v1/session"
+  ],
+  "errors": [
+   "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  ],
+  "step": "wrong password",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "auth"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-error": "E-mail ou senha incorretos.",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/admin/reviews",
+   "GET /api/v1/notifications",
+   "POST /api/v1/session"
+  ],
+  "errors": [],
+  "step": "sign in",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "0",
+    "toast": "Olá, Ana!"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/me/feed"
+  ],
+  "errors": [],
+  "step": "tab Perfil (signed in)",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Olá, Ana!"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "open settings",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "settings"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "open two-factor",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "settings",
+    "twofa"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close two-factor",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "settings"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close settings",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "open a photo from my feed",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "myphoto"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close my photo",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/notifications",
+   "POST /api/v1/notifications/read"
+  ],
+  "errors": [],
+  "step": "open notifications",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-alerts"
+   ],
+   "open": [
+    "alerts"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close notifications via Mapa tab",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 0,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/admin/reviews",
+   "GET /api/v1/me/feed"
+  ],
+  "errors": [],
+  "step": "open moderation",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "settings",
+    "review"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close moderation",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/places/89a8100c0d3ffff"
+  ],
+  "errors": [],
+  "step": "tap a pin on the map",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "detail"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "close place screen",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "filter chips: Sujo",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap"
+  ],
+  "errors": [],
+  "step": "report button -> confirm place",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "place"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap"
+  ],
+  "errors": [],
+  "step": "cancel place",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap"
+  ],
+  "errors": [],
+  "step": "report button again -> confirm",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "place"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "confirm place -> camera",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "camera"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "take a photo",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "camera"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/me/trashes/9",
+   "POST /api/v1/devices",
+   "POST /api/v1/trashes"
+  ],
+  "errors": [],
+  "step": "send the photo",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "analysis"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap",
+   "POST /api/v1/me/trashes/9/publish"
+  ],
+  "errors": [],
+  "step": "publish the result",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "report"
+   ],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap"
+  ],
+  "errors": [],
+  "step": "close report screen",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "DELETE /api/v1/session",
+   "GET /api/v1/heatmap",
+   "GET /api/v1/me/feed"
+  ],
+  "errors": [],
+  "step": "sign out",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Você saiu."
+   }
+  }
+ }
+]
