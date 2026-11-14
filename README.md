@@ -138,7 +138,7 @@ items, 50-70 a clear pile or a lot of mixed loose litter (bags are not required;
 1. Mobile creates an anonymous device (`POST /devices`) and keeps the token.
 2. Mobile uploads a photo with GPS and `taken_at` (`POST /trashes`). It starts as `pending` and is not public.
 3. `SanitizePhotoJob` makes the photo safe (see [Photo privacy](#photo-privacy)) and deletes the original.
-4. `ValidateTrashJob` shows the sanitized photo to the AI (`app/services/trash_vision.rb`), which decides if
+4. `ValidateTrashJob` shows the sanitized photo to the AI (`app/services/trash_vision.rb`; the layout of the backend is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), which decides if
    it is trash and sets `severity` (0-100) and `trash_types`, or sends it to `needs_review`.
 5. Validated reports re-score their H3 cell (`RefreshHeatCellJob`). A nightly job applies time decay.
 6. Web reads `GET /heatmap` for the colored layer and `GET /trashes` for the photos of a clicked spot.
