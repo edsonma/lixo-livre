@@ -10,7 +10,7 @@ module Api
       before_action :require_login!, only: %i[registration_options create index destroy]
 
       def index
-        render json: current_user.passkeys.order(:created_at).map { |p| serialize_passkey(p) }
+        render json: PasskeySerializer.collection(current_user.passkeys.order(:created_at))
       end
 
       def registration_options
@@ -26,7 +26,7 @@ module Api
         return render(json: { error: "no_challenge" }, status: :unprocessable_entity) unless challenge
 
         passkey = service.register(current_user, params.require(:credential).to_unsafe_h, challenge, nickname: params[:nickname])
-        render json: serialize_passkey(passkey), status: :created
+        render json: PasskeySerializer.call(passkey), status: :created
       rescue PasskeyService::Failed => e
         render json: { error: "passkey_failed", message: e.message }, status: :unprocessable_entity
       rescue ActionController::ParameterMissing
@@ -50,7 +50,7 @@ module Api
         user = service.authenticate(params.require(:credential).to_unsafe_h, challenge)
         user.save! if user.admin_eligible? && !user.admin?
         sign_in(:user, user, store: true)
-        render json: { user: serialize_user(user) }
+        render json: { user: UserSerializer.call(user) }
       rescue PasskeyService::Failed => e
         render json: { error: "passkey_failed", message: e.message }, status: :unauthorized
       end
@@ -73,10 +73,6 @@ module Api
 
       def service
         PasskeyService.new(request)
-      end
-
-      def serialize_passkey(passkey)
-        { id: passkey.id, nickname: passkey.nickname, created_at: passkey.created_at, last_used_at: passkey.last_used_at }
       end
     end
   end

@@ -15,11 +15,11 @@ module Api
                        .includes(:user).with_attached_photo
                        .order(taken_at: :desc).limit(30)
 
-        render json: trashes.map { |t| serialize_trash(t) }
+        render json: TrashSerializer.collection(trashes, urls: self)
       end
 
       def show
-        render json: serialize_trash(Trash.for_heatmap.find(params[:id]))
+        render json: TrashSerializer.call(Trash.for_heatmap.find(params[:id]), urls: self)
       end
 
       # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info, kind ("dirty", or "cleanup" for "Já foi limpo")

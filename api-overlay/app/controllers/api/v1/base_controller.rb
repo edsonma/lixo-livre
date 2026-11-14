@@ -81,27 +81,6 @@ module Api
         configured = [ENV["APP_ORIGIN"], *ENV.fetch("WEB_ORIGINS", "").split(",")].map { |o| o.to_s.strip }.reject(&:empty?)
         origin.sub(%r{\Ahttps?://}, "") == request.host_with_port || configured.include?(origin)
       end
-
-      def serialize_user(user)
-        { id: user.id, name: user.name, email: user.email, role: user.role, admin: user.admin?, moderator: user.privileged?,
-          passkeys: user.passkeys.count, google: user.provider == "google", terms_ok: user.terms_current?,
-          email_verified: user.email_verified?, two_factor: user.otp_enabled? }
-      end
-
-      def serialize_trash(trash)
-        {
-          id: trash.id,
-          kind: trash.kind,
-          severity: trash.severity,
-          trash_types: trash.trash_types,
-          extra_info: trash.extra_info,
-          taken_at: trash.taken_at,
-          lat: trash.lonlat.y,
-          lng: trash.lonlat.x,
-          photo_url: url_for(trash.photo),
-          uploader: trash.user ? { id: trash.user_id, name: trash.user.name } : nil # nil = anonymous
-        }
-      end
     end
   end
 end

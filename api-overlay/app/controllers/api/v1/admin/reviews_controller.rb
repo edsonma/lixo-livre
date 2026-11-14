@@ -19,8 +19,8 @@ module Api
 
           render json: {
             counts: { held: held.count, flagged: flagged.count },
-            held: held.includes(:user, :flags).with_attached_photo.limit(LIMIT).map { |t| serialize_review(t, "held") },
-            flagged: flagged.includes(:user, :flags).with_attached_photo.limit(LIMIT).map { |t| serialize_review(t, "flagged") }
+            held: ReviewSerializer.collection(held.includes(:user, :flags).with_attached_photo.limit(LIMIT), urls: self, kind: "held"),
+            flagged: ReviewSerializer.collection(flagged.includes(:user, :flags).with_attached_photo.limit(LIMIT), urls: self, kind: "flagged")
           }
         end
 
@@ -60,43 +60,6 @@ module Api
         # nil keeps what the AI found; anything else replaces it (and is checked against the known types by the model)
         def review_types
           Array.wrap(params[:trash_types]).map(&:to_s) unless params[:trash_types].nil?
-        end
-
-        # An un-protected photo (privacy step did not finish) is never shown, even to admins.
-        def serialize_review(trash, kind)
-          protected_photo = trash.sanitized_at.present?
-          meta = trash.photo_meta || {}
-          payload = trash.ai_payload || {}
-          {
-            id: trash.id,
-            kind: kind,
-            reason: review_reason(trash, kind),
-            flags: trash.flags.map(&:reason).tally,
-            severity: trash.severity,
-            trash_types: trash.trash_types,
-            ai_confidence: trash.ai_confidence,
-            extra_info: trash.extra_info,
-            taken_at: trash.taken_at,
-            created_at: trash.created_at,
-            lat: trash.lonlat.y,
-            lng: trash.lonlat.x,
-            exif_distance_m: meta["exif_distance_m"],
-            hold_reason: payload["hold_reason"],
-            uploader: trash.user && { id: trash.user_id, name: trash.user.name, email: trash.user.email },
-            hidden: trash.hidden_at.present?,
-            photo_protected: protected_photo,
-            photo_url: protected_photo && trash.photo.attached? ? url_for(trash.photo) : nil
-          }
-        end
-
-        def review_reason(trash, kind)
-          return "flagged" if kind == "flagged"
-
-          payload = trash.ai_payload || {}
-          return payload["reason"] if payload["reason"].present?
-          return "failed" if payload["hold_reason"].present?
-
-          trash.ai_confidence ? "low_confidence" : "other"
         end
       end
     end

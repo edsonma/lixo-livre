@@ -21,7 +21,7 @@ module Api
         user.save!
 
         sign_in(:user, user, store: true)
-        render json: { user: serialize_user(user) }
+        render json: { user: UserSerializer.call(user) }
       rescue GoogleIdentity::NotConfigured
         render json: { error: "google_not_configured" }, status: :service_unavailable
       rescue GoogleIdentity::Invalid => e

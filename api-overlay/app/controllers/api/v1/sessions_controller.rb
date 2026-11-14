@@ -4,7 +4,7 @@ module Api
     # password, DELETE logs out. Google and passkeys have their own endpoints below.
     class SessionsController < BaseController
       def show
-        render json: { user: current_user && serialize_user(current_user) }
+        render json: { user: current_user && UserSerializer.call(current_user) }
       end
 
       def create
@@ -20,7 +20,7 @@ module Api
         end
 
         sign_in_user(user)
-        render json: { user: serialize_user(user) }
+        render json: { user: UserSerializer.call(user) }
       end
 
       def destroy

@@ -10,6 +10,11 @@ class HeatCell < ApplicationRecord
     )
   }
 
+  # The stored cells for these H3 indexes, at the resolution reports are grouped in, keyed by index.
+  def self.by_h3(h3_indexes)
+    where(h3_index: h3_indexes, resolution: Trash::H3_RESOLUTION).index_by(&:h3_index)
+  end
+
   # severity (0-100) * 0.5^(age_days / half_life) for one report. How a whole cell is scored
   # (confidence, one-person-a-day, confirmations, cleanups) is in HeatScore.
   def self.weight(severity, taken_at, now: Time.current)
