@@ -15,27 +15,23 @@ module Api
                        .includes(:user).with_attached_photo
                        .order(taken_at: :desc).limit(30)
 
-        render json: trashes.map { |t| serialize_trash(t) }
+        render json: TrashSerializer.collection(trashes, urls: self)
       end
 
       def show
-        render json: serialize_trash(Trash.for_heatmap.find(params[:id]))
+        render json: TrashSerializer.call(Trash.for_heatmap.find(params[:id]), urls: self)
       end
 
       # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info, kind ("dirty", or "cleanup" for "Já foi limpo")
+      # The AI scores it asynchronously; the app polls /me/trashes for the result.
       def create
-        trash = @device.trashes.new(
-          user: current_user,
-          lonlat: Trash.point(params.require(:lng), params.require(:lat)),
-          taken_at: params.require(:taken_at),
-          extra_info: params[:extra_info],
-          kind: params[:kind].presence || "dirty",
-          photo: params[:photo]
+        trash = SubmitReport.call(
+          device: @device, user: current_user, photo: params[:photo], extra_info: params[:extra_info], kind: params[:kind],
+          lat: params.require(:lat), lng: params.require(:lng), taken_at: params.require(:taken_at)
         )
-        trash.save!
-
-        # The AI scores it asynchronously; the app polls /me/trashes for the result.
         render json: { id: trash.id, ai_status: trash.ai_status }, status: :accepted
+      rescue SubmitReport::InvalidPosition
+        render json: { errors: { position: ["is not a valid latitude and longitude"] } }, status: :unprocessable_entity
       end
     end
   end

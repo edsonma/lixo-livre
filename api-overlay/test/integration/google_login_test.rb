@@ -1,10 +1,10 @@
 require "test_helper"
 
 class GoogleLoginTest < ActionDispatch::IntegrationTest
-  Identity = GoogleIdentity::Identity
+  Identity = Auth::GoogleIdentity::Identity
 
   def login_with(identity, accepted: true)
-    GoogleIdentity.stub(:verify, identity) do
+    Auth::GoogleIdentity.stub(:verify, identity) do
       post "/api/v1/session/google", params: { credential: "token", accepted_terms: accepted }.to_json, headers: { "Content-Type" => "application/json" }
     end
   end
@@ -42,7 +42,7 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
   end
 
   test "an invalid token is refused" do
-    GoogleIdentity.stub(:verify, ->(_) { raise GoogleIdentity::Invalid, "bad" }) do
+    Auth::GoogleIdentity.stub(:verify, ->(_) { raise Auth::GoogleIdentity::Invalid, "bad" }) do
       post "/api/v1/session/google", params: { credential: "x" }.to_json, headers: { "Content-Type" => "application/json" }
     end
 
@@ -71,5 +71,30 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
 
     login_with(Identity.new(uid: "g-9", email: "fresh@example.com", name: "Fresh"), accepted: false)
     assert_response :success
+  end
+  test "linking Google to an account whose email nobody confirmed locks out whoever registered it" do
+    with_env("RESEND_API_KEY" => "re_test") do
+      squatter = create_user(email: "victim@example.com", email_verified_at: nil)
+      squatter.passkeys.create!(external_id: "cred-1", public_key: "pk")
+
+      login_with(Identity.new(uid: "g-7", email: "victim@example.com", name: "Victim"))
+
+      assert_response :success
+      squatter.reload
+      assert_not squatter.valid_password?(PASSWORD)
+      assert_empty squatter.passkeys
+      assert_equal ["g-7", true], [squatter.uid, squatter.email_verified?]
+    end
+  end
+
+  test "an account with a confirmed email keeps its password when Google is linked to it" do
+    with_env("RESEND_API_KEY" => "re_test") do
+      user = create_user(email: "ana@example.com")
+
+      login_with(Identity.new(uid: "g-9", email: "ana@example.com", name: "Ana"))
+
+      assert_response :success
+      assert user.reload.valid_password?(PASSWORD)
+    end
   end
 end

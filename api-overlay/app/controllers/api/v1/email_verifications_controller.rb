@@ -9,12 +9,12 @@ module Api
         return render(json: { error: "invalid_token" }, status: :unprocessable_entity) unless user
 
         user.verify_email!
-        render json: { user: current_user&.id == user.id ? serialize_user(user) : nil }
+        render json: { user: current_user&.id == user.id ? UserSerializer.call(user) : nil }
       end
 
       # POST /api/v1/email/resend   sends the confirmation email again
       def resend
-        return render(json: { error: "mail_not_configured" }, status: :service_unavailable) unless Mailer.configured?
+        return render(json: { error: "mail_not_configured" }, status: :service_unavailable) unless Messaging::Mailer.configured?
 
         SendUserEmailJob.perform_later(current_user.id, "verify") unless current_user.email_verified?
         head :no_content

@@ -10,7 +10,7 @@ module Api
         return render(json: { error: "already_enabled" }, status: :unprocessable_entity) if current_user.otp_enabled?
 
         secret = current_user.start_otp_setup!
-        render json: { secret: secret, uri: Totp.uri(secret, current_user.email) }
+        render json: { secret: secret, uri: Auth::Totp.uri(secret, current_user.email) }
       end
 
       # POST /api/v1/two_factor/enable  { code }  -> { recovery_codes: [...], user }  (the codes are shown only now)
@@ -18,7 +18,7 @@ module Api
         codes = current_user.enable_otp!(params.require(:code).to_s)
         return render(json: { error: "invalid_code" }, status: :unprocessable_entity) unless codes
 
-        render json: { recovery_codes: codes, user: serialize_user(current_user) }
+        render json: { recovery_codes: codes, user: UserSerializer.call(current_user) }
       end
 
       # POST /api/v1/two_factor/disable  { code }  a current code or a recovery code
@@ -26,7 +26,7 @@ module Api
         return render(json: { error: "invalid_code" }, status: :unprocessable_entity) unless current_user.otp_enabled? && current_user.check_otp(params.require(:code).to_s)
 
         current_user.disable_otp!
-        render json: { user: serialize_user(current_user) }
+        render json: { user: UserSerializer.call(current_user) }
       end
     end
   end

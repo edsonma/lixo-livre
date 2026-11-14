@@ -12,16 +12,14 @@ class Trash < ApplicationRecord
   # How dirty the AI says the spot is: 0 (spotless) to 100 (large illegal dump). Set by the AI only.
   SEVERITY_RANGE = (0..100).freeze
 
-  # A photo whose EXIF position is farther than this from the reported spot, or whose EXIF time
-  # differs from the reported time by more than this, goes to human review.
-  # (EXIF has no time zone, so the time tolerance must cover any zone offset.)
-  MAX_EXIF_DISTANCE_M = 1_000
-  MAX_EXIF_TIME_SKEW = 2.days
-
   belongs_to :device
   belongs_to :user, optional: true
   has_many :flags, dependent: :destroy
   has_one_attached :photo
+
+  include ExifCheck
+  include Moderation
+  include Publishing
 
   enum :ai_status, {
     pending: "pending",
@@ -33,8 +31,10 @@ class Trash < ApplicationRecord
   validates :photo, :lonlat, :taken_at, presence: true
   validates :severity, inclusion: { in: SEVERITY_RANGE }, allow_nil: true
   validates :kind, inclusion: { in: KINDS }
+  validates :extra_info, length: { maximum: 1000 }, on: :create
   validate :trash_types_are_known
   validate :photo_is_acceptable
+  validate :taken_at_not_in_the_future, on: :create
 
   before_validation :set_h3_index, if: -> { lonlat.present? }
 
@@ -66,14 +66,6 @@ class Trash < ApplicationRecord
     update!(hidden_at: Time.current)
   end
 
-  class NotPublishable < StandardError; end
-
-  # A report goes to the map as soon as the AI validates it (the AI's confidence decides how much it
-  # weighs, see HeatScore). AUTO_PUBLISH=false brings back the manual "Publicar" step for the author.
-  def self.auto_publish?
-    !%w[false 0 no off].include?(ENV["AUTO_PUBLISH"].to_s.strip.downcase)
-  end
-
   def cleanup?
     kind == "cleanup"
   end
@@ -81,101 +73,6 @@ class Trash < ApplicationRecord
   # Is there something to clean here? A cleanup only makes sense where trash was reported.
   def dirty_reports_nearby?
     Trash.for_heatmap.where(h3_index: h3_index, kind: "dirty").where.not(id: id).exists?
-  end
-
-  def published?
-    published_at.present?
-  end
-
-  # Scored, photo sanitized, still private: the author may publish it.
-  def publishable?
-    validated? && sanitized_at.present? && hidden_at.nil? && !published?
-  end
-
-  def publish!
-    raise NotPublishable, "report #{id} cannot be published (status #{ai_status}, published: #{published?})" unless publishable?
-
-    update!(published_at: Time.current)
-  end
-
-  # The author changed their mind. Only an unpublished report can be thrown away this way.
-  def discard_draft!
-    raise NotPublishable, "report #{id} is already published" if published?
-
-    destroy!
-  end
-
-  # The author takes a report back, published or not. A published one leaves the map and the cell is re-scored.
-  def withdraw!
-    destroy!
-  end
-
-  # Used when the pipeline cannot finish: keeps the report private until a human looks at it.
-  def hold_for_review!(reason)
-    update_columns(
-      ai_status: "needs_review",
-      ai_payload: (ai_payload || {}).merge("hold_reason" => reason),
-      updated_at: Time.current
-    )
-  end
-
-  # --- human review (admins and moderators) ---
-
-  class NotReviewable < StandardError; end
-
-  # A held report (needs_review): a person looked at the protected photo and decided the severity.
-  # It goes to the map right away. A photo that was never sanitized cannot be approved.
-  def approve_after_review!(severity:, types: nil, reviewer: nil)
-    raise NotReviewable, "report #{id} is not waiting for review" unless needs_review?
-    raise NotReviewable, "report #{id} has no protected photo yet" unless sanitized_at.present?
-
-    update!(
-      ai_status: :validated, severity: severity, trash_types: types.nil? ? trash_types : types,
-      validated_at: Time.current, published_at: Time.current,
-      ai_payload: (ai_payload || {}).merge("reviewed" => "approved", "reviewer_id" => reviewer&.id)
-    )
-  end
-
-  def reject_after_review!(reviewer: nil)
-    raise NotReviewable, "report #{id} is not waiting for review" unless needs_review?
-
-    update_columns(ai_status: "rejected", updated_at: Time.current,
-                   ai_payload: (ai_payload || {}).merge("reviewed" => "rejected", "reviewer_id" => reviewer&.id))
-    photo.purge_later
-  end
-
-  # A published photo people reported: the moderator says it is fine ...
-  def keep_after_flags!
-    transaction do
-      flags.pending.update_all(status: "dismissed")
-      update!(hidden_at: nil)
-    end
-  end
-
-  # ... or takes it down.
-  def take_down_after_flags!
-    transaction do
-      flags.pending.update_all(status: "resolved")
-      update!(hidden_at: hidden_at || Time.current)
-    end
-  end
-
-  # True when the EXIF data read at upload contradicts the report (see the constants above).
-  def metadata_suspicious?
-    distance = photo_meta["exif_distance_m"]
-    return true if distance && distance > max_exif_distance_m
-
-    exif_time = photo_meta["exif_taken_at"]
-    return false unless exif_time
-
-    (Time.zone.parse(exif_time) - taken_at).abs > MAX_EXIF_TIME_SKEW.to_i
-  end
-
-  # EXIF_MAX_DISTANCE_M (meters) overrides the default; useful for testing with gallery photos.
-  def max_exif_distance_m
-    Float(ENV.fetch("EXIF_MAX_DISTANCE_M", MAX_EXIF_DISTANCE_M))
-  rescue ArgumentError
-    MAX_EXIF_DISTANCE_M
   end
 
   private
@@ -188,6 +85,12 @@ class Trash < ApplicationRecord
   def trash_types_are_known
     unknown = trash_types - TYPES
     errors.add(:trash_types, "unknown: #{unknown.join(', ')}") if unknown.any?
+  end
+
+  # taken_at is what the person says, and it sets how much the report weighs on the map (older counts less):
+  # a time in the future would make a report outweigh everything else for as long as it lies ahead.
+  def taken_at_not_in_the_future
+    errors.add(:taken_at, "cannot be in the future") if taken_at && taken_at > 1.day.from_now # a day: time zones, wrong phone clocks
   end
 
   def photo_is_acceptable

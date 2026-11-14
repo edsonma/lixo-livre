@@ -99,6 +99,21 @@ class SessionsApiTest < ActionDispatch::IntegrationTest
     assert_predicate User.find_by(email: "boss@example.com"), :admin?
   end
 
+  test "with email delivery on, a listed address does not make an admin until the email is confirmed" do
+    with_env("ADMIN_EMAILS" => "boss@example.com", "RESEND_API_KEY" => "re_test") do
+      json_post "/api/v1/users", { email: "boss@example.com", password: "longenough1", accepted_terms: true }
+      assert_equal false, response.parsed_body.dig("user", "admin")
+      get "/api/v1/admin/reviews"
+      assert_response :forbidden
+
+      token = User.find_by!(email: "boss@example.com").generate_token_for(:email_verification)
+      json_post "/api/v1/email/verify", { token: token }
+
+      assert_response :success
+      assert_predicate User.find_by!(email: "boss@example.com"), :admin?
+    end
+  end
+
   test "an existing account is promoted at its next login once its email is listed" do
     user = create_user(email: "later@example.com")
     assert_not_predicate user, :admin?

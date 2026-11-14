@@ -6,16 +6,17 @@ module Api
 
       # GET /api/v1/heatmap?bbox=west,south,east,north  ->  GeoJSON FeatureCollection of cell centers
       # Optional: days=7|30|90 (only recent reports) and type=plastic (only that kind of trash).
-      # With either, cells are scored live from the reports (HeatQuery); without, from the stored scores.
+      # With either, cells are scored live from the reports (Heat::Query); without, from the stored scores.
       def index
-        west, south, east, north = params.require(:bbox).split(",").map(&:to_f)
+        west, south, east, north = parse_bbox
+        return render(json: { error: "invalid_params", message: "bbox must be west,south,east,north" }, status: :unprocessable_entity) unless west
 
         days = params[:days].presence&.to_i
         type = params[:type].presence
-        days = nil unless HeatQuery::PERIODS.include?(days)
+        days = nil unless Heat::Query::PERIODS.include?(days)
         type = nil unless Trash::TYPES.include?(type)
         if days || type
-          cells = HeatQuery.in_bbox(west, south, east, north, days: days, type: type)
+          cells = Heat::Query.in_bbox(west, south, east, north, days: days, type: type)
           return render json: { type: "FeatureCollection", features: cells.select { |c| c.score > MIN_SCORE || c.cleaned? }.map(&:to_feature) }
         end
 
@@ -24,6 +25,19 @@ module Api
                         .limit(5_000)
 
         render json: { type: "FeatureCollection", features: cells.map(&:to_feature) }
+      end
+
+      private
+
+      # [west, south, east, north] as numbers, or nil. A map zoomed far out can report longitudes beyond
+      # +-180 (the world repeats), so the values are clamped rather than refused.
+      def parse_bbox
+        parts = params.require(:bbox).to_s.split(",", -1)
+        numbers = parts.map { |part| Float(part, exception: false) }
+        return nil unless numbers.size == 4 && numbers.all? { |n| n&.finite? }
+
+        west, south, east, north = numbers
+        [west.clamp(-180, 180), south.clamp(-90, 90), east.clamp(-180, 180), north.clamp(-90, 90)]
       end
     end
   end

@@ -2,10 +2,10 @@ require "test_helper"
 
 # What the demo page does against a freshly seeded database.
 class DemoDataApiTest < ActionDispatch::IntegrationTest
-  setup { DemoSeeder.call(count: 60) }
+  setup { Demo::Seeder.call(count: 60) }
 
   test "the heatmap near the demo center has cells" do
-    lat, lng = DemoMode.center
+    lat, lng = Demo::Mode.center
     get "/api/v1/heatmap", params: { bbox: [lng - 0.2, lat - 0.2, lng + 0.2, lat + 0.2].join(",") }
 
     assert_response :success

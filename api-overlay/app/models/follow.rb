@@ -15,6 +15,8 @@ class Follow < ApplicationRecord
       follow.last_cleaned_at = cell&.cleaned_at if follow.new_record?
       follow.save!
     end
+  rescue ActiveRecord::RecordNotUnique # the same person tapped twice at once: it already exists
+    find_by!(user: user, h3_index: h3_index)
   end
 
   private

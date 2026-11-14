@@ -26,13 +26,13 @@ class TrashVisionTest < ActiveSupport::TestCase
 
   test "the provider never gets EXIF, even when the stored photo carries it" do
     trash = create_trash(fixture: "exif_gps.jpg") # the stored file has GPS and camera data
-    assert PhotoMetadata.read(trash.photo.download).exif?
+    assert Photos::Metadata.read(trash.photo.download).exif?
     seen = nil
     TrashVision.provider = ->(image) { seen = image; answer }
 
     TrashVision.analyze(trash.photo)
 
-    assert_not PhotoMetadata.read(seen.bytes).exif?
+    assert_not Photos::Metadata.read(seen.bytes).exif?
     assert_not_includes seen.bytes, "FakeCam"
   end
 

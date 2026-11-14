@@ -7,13 +7,13 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
 
   test "replaces the stored photo with a sanitized copy that keeps GPS and camera EXIF" do
     trash = create_trash(fixture: "exif_gps.jpg")
-    assert PhotoMetadata.read(trash.photo.download).exif?, "the upload starts with EXIF"
+    assert Photos::Metadata.read(trash.photo.download).exif?, "the upload starts with EXIF"
 
     SanitizePhotoJob.perform_now(trash.id)
 
     trash.reload
     stored = trash.photo.download
-    assert_predicate PhotoMetadata.read(stored), :gps?
+    assert_predicate Photos::Metadata.read(stored), :gps?
     assert_includes stored.b, "FakeCam"
     assert_equal true, trash.photo_meta["metadata_kept"]
     assert_equal "image/jpeg", trash.photo.content_type
@@ -27,7 +27,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
 
     trash.reload
     stored = trash.photo.download
-    assert_not PhotoMetadata.read(stored).exif?
+    assert_not Photos::Metadata.read(stored).exif?
     assert_not_includes stored.b, "FakeCam"
     assert_equal false, trash.photo_meta["metadata_kept"]
   end
@@ -45,7 +45,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
   end
 
   test "blurs the regions the detector finds and records what it did" do
-    PrivacyDetector.provider = ->(_bytes) { [FACE] }
+    Photos::PrivacyDetector.provider = ->(_bytes) { [FACE] }
     trash = create_trash(fixture: "exif_gps.jpg")
     before = deviation_in(decode(trash.photo.download), INSIDE)
 
@@ -121,7 +121,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
   end
 
   test "fails closed: if the detector is down the report stays private and goes to review" do
-    PrivacyDetector.provider = ->(_bytes) { raise "detector is down" }
+    Photos::PrivacyDetector.provider = ->(_bytes) { raise "detector is down" }
     vision_calls = 0
     TrashVision.provider = ->(_photo) { vision_calls += 1; vision_result }
     trash = create_trash(fixture: "exif_gps.jpg")
@@ -138,7 +138,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
 
   test "retries a failing detector before giving up" do
     attempts = 0
-    PrivacyDetector.provider = ->(_bytes) { attempts += 1; raise "flaky" }
+    Photos::PrivacyDetector.provider = ->(_bytes) { attempts += 1; raise "flaky" }
     trash = create_trash
 
     perform_enqueued_jobs { SanitizePhotoJob.perform_later(trash.id) }
@@ -148,7 +148,7 @@ class SanitizePhotoJobTest < ActiveSupport::TestCase
 
   test "recovers when the detector comes back during the retries" do
     attempts = 0
-    PrivacyDetector.provider = ->(_bytes) { attempts += 1; attempts < 3 ? raise("flaky") : [] }
+    Photos::PrivacyDetector.provider = ->(_bytes) { attempts += 1; attempts < 3 ? raise("flaky") : [] }
     trash = create_trash
 
     perform_enqueued_jobs(only: SanitizePhotoJob) { SanitizePhotoJob.perform_later(trash.id) }

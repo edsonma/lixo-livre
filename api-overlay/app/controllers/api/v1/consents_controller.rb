@@ -10,7 +10,7 @@ module Api
 
         current_user.accept_terms
         current_user.save!
-        render json: { user: serialize_user(current_user) }
+        render json: { user: UserSerializer.call(current_user) }
       end
     end
   end

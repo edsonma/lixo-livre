@@ -4,21 +4,16 @@ module Api
     # password, DELETE logs out. Google and passkeys have their own endpoints below.
     class SessionsController < BaseController
       def show
-        render json: { user: current_user && serialize_user(current_user) }
+        render json: { user: current_user && UserSerializer.call(current_user) }
       end
 
       def create
-        user = User.find_for_database_authentication(email: params.require(:email).to_s)
-        return render(json: { error: "invalid_credentials" }, status: :unauthorized) unless user&.valid_password?(params.require(:password).to_s)
+        password = params.require(:password).to_s
+        outcome = AuthenticateWithPassword.call(email: params.require(:email).to_s, password: password, otp: params[:otp])
+        return render(json: { error: outcome.error }, status: :unauthorized) unless outcome.success?
 
-        if user.otp_enabled? # second step: the 6-digit code from the authenticator app, or a recovery code
-          otp = params[:otp].to_s.strip
-          return render(json: { error: "otp_required" }, status: :unauthorized) if otp.empty?
-          return render(json: { error: "invalid_otp" }, status: :unauthorized) unless user.check_otp(otp)
-        end
-
-        sign_in_user(user)
-        render json: { user: serialize_user(user) }
+        sign_in_user(outcome.value)
+        render json: { user: UserSerializer.call(outcome.value) }
       end
 
       def destroy
@@ -29,7 +24,7 @@ module Api
       private
 
       def sign_in_user(user)
-        user.save! if user.listed_as_admin? && !user.admin? # ADMIN_EMAILS changed since they signed up
+        user.promote_if_eligible!
         user.update_column(:last_sign_in_at, Time.current)
         sign_in(:user, user, store: true)
       end

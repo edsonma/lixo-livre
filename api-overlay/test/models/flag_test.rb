@@ -3,7 +3,8 @@ require "test_helper"
 class FlagTest < ActiveSupport::TestCase
   setup { @trash = create_published_trash }
 
-  def flag!(reason: "privacy", device: create_device, **attrs)
+  # by default each flag comes from a different logged-in person
+  def flag!(reason: "privacy", device: create_device(user: create_user), **attrs)
     Flag.create!(trash: @trash, device: device, reason: reason, **attrs)
   end
 
@@ -27,7 +28,7 @@ class FlagTest < ActiveSupport::TestCase
     assert_predicate flag!, :pending?
   end
 
-  test "three pending flags from different devices hide the photo" do
+  test "three pending flags from different accounts hide the photo" do
     2.times { flag! }
     assert_nil @trash.reload.hidden_at
 
@@ -35,6 +36,20 @@ class FlagTest < ActiveSupport::TestCase
 
     assert_not_nil @trash.reload.hidden_at
     assert_not_includes Trash.for_heatmap.pluck(:id), @trash.id
+  end
+
+  test "anonymous devices are free to make, so their flags never hide a photo by themselves" do
+    4.times { flag!(device: create_device) }
+
+    assert_nil @trash.reload.hidden_at
+    assert_equal 4, @trash.flags.pending.count # the moderators still see every one
+  end
+
+  test "one person flagging from several devices counts once" do
+    person = create_user
+    3.times { flag!(device: create_device(user: person)) }
+
+    assert_nil @trash.reload.hidden_at
   end
 
   test "dismissed and resolved flags do not count towards hiding" do

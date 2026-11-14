@@ -1,6 +1,6 @@
 class Flag < ApplicationRecord
   REASONS = %w[not_trash privacy inappropriate duplicate wrong_location].freeze
-  AUTO_HIDE_THRESHOLD = 3 # pending flags that hide a photo until a moderator looks
+  AUTO_HIDE_THRESHOLD = 3 # people (logged-in accounts) whose pending flags hide a photo until a moderator looks
 
   belongs_to :trash
   belongs_to :device
@@ -14,7 +14,12 @@ class Flag < ApplicationRecord
 
   private
 
+  # Anyone can create devices (and so flags) for free, so three anonymous flags would let a single person
+  # take down any photo. Only distinct accounts count towards hiding; every flag still reaches the moderators.
   def auto_hide_trash
-    trash.hide! if trash.flags.pending.count >= AUTO_HIDE_THRESHOLD && trash.hidden_at.nil?
+    return unless trash.hidden_at.nil?
+
+    people = trash.flags.pending.joins(:device).where.not(devices: { user_id: nil }).distinct.count("devices.user_id")
+    trash.hide! if people >= AUTO_HIDE_THRESHOLD
   end
 end

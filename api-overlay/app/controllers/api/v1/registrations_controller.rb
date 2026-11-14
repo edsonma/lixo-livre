@@ -3,14 +3,14 @@ module Api
     # POST /api/v1/users   { name, email, password, accepted_terms: true }  creates the account and logs it in.
     class RegistrationsController < BaseController
       def create
-        user = User.new(email: params.require(:email).to_s, name: params[:name].to_s.strip.presence, password: params.require(:password).to_s)
-        return render(json: { error: "terms_required" }, status: :unprocessable_entity) unless Terms.accepted_param?(params[:accepted_terms])
+        outcome = RegisterAccount.call(
+          email: params.require(:email).to_s, password: params.require(:password).to_s,
+          name: params[:name], accepted_terms: params[:accepted_terms]
+        )
+        return render(json: { error: outcome.error }, status: :unprocessable_entity) unless outcome.success?
 
-        user.accept_terms
-        user.save!
-        SendUserEmailJob.perform_later(user.id, "verify") if Mailer.configured?
-        sign_in(:user, user, store: true)
-        render json: { user: serialize_user(user) }, status: :created
+        sign_in(:user, outcome.value, store: true)
+        render json: { user: UserSerializer.call(outcome.value) }, status: :created
       end
     end
   end

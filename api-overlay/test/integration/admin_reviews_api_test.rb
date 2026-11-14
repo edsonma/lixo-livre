@@ -61,7 +61,7 @@ class AdminReviewsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "says why a report was held" do
-    held_trash(payload: { "hold_reason" => "sanitize_failed: PrivacyDetector::NotConfigured" })
+    held_trash(payload: { "hold_reason" => "sanitize_failed: Photos::PrivacyDetector::NotConfigured" })
     held_trash(payload: {}).update_columns(ai_confidence: 0.4)
 
     get "/api/v1/admin/reviews"
@@ -188,6 +188,27 @@ class AdminReviewsApiTest < ActionDispatch::IntegrationTest
     assert_not_nil trash.reload.hidden_at
     assert_equal ["resolved"], trash.flags.map(&:status)
     assert_not_includes Trash.for_heatmap.pluck(:id), trash.id
+  end
+
+  test "taking a flagged photo down also deletes the file, so its old address stops working" do
+    trash = create_published_trash
+    flag!(trash)
+
+    assert_enqueued_with(job: ActiveStorage::PurgeJob) { json_post "/api/v1/admin/reviews/#{trash.id}/reject" }
+
+    assert_response :success
+  end
+
+  test "trash_types in an odd shape is an ordinary answer, never a crash" do
+    held = held_trash
+
+    json_post "/api/v1/admin/reviews/#{held.id}/approve", severity: 50, trash_types: { plastic: true }
+    assert_response :unprocessable_entity
+    assert_predicate held.reload, :needs_review?
+
+    json_post "/api/v1/admin/reviews/#{held.id}/approve", severity: 50, trash_types: "plastic"
+    assert_response :success
+    assert_equal %w[plastic], held.reload.trash_types
   end
 
   test "the status of the login shows whether the person can moderate" do

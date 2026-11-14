@@ -26,7 +26,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
 
   test "an uploaded photo is blurred and validated, keeping its EXIF, before it reaches the map" do
     travel_to NOW do
-      PrivacyDetector.provider = ->(_bytes) { [PLATE] }
+      Photos::PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       original = decode(file_fixture("exif_gps.jpg").binread)
 
       with_env("AUTO_PUBLISH" => "false") { perform_enqueued_jobs { upload_exif_photo } } # manual "Publicar" step
@@ -37,7 +37,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
       assert_equal({ "license_plate" => 1 }, trash.photo_meta["redactions"])
 
       stored = trash.photo.download
-      assert_predicate PhotoMetadata.read(stored), :gps?, "GPS and camera data are kept"
+      assert_predicate Photos::Metadata.read(stored), :gps?, "GPS and camera data are kept"
       assert_includes stored.b, "FakeCam"
       assert_operator deviation_in(decode(stored), INSIDE), :<, deviation_in(original, INSIDE) * 0.35
 
@@ -74,14 +74,14 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
 
   test "the AI is shown the blurred photo without any EXIF, never the original" do
     travel_to NOW do
-      PrivacyDetector.provider = ->(_bytes) { [PLATE] }
+      Photos::PrivacyDetector.provider = ->(_bytes) { [PLATE] }
       seen = nil
       TrashVision.provider = ->(photo) { seen = photo.bytes; vision_result }
 
       perform_enqueued_jobs { upload_exif_photo }
 
       assert_not_nil seen
-      assert_not PhotoMetadata.read(seen).exif?
+      assert_not Photos::Metadata.read(seen).exif?
       assert_not_includes seen.b, "FakeCam"
     end
   end
@@ -106,7 +106,7 @@ class PhotoPrivacyPipelineTest < ActionDispatch::IntegrationTest
 
   test "fails closed: when the detector is down the photo is held, private, and never analyzed" do
     travel_to NOW do
-      PrivacyDetector.provider = ->(_bytes) { raise "detector is down" }
+      Photos::PrivacyDetector.provider = ->(_bytes) { raise "detector is down" }
       vision_calls = 0
       TrashVision.provider = ->(_photo) { vision_calls += 1; vision_result }
 

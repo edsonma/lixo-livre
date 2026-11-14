@@ -94,7 +94,7 @@ class HeatCellTest < ActiveSupport::TestCase
     assert_in_delta(-15.79, feature[:geometry][:coordinates][1], 1e-6)
   end
 
-  # --- the scoring rules (the arithmetic itself is in test/services/heat_score_test.rb) ---
+  # --- the scoring rules (the arithmetic itself is in test/services/heat/score_test.rb) ---
 
   test "a cleanup erases the reports before it and the cell remembers when" do
     dirty = create_published_trash(severity: 80, taken_at: 3.days.ago)
@@ -142,5 +142,14 @@ class HeatCellTest < ActiveSupport::TestCase
 
     assert_equal 3, cell.reports_count
     assert_in_delta 80, cell.score, 2
+  end
+  test "by_h3 returns the stored cells keyed by their index, and skips the ones that do not exist" do
+    h3 = H3.to_string(H3.from_geo_coordinates([-15.79, -47.88], Trash::H3_RESOLUTION))
+    cell = HeatCell.create!(h3_index: h3, resolution: Trash::H3_RESOLUTION, lonlat: Trash.point(-47.88, -15.79), score: 10, reports_count: 1)
+
+    found = HeatCell.by_h3([h3, "89a8100c0d3ffff"])
+
+    assert_equal [h3], found.keys
+    assert_equal cell, found[h3]
   end
 end

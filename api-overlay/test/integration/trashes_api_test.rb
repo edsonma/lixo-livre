@@ -124,6 +124,28 @@ class TrashesApiTest < ActionDispatch::IntegrationTest
     assert response.parsed_body["errors"].key?("taken_at")
   end
 
+  test "POST with a position that does not exist is rejected" do
+    [{ lat: 91 }, { lat: -91 }, { lng: 181 }, { lng: "abc" }, { lat: "NaN" }].each do |bad|
+      assert_no_difference("Trash.count") { upload(**bad) }
+
+      assert_response :unprocessable_entity, bad.inspect
+    end
+  end
+
+  test "POST with a time in the future is rejected" do
+    assert_no_difference("Trash.count") { upload(taken_at: 3.days.from_now.iso8601) }
+
+    assert_response :unprocessable_entity
+    assert response.parsed_body["errors"].key?("taken_at")
+  end
+
+  test "POST with a very long note is rejected" do
+    assert_no_difference("Trash.count") { upload(extra_info: "x" * 1001) }
+
+    assert_response :unprocessable_entity
+    assert response.parsed_body["errors"].key?("extra_info")
+  end
+
   test "POST without a position is a bad request" do
     upload(lat: nil)
     assert_response :bad_request

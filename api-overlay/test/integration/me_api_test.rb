@@ -32,6 +32,16 @@ class MeApiTest < ActionDispatch::IntegrationTest
     assert_equal %w[validated pending], body.map { |t| t["ai_status"] }
   end
 
+  test "a report whose photo has been deleted (rejected, taken down) still lists, without a picture" do
+    trash = create_published_trash(device: @device)
+    trash.photo.purge
+
+    entry = feed.find { |t| t["id"] == trash.id }
+
+    assert_response :success
+    assert_equal [false, nil], entry.values_at("photo_ready", "photo_url")
+  end
+
   test "includes the AI's verdict once there is one" do
     create_published_trash(device: @device, severity: 80)
 
