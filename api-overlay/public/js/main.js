@@ -1,0 +1,48 @@
+// Entry point. Each screen's module wires its own buttons in boot(); they run here in the order the page
+// has always wired them (the order matters where two handlers use the same element or event).
+import { boot as bootCore } from "./core.js";
+import { boot as bootMap } from "./map.js";
+import { boot as bootSearch } from "./search.js";
+import { boot as bootNavigation } from "./navigation.js";
+import { boot as bootAuth } from "./auth.js";
+import { boot as bootPasskeys } from "./passkeys.js";
+import { boot as bootPlace } from "./place.js";
+import { boot as bootMyPhotos } from "./my_photos.js";
+import { boot as bootSettings } from "./settings.js";
+import { boot as bootEmailLinks } from "./email_links.js";
+import { boot as bootTwoFactor } from "./two_factor.js";
+import { boot as bootTerms } from "./terms.js";
+import { boot as bootAccountDeletion } from "./account_deletion.js";
+import { boot as bootNotifications } from "./notifications.js";
+import { boot as bootModeration } from "./moderation.js";
+import { boot as bootReport } from "./report.js";
+import { boot as bootMapFilters } from "./map_filters.js";
+import { boot as bootExplore } from "./explore.js";
+import { boot as bootAnalysis } from "./analysis.js";
+import { boot as bootReportFlow } from "./report_flow.js";
+import { boot as bootBackButton } from "./back_button.js";
+import { loadMe } from "./auth.js";
+import { handleEmailLinks } from "./email_links.js";
+
+await bootCore();
+bootMap();
+bootSearch();
+bootNavigation();
+bootAuth();
+bootPasskeys();
+loadMe().then(handleEmailLinks);
+bootPlace();
+bootMyPhotos();
+bootSettings();
+bootEmailLinks();
+bootTwoFactor();
+bootTerms();
+bootAccountDeletion();
+bootNotifications();
+bootModeration();
+bootReport();
+bootMapFilters();
+bootExplore();
+bootAnalysis();
+bootReportFlow();
+bootBackButton();
