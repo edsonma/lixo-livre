@@ -71,4 +71,21 @@ class UserTest < ActiveSupport::TestCase
     assert_empty user.passkeys
     assert_not_predicate user, :otp_enabled?
   end
+  test "promote_if_eligible! makes an existing account admin once its address is listed" do
+    user = create_user(email: "later@example.com")
+    assert_not_predicate user, :admin?
+
+    with_env("ADMIN_EMAILS" => "later@example.com") { user.promote_if_eligible! }
+
+    assert_predicate user.reload, :admin?
+  end
+
+  test "reset_password! sets the password and counts as proof of the inbox" do
+    user = create_user(email_verified_at: nil)
+
+    user.reset_password!("a-new-password")
+
+    assert user.reload.valid_password?("a-new-password")
+    assert_predicate user, :email_verified?
+  end
 end

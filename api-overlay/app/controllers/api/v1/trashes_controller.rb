@@ -23,25 +23,15 @@ module Api
       end
 
       # POST /api/v1/trashes   multipart: photo, lat, lng, taken_at, extra_info, kind ("dirty", or "cleanup" for "Já foi limpo")
+      # The AI scores it asynchronously; the app polls /me/trashes for the result.
       def create
-        lat = Float(params.require(:lat).to_s, exception: false)
-        lng = Float(params.require(:lng).to_s, exception: false)
-        unless lat&.between?(-90, 90) && lng&.between?(-180, 180)
-          return render json: { errors: { position: ["is not a valid latitude and longitude"] } }, status: :unprocessable_entity
-        end
-
-        trash = @device.trashes.new(
-          user: current_user,
-          lonlat: Trash.point(lng, lat),
-          taken_at: params.require(:taken_at),
-          extra_info: params[:extra_info],
-          kind: params[:kind].presence || "dirty",
-          photo: params[:photo]
+        trash = SubmitReport.call(
+          device: @device, user: current_user, photo: params[:photo], extra_info: params[:extra_info], kind: params[:kind],
+          lat: params.require(:lat), lng: params.require(:lng), taken_at: params.require(:taken_at)
         )
-        trash.save!
-
-        # The AI scores it asynchronously; the app polls /me/trashes for the result.
         render json: { id: trash.id, ai_status: trash.ai_status }, status: :accepted
+      rescue SubmitReport::InvalidPosition
+        render json: { errors: { position: ["is not a valid latitude and longitude"] } }, status: :unprocessable_entity
       end
     end
   end

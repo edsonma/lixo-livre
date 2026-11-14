@@ -18,6 +18,13 @@ module User::Credentials
     false
   end
 
+  # Sets the new password from a reset link. Reading the link's email proves the address is theirs.
+  def reset_password!(new_password)
+    self.password = new_password
+    self.email_verified_at ||= Time.current
+    save!
+  end
+
   # Google has just proven that this email belongs to its owner, but the account was made with it by
   # someone who never confirmed it (maybe not the owner). Whatever they set up (password, passkeys,
   # second factor) must not survive: only the owner, through Google, keeps access.

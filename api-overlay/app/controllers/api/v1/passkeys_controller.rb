@@ -48,7 +48,7 @@ module Api
         return render(json: { error: "no_challenge" }, status: :unprocessable_entity) unless challenge
 
         user = service.authenticate(params.require(:credential).to_unsafe_h, challenge)
-        user.save! if user.admin_eligible? && !user.admin?
+        user.promote_if_eligible!
         sign_in(:user, user, store: true)
         render json: { user: UserSerializer.call(user) }
       rescue PasskeyService::Failed => e

@@ -15,10 +15,7 @@ module Api
         user = User.find_by_token_for(:password_reset, params.require(:token).to_s)
         return render(json: { error: "invalid_token" }, status: :unprocessable_entity) unless user
 
-        password = params.require(:password).to_s
-        user.password = password
-        user.email_verified_at ||= Time.current # they just proved they read that inbox
-        user.save!
+        user.reset_password!(params.require(:password).to_s)
         head :no_content
       end
     end

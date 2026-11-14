@@ -27,6 +27,11 @@ module User::AdminRole
     admin? || moderator?
   end
 
+  # ADMIN_EMAILS may have changed since the person signed up: sign-in promotes them if they are listed now.
+  def promote_if_eligible!
+    save! if admin_eligible? && !admin?
+  end
+
   private
 
   def promote_if_listed
