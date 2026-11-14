@@ -1,4 +1,4 @@
-# Optional two-factor login (TOTP, with recovery codes). The secret is stored encrypted (OtpVault).
+# Optional two-factor login (TOTP, with recovery codes). The secret is stored encrypted (Auth::OtpVault).
 module User::TwoFactor
   extend ActiveSupport::Concern
 
@@ -9,13 +9,13 @@ module User::TwoFactor
   end
 
   def otp_secret_plain
-    OtpVault.decrypt(otp_secret)
+    Auth::OtpVault.decrypt(otp_secret)
   end
 
   # A fresh secret that is not active until enable_otp! confirms a first code. Returns the secret.
   def start_otp_setup!
-    secret = Totp.generate_secret
-    update_columns(otp_secret: OtpVault.encrypt(secret), otp_enabled_at: nil, otp_last_step: nil, otp_recovery_codes: nil)
+    secret = Auth::Totp.generate_secret
+    update_columns(otp_secret: Auth::OtpVault.encrypt(secret), otp_enabled_at: nil, otp_last_step: nil, otp_recovery_codes: nil)
     secret
   end
 
@@ -24,7 +24,7 @@ module User::TwoFactor
     secret = otp_secret_plain
     return nil if secret.nil? || otp_enabled?
 
-    step = Totp.verify(secret, code) or return nil
+    step = Auth::Totp.verify(secret, code) or return nil
     codes = Array.new(RECOVERY_CODES) { SecureRandom.alphanumeric(10).downcase.insert(5, "-") }
     update_columns(otp_enabled_at: Time.current, otp_last_step: step, otp_recovery_codes: codes.map { |c| Digest::SHA256.hexdigest(c) }.to_json)
     codes
@@ -35,7 +35,7 @@ module User::TwoFactor
     secret = otp_secret_plain
     return false if secret.nil?
 
-    if (step = Totp.verify(secret, input, last_step: otp_last_step))
+    if (step = Auth::Totp.verify(secret, input, last_step: otp_last_step))
       update_column(:otp_last_step, step)
       return true
     end

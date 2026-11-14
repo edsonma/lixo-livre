@@ -151,11 +151,11 @@ Every upload goes through `SanitizePhotoJob` before the AI, the map or the mobil
 - **Rebuilt from pixels.** The photo is decoded, rotated upright, converted to sRGB, shrunk to 2048 px and
   re-encoded as a new JPEG, so nothing from the original file survives by accident (XMP, IPTC, ICC, previews).
 - **EXIF kept, cleaned.** The stored photo keeps its GPS position, capture time, camera make and model, lens and
-  basic shooting settings (`ExifPreserver`). It is a brand new EXIF block built from that allowlist, so it has
+  basic shooting settings (`Photos::ExifPreserver`). It is a brand new EXIF block built from that allowlist, so it has
   **no embedded preview image** (that preview comes from the unblurred original and would bring a face back), no
   maker note, no serial number, owner name or description. Orientation is reset to 1 and the pixel size updated.
   Set `STRIP_PHOTO_METADATA=true` to store photos with no EXIF at all.
-- **Faces and plates blurred.** A detector (`PrivacyDetector`) returns regions; each becomes a 6x6 mosaic
+- **Faces and plates blurred.** A detector (`Photos::PrivacyDetector`) returns regions; each becomes a 6x6 mosaic
   (padded 20% so box edges are covered). The detector and the AI vendor only receive metadata-free pixels, so no GPS
   or device info reaches a third party.
 - **Original deleted.** The stored file is replaced; the old blob is purged.
@@ -174,12 +174,12 @@ just is not repeated inside the image file.
 
 ### Plugging in a face and plate detector
 
-`PrivacyDetector.provider` is a callable. It gets JPEG bytes and returns regions in normalized
+`Photos::PrivacyDetector.provider` is a callable. It gets JPEG bytes and returns regions in normalized
 coordinates (0.0-1.0, origin top-left):
 
 ```ruby
 # config/initializers/privacy_detector.rb
-PrivacyDetector.provider = lambda do |jpeg_bytes|
+Photos::PrivacyDetector.provider = lambda do |jpeg_bytes|
   # Call your detector here: AWS Rekognition (DetectFaces + DetectText for plates),
   # Google Cloud Vision (face detection + object localization), or a self-hosted model.
   [
@@ -206,7 +206,7 @@ Reports are approved for the heatmap **by the AI score**, with no manual step (`
 | 0.6 to 0.8 | published, weight x0.6 |
 | below 0.6 | held for moderation |
 
-Cell score (`HeatScore`): reports decay with a 14-day half-life; one report per person per day counts; each extra
+Cell score (`Heat::Score`): reports decay with a 14-day half-life; one report per person per day counts; each extra
 person confirming adds 15% (up to +45%); a person's repeats do not add up.
 **Cleanup reports** (`POST /trashes` with `kind=cleanup`, button "Já foi limpo"): the AI must see a clean place
 (severity <= 15, confidence >= 0.8) and the cell must have recent dirty reports; then earlier reports stop counting
@@ -216,7 +216,7 @@ Set `AUTO_PUBLISH=false` to restore the manual **Publicar** step.
 
 ### Privacy: faces, plates and consent
 
-With `TRASH_VISION_PROVIDER=anthropic` the same Claude key also finds faces and license plates (`PrivacyDetector::Anthropic`, `PRIVACY_DETECTOR=none` to disable) before a photo can be published; if it fails, the photo stays private for review. Sign-up requires accepting the Terms and Privacy Policy (`POST /users` and a new Google account need `accepted_terms: true`; the version and date are stored; `POST /consent` for older accounts; reporting returns 403 `terms_required` until accepted). `DELETE /api/v1/account` deletes the account and its reports. `bin/rails db:backup` uploads a database dump to a bucket (see docs/DEPLOY_RAILWAY.md).
+With `TRASH_VISION_PROVIDER=anthropic` the same Claude key also finds faces and license plates (`Photos::PrivacyDetector::Anthropic`, `PRIVACY_DETECTOR=none` to disable) before a photo can be published; if it fails, the photo stays private for review. Sign-up requires accepting the Terms and Privacy Policy (`POST /users` and a new Google account need `accepted_terms: true`; the version and date are stored; `POST /consent` for older accounts; reporting returns 403 `terms_required` until accepted). `DELETE /api/v1/account` deletes the account and its reports. `bin/rails db:backup` uploads a database dump to a bucket (see docs/DEPLOY_RAILWAY.md).
 
 ### Plugging in an AI provider
 
@@ -229,7 +229,7 @@ With `TRASH_VISION_PROVIDER=anthropic` the same Claude key also finds faces and 
 
 The adapters live in `app/services/trash_vision/adapters/` and use plain `Net::HTTP`, with no extra gems. The photo
 they send has no EXIF. A provider set this way is used even with `DEMO_MODE=true`, so you can try a real AI on fake
-data. **Note:** `DEMO_MODE` still turns face and plate blurring off; do not accept real users until `PrivacyDetector`
+data. **Note:** `DEMO_MODE` still turns face and plate blurring off; do not accept real users until `Photos::PrivacyDetector`
 is wired in. A failing call (bad key, rate limit, timeout) is retried, then the report goes to `needs_review`.
 
 **Comparing providers on your own photos:** put some photos in a folder and run, from `api/`:
@@ -284,7 +284,7 @@ means writing a new adapter and nothing else.
 | GET | `/api/v1/status` | demo page, monitors | Demo flag, map center, counts |
 | GET | `/api/v1/heatmap?bbox=w,s,e,n` | web | GeoJSON cells in the viewport |
 | GET | `/api/v1/places/:h3_index` | web | One map cell: latest report, monthly cleanliness history, photos |
-| GET | `/api/v1/heatmap?bbox=&days=7\|30\|90&type=plastic` | web | Same as before; `days` / `type` re-score the cells live from the matching reports (`HeatQuery`); each feature has a `trend` (`worse` / `better` / `stable`, 14-day change) |
+| GET | `/api/v1/heatmap?bbox=&days=7\|30\|90&type=plastic` | web | Same as before; `days` / `type` re-score the cells live from the matching reports (`Heat::Query`); each feature has a `trend` (`worse` / `better` / `stable`, 14-day change) |
 | GET | `/api/v1/rankings?lat=&lng=&radius_km=` | web | Worst places around a point (score, trend, distance) and regions (H3 res 7) ranked by average score |
 | GET / POST / DELETE | `/api/v1/follows`, `/api/v1/follows/:h3_index` | web (login) | Follow a place; `places/:h3` also returns `following` and `trend` |
 | GET / POST | `/api/v1/notifications`, `/api/v1/notifications/read` | web (login) | In-app alerts when a followed place gets worse (+15 points) or is cleaned; `unread` count |
@@ -306,8 +306,8 @@ anonymous history moves to the account.
 
 ## Before real users
 
-- Turn `DEMO_MODE` off and wire in your AI provider: `TrashVision` and `PrivacyDetector` raise outside development, test and demo mode, and failed reports go to `needs_review`.
-- Set `PrivacyDetector.provider` (see above). Without it, production holds every photo for review.
+- Turn `DEMO_MODE` off and wire in your AI provider: `TrashVision` and `Photos::PrivacyDetector` raise outside development, test and demo mode, and failed reports go to `needs_review`.
+- Set `Photos::PrivacyDetector.provider` (see above). Without it, production holds every photo for review.
 - Move photos to S3 or R2 (`ACTIVE_STORAGE_SERVICE=s3`, see the Railway guide), and commit `api/` so gem versions are pinned.
 - Replace the in-process queue with a real worker (Sidekiq or Solid Queue).
 - Add a moderator screen for `needs_review` reports and pending flags.
@@ -326,13 +326,13 @@ bin/rails test test/integration                   # API + end-to-end privacy pip
 
 | Folder | Covers |
 |---|---|
-| `test/services` | `DemoMode`, `DemoPlan`, `DemoSeeder`, `PipelineRecovery`, `PhotoSanitizer` and `ExifPreserver` (EXIF kept but cleaned: no preview image, maker note or private fields; rotation, resize, alpha, mosaic where asked and nowhere else), `PhotoMetadata` (both byte orders, truncated and fuzzed input), `PrivacyRegion`, `PrivacyDetector`, `TrashVision`, `Geo` |
+| `test/services` | `Demo::Mode`, `Demo::Plan`, `Demo::Seeder`, `Ops::PipelineRecovery`, `Photos::Sanitizer` and `Photos::ExifPreserver` (EXIF kept but cleaned: no preview image, maker note or private fields; rotation, resize, alpha, mosaic where asked and nowhere else), `Photos::Metadata` (both byte orders, truncated and fuzzed input), `Photos::PrivacyRegion`, `Photos::PrivacyDetector`, `TrashVision`, `Geo` |
 | `test/models` | validations, scopes, EXIF cross-check, flag auto-hide, heat score and decay, device claiming |
 | `test/jobs` | `SanitizePhotoJob` (original deleted, retries, fail-closed), `ValidateTrashJob`, heat cell jobs |
 | `test/integration` | every endpoint (including `/status` and the seeded demo data), plus `photo_privacy_pipeline_test.rb`: upload a photo with GPS in its EXIF and follow it to the map |
 
 The AI and detector are replaced by fakes in `test/test_helper.rb` (`TrashVision.provider`,
-`PrivacyDetector.provider`), so tests need no network and no API keys.
+`Photos::PrivacyDetector.provider`), so tests need no network and no API keys.
 
 Image fixtures live in `test/fixtures/files` and are committed. To regenerate them (needs Pillow and numpy):
 `python3 tools/generate_test_fixtures.py`.

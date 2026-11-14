@@ -1,5 +1,5 @@
 class HeatCell < ApplicationRecord
-  HALF_LIFE_DAYS = HeatScore::HALF_LIFE_DAYS # a report loses half its weight every 14 days
+  HALF_LIFE_DAYS = Heat::Score::HALF_LIFE_DAYS # a report loses half its weight every 14 days
 
   validates :h3_index, presence: true, uniqueness: { scope: :resolution }
 
@@ -16,19 +16,19 @@ class HeatCell < ApplicationRecord
   end
 
   # severity (0-100) * 0.5^(age_days / half_life) for one report. How a whole cell is scored
-  # (confidence, one-person-a-day, confirmations, cleanups) is in HeatScore.
+  # (confidence, one-person-a-day, confirmations, cleanups) is in Heat::Score.
   def self.weight(severity, taken_at, now: Time.current)
-    severity * HeatScore.decay(taken_at, now: now)
+    severity * Heat::Score.decay(taken_at, now: now)
   end
 
   def recompute!
     rows = Trash.for_heatmap.where(h3_index: h3_index)
                 .pluck(:severity, :taken_at, :ai_confidence, :kind, :user_id, :device_id)
                 .map do |severity, taken_at, confidence, kind, user_id, device_id|
-      HeatScore::Row.new(severity: severity, taken_at: taken_at, confidence: confidence, kind: kind,
+      Heat::Score::Row.new(severity: severity, taken_at: taken_at, confidence: confidence, kind: kind,
                          reporter: user_id ? "u#{user_id}" : "d#{device_id}")
     end
-    result = HeatScore.call(rows)
+    result = Heat::Score.call(rows)
 
     self.resolution = Trash::H3_RESOLUTION
     self.lonlat ||= center_point

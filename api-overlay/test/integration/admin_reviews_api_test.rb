@@ -61,7 +61,7 @@ class AdminReviewsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "says why a report was held" do
-    held_trash(payload: { "hold_reason" => "sanitize_failed: PrivacyDetector::NotConfigured" })
+    held_trash(payload: { "hold_reason" => "sanitize_failed: Photos::PrivacyDetector::NotConfigured" })
     held_trash(payload: {}).update_columns(ai_confidence: 0.4)
 
     get "/api/v1/admin/reviews"

@@ -86,7 +86,7 @@ class TrashVision
 
     # Development, test and DEMO_MODE get a fake answer so the whole pipeline works end to end.
     # Anywhere else it refuses to run until you plug in a real provider.
-    def default_provider(local: DemoMode.fakes_allowed?)
+    def default_provider(local: Demo::Mode.fakes_allowed?)
       # A provider chosen with TRASH_VISION_PROVIDER wins, also in demo mode: you can try a real AI with fake data.
       adapter = Adapters.from_env
       return adapter if adapter
@@ -121,7 +121,7 @@ class TrashVision
       return photo if photo.is_a?(Image)
 
       # The stored photo may carry EXIF (GPS, camera). The AI vendor never gets it.
-      Image.new(bytes: ExifPreserver.strip(photo.download), content_type: photo.content_type)
+      Image.new(bytes: Photos::ExifPreserver.strip(photo.download), content_type: photo.content_type)
     end
 
     def answer_to_hash(answer)

@@ -10,7 +10,7 @@ module Api
         return render(json: { error: "already_enabled" }, status: :unprocessable_entity) if current_user.otp_enabled?
 
         secret = current_user.start_otp_setup!
-        render json: { secret: secret, uri: Totp.uri(secret, current_user.email) }
+        render json: { secret: secret, uri: Auth::Totp.uri(secret, current_user.email) }
       end
 
       # POST /api/v1/two_factor/enable  { code }  -> { recovery_codes: [...], user }  (the codes are shown only now)

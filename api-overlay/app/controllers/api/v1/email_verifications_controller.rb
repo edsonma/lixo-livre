@@ -14,7 +14,7 @@ module Api
 
       # POST /api/v1/email/resend   sends the confirmation email again
       def resend
-        return render(json: { error: "mail_not_configured" }, status: :service_unavailable) unless Mailer.configured?
+        return render(json: { error: "mail_not_configured" }, status: :service_unavailable) unless Messaging::Mailer.configured?
 
         SendUserEmailJob.perform_later(current_user.id, "verify") unless current_user.email_verified?
         head :no_content

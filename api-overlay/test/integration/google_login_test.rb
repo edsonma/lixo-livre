@@ -1,10 +1,10 @@
 require "test_helper"
 
 class GoogleLoginTest < ActionDispatch::IntegrationTest
-  Identity = GoogleIdentity::Identity
+  Identity = Auth::GoogleIdentity::Identity
 
   def login_with(identity, accepted: true)
-    GoogleIdentity.stub(:verify, identity) do
+    Auth::GoogleIdentity.stub(:verify, identity) do
       post "/api/v1/session/google", params: { credential: "token", accepted_terms: accepted }.to_json, headers: { "Content-Type" => "application/json" }
     end
   end
@@ -42,7 +42,7 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
   end
 
   test "an invalid token is refused" do
-    GoogleIdentity.stub(:verify, ->(_) { raise GoogleIdentity::Invalid, "bad" }) do
+    Auth::GoogleIdentity.stub(:verify, ->(_) { raise Auth::GoogleIdentity::Invalid, "bad" }) do
       post "/api/v1/session/google", params: { credential: "x" }.to_json, headers: { "Content-Type" => "application/json" }
     end
 

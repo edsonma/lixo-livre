@@ -6,7 +6,7 @@ module Trash::Publishing
 
   class_methods do
     # A report goes to the map as soon as the AI validates it (the AI's confidence decides how much it
-    # weighs, see HeatScore). AUTO_PUBLISH=false brings back the manual "Publicar" step for the author.
+    # weighs, see Heat::Score). AUTO_PUBLISH=false brings back the manual "Publicar" step for the author.
     def auto_publish?
       !%w[false 0 no off].include?(ENV["AUTO_PUBLISH"].to_s.strip.downcase)
     end

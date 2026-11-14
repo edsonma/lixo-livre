@@ -90,12 +90,12 @@ class ActiveSupport::TestCase
 
   setup do
     TrashVision.provider = ->(_photo) { vision_result }
-    PrivacyDetector.provider = ->(_bytes) { [] }
+    Photos::PrivacyDetector.provider = ->(_bytes) { [] }
   end
 
   teardown do
     TrashVision.reset_provider!
-    PrivacyDetector.reset_provider!
+    Photos::PrivacyDetector.reset_provider!
   end
 end
 

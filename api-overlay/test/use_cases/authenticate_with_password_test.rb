@@ -24,7 +24,7 @@ class AuthenticateWithPasswordTest < ActiveSupport::TestCase
   test "with two-factor on, the password alone is not enough" do
     user = create_user(email: "ana@example.com")
     secret = user.start_otp_setup!
-    recovery_codes = user.enable_otp!(Totp.code(secret, Totp.step))
+    recovery_codes = user.enable_otp!(Auth::Totp.code(secret, Auth::Totp.step))
 
     assert_equal :otp_required, attempt(email: "ana@example.com").error
     assert_equal :otp_required, attempt(email: "ana@example.com", otp: "  ").error
@@ -34,7 +34,7 @@ class AuthenticateWithPasswordTest < ActiveSupport::TestCase
 
   test "the second factor is only asked of someone who gave the right password" do
     user = create_user(email: "ana@example.com")
-    user.enable_otp!(Totp.code(user.start_otp_setup!, Totp.step))
+    user.enable_otp!(Auth::Totp.code(user.start_otp_setup!, Auth::Totp.step))
 
     assert_equal :invalid_credentials, attempt(email: "ana@example.com", password: "not-the-password").error
   end

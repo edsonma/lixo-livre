@@ -12,7 +12,7 @@ module Api
         lng = Float(params.require(:lng))
         km = (params[:radius_km].presence || DEFAULT_KM).to_f.clamp(1, MAX_KM)
 
-        cells = HeatQuery.near(lat, lng, km * 1000)
+        cells = Heat::Query.near(lat, lng, km * 1000)
         worst = cells.reject(&:cleaned?).select { |c| c.score > HeatmapController::MIN_SCORE }
                      .sort_by { |c| -c.score }.first(WORST)
 
@@ -20,7 +20,7 @@ module Api
           radius_km: km,
           worst: worst.map { |c| { h3: c.h3, lat: c.lat, lng: c.lng, score: c.score.round(1), count: c.count, trend: c.trend,
                                    meters: Geo.distance_m(lat, lng, c.lat, c.lng).round } },
-          regions: HeatQuery.regions(cells)
+          regions: Heat::Query.regions(cells)
         }
       rescue ArgumentError
         render json: { error: "invalid_params" }, status: :unprocessable_entity

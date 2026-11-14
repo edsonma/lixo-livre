@@ -8,9 +8,9 @@ module Api
 
         sign_in(:user, outcome.value, store: true)
         render json: { user: UserSerializer.call(outcome.value) }
-      rescue GoogleIdentity::NotConfigured
+      rescue Auth::GoogleIdentity::NotConfigured
         render json: { error: "google_not_configured" }, status: :service_unavailable
-      rescue GoogleIdentity::Invalid => e
+      rescue Auth::GoogleIdentity::Invalid => e
         render json: { error: "invalid_google_token", message: e.message }, status: :unauthorized
       end
     end

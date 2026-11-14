@@ -19,11 +19,11 @@ module Api
           center: { lat: latest.lonlat.y, lng: latest.lonlat.x },
           score: cell&.score&.round(2),
           cleaned_at: cell&.cleaned_at,
-          trend: HeatQuery.cells_from({ h3 => place_rows(h3) }).first&.trend,
+          trend: Heat::Query.cells_from({ h3 => place_rows(h3) }).first&.trend,
           reports_count: reports.count,
           following: current_user ? current_user.follows.exists?(h3_index: h3) : false,
           latest: TrashSerializer.call(latest, urls: self),
-          history: PlaceHistory.monthly(reports.pluck(:severity, :taken_at)),
+          history: Heat::PlaceHistory.monthly(reports.pluck(:severity, :taken_at)),
           photos: TrashSerializer.collection(reports.limit(PHOTOS), urls: self)
         }
       end
@@ -31,7 +31,7 @@ module Api
       private
 
       def place_rows(h3)
-        HeatQuery.group(Trash.for_heatmap.where(h3_index: h3))[h3] || []
+        Heat::Query.group(Trash.for_heatmap.where(h3_index: h3))[h3] || []
       end
     end
   end

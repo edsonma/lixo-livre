@@ -20,7 +20,7 @@ module User::AdminRole
   # sign-up, so without this the first one to register the owner's address would be the admin.
   # Without email delivery (no RESEND_API_KEY) nothing can be verified, so, as elsewhere, the check is off.
   def admin_eligible?
-    listed_as_admin? && (email_verified? || !Mailer.configured?)
+    listed_as_admin? && (email_verified? || !Messaging::Mailer.configured?)
   end
 
   def privileged?

@@ -3,14 +3,14 @@ module Api
     class StatusController < BaseController
       # GET /api/v1/status  -> what the demo page needs to open on the right place
       def show
-        lat, lng = DemoMode.center
+        lat, lng = Demo::Mode.center
         render json: {
           status: "ok",
-          demo_mode: DemoMode.enabled?,
+          demo_mode: Demo::Mode.enabled?,
           center: { lat: lat, lng: lng },
           legal: { version: Terms::VERSION, name: ENV["LEGAL_NAME"].presence, email: ENV["LEGAL_EMAIL"].presence },
-          mail: { enabled: Mailer.configured? },
-          auth: { google_client_id: GoogleIdentity.client_id },
+          mail: { enabled: Messaging::Mailer.configured? },
+          auth: { google_client_id: Auth::GoogleIdentity.client_id },
           counts: { reports: Trash.for_heatmap.count, heat_cells: HeatCell.count }
         }
       end

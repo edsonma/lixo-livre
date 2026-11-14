@@ -14,7 +14,7 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
   # Runs the block with email "configured" and captures what would be sent.
   def with_mail
     with_env("RESEND_API_KEY" => "re_test", "APP_ORIGIN" => "https://app.test") do
-      Mailer.stub(:http_post, ->(_url, _headers, body) { sent << body; [200, "{}"] }) do
+      Messaging::Mailer.stub(:http_post, ->(_url, _headers, body) { sent << body; [200, "{}"] }) do
         perform_enqueued_jobs { yield }
       end
     end
@@ -73,7 +73,7 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
   end
 
   test "Google accounts are verified from the start" do
-    GoogleIdentity.stub(:verify, GoogleIdentity::Identity.new(uid: "g1", email: "g@example.com", name: "G")) do
+    Auth::GoogleIdentity.stub(:verify, Auth::GoogleIdentity::Identity.new(uid: "g1", email: "g@example.com", name: "G")) do
       json_post "/api/v1/session/google", { credential: "x", accepted_terms: true }
     end
     assert_predicate User.find_by!(email: "g@example.com"), :email_verified?
@@ -137,7 +137,7 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
     sign_in user
     json_post "/api/v1/two_factor/setup"
     secret = response.parsed_body["secret"]
-    json_post "/api/v1/two_factor/enable", { code: Totp.code(secret, Totp.step) }
+    json_post "/api/v1/two_factor/enable", { code: Auth::Totp.code(secret, Auth::Totp.step) }
     [secret, response.parsed_body["recovery_codes"]]
   end
 
@@ -153,7 +153,7 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
     json_post "/api/v1/two_factor/enable", { code: "000000" }
     assert_response :unprocessable_entity
 
-    json_post "/api/v1/two_factor/enable", { code: Totp.code(secret, Totp.step) }
+    json_post "/api/v1/two_factor/enable", { code: Auth::Totp.code(secret, Auth::Totp.step) }
     assert_response :success
     assert_equal User::RECOVERY_CODES, response.parsed_body["recovery_codes"].size
     assert_predicate user.reload, :otp_enabled?
@@ -173,10 +173,10 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
     json_post "/api/v1/session", { email: "ana@example.com", password: PASSWORD, otp: "000000" }
     assert_equal "invalid_otp", response.parsed_body["error"]
 
-    json_post "/api/v1/session", { email: "ana@example.com", password: "wrong-password", otp: Totp.code(secret, Totp.step + 1) }
+    json_post "/api/v1/session", { email: "ana@example.com", password: "wrong-password", otp: Auth::Totp.code(secret, Auth::Totp.step + 1) }
     assert_equal "invalid_credentials", response.parsed_body["error"]
 
-    json_post "/api/v1/session", { email: "ana@example.com", password: PASSWORD, otp: Totp.code(secret, Totp.step + 1) }
+    json_post "/api/v1/session", { email: "ana@example.com", password: PASSWORD, otp: Auth::Totp.code(secret, Auth::Totp.step + 1) }
     assert_response :success
   end
 
@@ -185,7 +185,7 @@ class AccountSecurityApiTest < ActionDispatch::IntegrationTest
     secret, = enable_two_factor(user) # used the code of the current step to enable
     delete "/api/v1/session"
 
-    json_post "/api/v1/session", { email: "ana@example.com", password: PASSWORD, otp: Totp.code(secret, Totp.step) }
+    json_post "/api/v1/session", { email: "ana@example.com", password: PASSWORD, otp: Auth::Totp.code(secret, Auth::Totp.step) }
     assert_response :unauthorized # the same step was already used by /enable
   end
 

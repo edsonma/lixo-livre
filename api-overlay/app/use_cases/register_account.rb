@@ -16,7 +16,7 @@ class RegisterAccount
 
     user.accept_terms
     user.save!
-    SendUserEmailJob.perform_later(user.id, "verify") if Mailer.configured?
+    SendUserEmailJob.perform_later(user.id, "verify") if Messaging::Mailer.configured?
     Outcome.success(user)
   end
 end

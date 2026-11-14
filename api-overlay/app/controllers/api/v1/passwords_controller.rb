@@ -5,7 +5,7 @@ module Api
       # Always answers 204, whether or not the email has an account: it must not tell strangers who is registered.
       def forgot
         user = User.find_for_database_authentication(email: params.require(:email).to_s)
-        SendUserEmailJob.perform_later(user.id, "reset") if user && Mailer.configured?
+        SendUserEmailJob.perform_later(user.id, "reset") if user && Messaging::Mailer.configured?
         head :no_content
       end
 

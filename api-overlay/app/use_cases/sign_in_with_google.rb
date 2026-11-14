@@ -1,5 +1,5 @@
 # "Sign in with Google": finds the account by Google id, else by the (verified) email, else creates it.
-# Raises GoogleIdentity::NotConfigured / ::Invalid when the token cannot be used.
+# Raises Auth::GoogleIdentity::NotConfigured / ::Invalid when the token cannot be used.
 # Failure error: :terms_required (a new account needs consent first).
 class SignInWithGoogle
   def self.call(**args) = new(**args).call
@@ -10,7 +10,7 @@ class SignInWithGoogle
   end
 
   def call
-    identity = GoogleIdentity.verify(@credential)
+    identity = Auth::GoogleIdentity.verify(@credential)
     user = User.find_by(provider: "google", uid: identity.uid) || claim_by_email(identity)
     return Outcome.failure(:terms_required) if user.nil? && !Terms.accepted_param?(@accepted_terms)
 
@@ -29,7 +29,7 @@ class SignInWithGoogle
   # made by someone who never confirmed the email, whatever they set up must not survive.
   def claim_by_email(identity)
     user = User.find_by(email: identity.email) or return nil
-    user.reset_credentials! if Mailer.configured? && !user.email_verified?
+    user.reset_credentials! if Messaging::Mailer.configured? && !user.email_verified?
     user
   end
 end

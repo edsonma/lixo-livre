@@ -24,7 +24,7 @@ module AccountGuards
 
   # With email configured (Resend), reporting also needs a confirmed email address.
   def require_verified_email!
-    render(json: { error: "email_unverified" }, status: :forbidden) if Mailer.configured? && !current_user&.email_verified?
+    render(json: { error: "email_unverified" }, status: :forbidden) if Messaging::Mailer.configured? && !current_user&.email_verified?
   end
 
   def require_admin!

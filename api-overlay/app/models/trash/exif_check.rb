@@ -1,5 +1,5 @@
 # Does the photo's own metadata agree with what the person reported? (photo_meta is read at upload,
-# see PhotoMetadata.) A disagreement sends the report to human review instead of the map.
+# see Photos::Metadata.) A disagreement sends the report to human review instead of the map.
 module Trash::ExifCheck
   # A photo whose EXIF position is farther than this from the reported spot, or whose EXIF time
   # differs from the reported time by more than this, goes to human review.

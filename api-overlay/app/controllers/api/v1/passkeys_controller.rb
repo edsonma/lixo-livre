@@ -27,7 +27,7 @@ module Api
 
         passkey = service.register(current_user, params.require(:credential).to_unsafe_h, challenge, nickname: params[:nickname])
         render json: PasskeySerializer.call(passkey), status: :created
-      rescue PasskeyService::Failed => e
+      rescue Auth::PasskeyService::Failed => e
         render json: { error: "passkey_failed", message: e.message }, status: :unprocessable_entity
       rescue ActionController::ParameterMissing
         raise
@@ -51,7 +51,7 @@ module Api
         user.promote_if_eligible!
         sign_in(:user, user, store: true)
         render json: { user: UserSerializer.call(user) }
-      rescue PasskeyService::Failed => e
+      rescue Auth::PasskeyService::Failed => e
         render json: { error: "passkey_failed", message: e.message }, status: :unauthorized
       end
 
@@ -72,7 +72,7 @@ module Api
       end
 
       def service
-        PasskeyService.new(request)
+        Auth::PasskeyService.new(request)
       end
     end
   end

@@ -1,6 +1,6 @@
 # Runs right after upload, BEFORE the AI sees the photo or anyone can see it:
 # reads the EXIF fields we need, then replaces the stored photo with a sanitized copy
-# (faces and license plates blurred, EXIF kept in a cleaned form, see PhotoSanitizer) and deletes
+# (faces and license plates blurred, EXIF kept in a cleaned form, see Photos::Sanitizer) and deletes
 # the original file.
 #
 # Fail closed: if sanitizing cannot be completed (detector down, ...) the report goes to
@@ -18,11 +18,11 @@ class SanitizePhotoJob < ApplicationJob
     return if trash.sanitized_at # already done (job ran twice)
 
     original = trash.photo.download
-    metadata = PhotoMetadata.read(original)
+    metadata = Photos::Metadata.read(original)
 
     begin
-      result = PhotoSanitizer.call(original)
-    rescue PhotoSanitizer::InvalidImage => e
+      result = Photos::Sanitizer.call(original)
+    rescue Photos::Sanitizer::InvalidImage => e
       reject_unreadable(trash, e.message)
       return
     end

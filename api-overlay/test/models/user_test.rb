@@ -28,7 +28,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "the demo seeder's accounts still work without passwords" do
-    assert_nothing_raised { DemoSeeder.call(count: 5) }
+    assert_nothing_raised { Demo::Seeder.call(count: 5) }
   end
   test "with email delivery on, a listed address is not an admin until it has confirmed the email" do
     with_env("ADMIN_EMAILS" => "boss@example.com", "RESEND_API_KEY" => "re_test") do
@@ -61,7 +61,7 @@ class UserTest < ActiveSupport::TestCase
     user = create_user(email_verified_at: nil)
     user.passkeys.create!(external_id: "cred-1", public_key: "pk")
     secret = user.start_otp_setup!
-    user.enable_otp!(Totp.code(secret, Totp.step))
+    user.enable_otp!(Auth::Totp.code(secret, Auth::Totp.step))
     assert_predicate user, :otp_enabled?
 
     user.reset_credentials!
