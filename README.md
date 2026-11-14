@@ -320,7 +320,7 @@ Minitest, run from the generated app (needs PostgreSQL with PostGIS and libvips)
 ```fish
 cd api
 bin/rails test                                    # everything
-bin/rails test test/services/photo_sanitizer_test.rb   # one file
+bin/rails test test/services/photos/sanitizer_test.rb   # one file
 bin/rails test test/integration                   # API + end-to-end privacy pipeline
 ```
 

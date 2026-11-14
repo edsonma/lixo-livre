@@ -94,7 +94,7 @@ class HeatCellTest < ActiveSupport::TestCase
     assert_in_delta(-15.79, feature[:geometry][:coordinates][1], 1e-6)
   end
 
-  # --- the scoring rules (the arithmetic itself is in test/services/heat_score_test.rb) ---
+  # --- the scoring rules (the arithmetic itself is in test/services/heat/score_test.rb) ---
 
   test "a cleanup erases the reports before it and the cell remembers when" do
     dirty = create_published_trash(severity: 80, taken_at: 3.days.ago)
