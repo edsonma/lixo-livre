@@ -10,7 +10,7 @@ module Api
       # photo_url is only given once the photo has been sanitized (faces and
       # plates blurred), so the app never displays or links the raw original.
       def trashes
-        trashes = @device.trashes.with_attached_photo.order(taken_at: :desc).limit(50)
+        trashes = @device.trashes.listed.with_attached_photo.order(taken_at: :desc).limit(50)
 
         render json: OwnTrashSerializer.collection(trashes, urls: self)
       end
@@ -18,7 +18,7 @@ module Api
       # GET /api/v1/me/feed   everything this account has sent, from any device, newest first: the profile grid.
       # thumb_url is a small square crop for the grid; photo_url is the full photo.
       def feed
-        reports = current_user.trashes.with_attached_photo.order(taken_at: :desc).limit(FEED_LIMIT)
+        reports = current_user.trashes.listed.with_attached_photo.order(taken_at: :desc).limit(FEED_LIMIT)
 
         render json: OwnTrashSerializer.collection(reports, urls: self)
       end

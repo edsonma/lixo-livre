@@ -51,4 +51,17 @@ class PipelineRecoveryTest < ActiveSupport::TestCase
 
     assert_equal({ sanitize: 0, validate: 0 }, Ops::PipelineRecovery.requeue_stuck(now: 1.day.from_now))
   end
+
+  test "removes reports the AI found no trash in a day later, and nothing else" do
+    gone = create_trash.tap { |t| t.update_columns(ai_status: "rejected", updated_at: 2.days.ago) }
+    fresh = create_trash.tap { |t| t.update_columns(ai_status: "rejected", updated_at: 1.hour.ago) }
+    cleanup = create_trash.tap { |t| t.update_columns(ai_status: "rejected", ai_payload: { "reason" => "still_dirty" }, updated_at: 5.days.ago) }
+    by_person = create_trash.tap { |t| t.update_columns(ai_status: "rejected", ai_payload: { "reviewed" => "rejected" }, updated_at: 5.days.ago) }
+    published = create_published_trash.tap { |t| t.update_columns(updated_at: 5.days.ago) }
+
+    assert_equal 1, Ops::PipelineRecovery.purge_no_trash
+
+    assert_not Trash.exists?(gone.id)
+    assert_equal 4, [fresh, cleanup, by_person, published].count { |t| Trash.exists?(t.id) }
+  end
 end
