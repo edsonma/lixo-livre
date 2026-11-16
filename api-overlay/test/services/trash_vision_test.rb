@@ -154,6 +154,9 @@ class TrashVisionTest < ActiveSupport::TestCase
     # the more bags, boxes and loose items outside the containers, the higher the score
     assert_includes TrashVision::PROMPT, "The number of bags, boxes and loose items outside the containers raises the score"
     assert_includes TrashVision::PROMPT, "Four to eight: about 25 to 40"
+    # a big mixed heap on the ground scores high
+    assert_includes TrashVision::PROMPT, "more than about eight bags and boxes together on the ground is at least 70"
+    assert_includes TrashVision::PROMPT, "score it 80 to 90"
     # ... without giving up the rule that loose, spread-out litter scores high
     assert_includes TrashVision::PROMPT, "do not score it"
   end

@@ -53,6 +53,9 @@ class TrashVision
       about 15 to 25. Four to eight: about 25 to 40. More than eight, or items spread widely on the ground, or a real
       pile outside any container: use the higher ranges above. Several different kinds of waste outside the containers
       add a few more points. Within a range, more items means a higher number.
+      A heap of more than about eight bags and boxes together on the ground is at least 70. When that heap also has bulky
+      pieces (pipes, planks, furniture, appliances), loose rubbish spread around it, or four or more kinds of waste
+      mixed, score it 80 to 90. Do not hold a large, mixed heap at the middle of the scale.
       Omit severity if is_trash is false.
     - types: the kinds of trash you can see, only from the allowed list.
     - confidence: your confidence in this answer, from 0.0 to 1.0.
