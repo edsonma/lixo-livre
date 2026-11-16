@@ -85,6 +85,27 @@ Photos can live in any S3-compatible bucket (`ACTIVE_STORAGE_SERVICE=s3`). Cheap
 
 R2 setup: Cloudflare dashboard → R2 → create bucket `lixo-livre-photos` → *Manage API tokens* → Object Read & Write. Then set `ACTIVE_STORAGE_SERVICE=s3`, `S3_BUCKET`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`. For B2 use its S3 endpoint (`https://s3.<region>.backblazeb2.com`) and an application key. Keep the bucket private: the app serves the photos.
 
+### Railway Bucket (no extra account)
+
+*Create → Bucket* in the project, then in the web service's variables (replace `Bucket` with the bucket's name):
+
+| Variable | Value |
+|---|---|
+| `ACTIVE_STORAGE_SERVICE` | `s3` |
+| `S3_ENDPOINT` | `${{Bucket.ENDPOINT}}` |
+| `S3_REGION` | `${{Bucket.REGION}}` |
+| `S3_ACCESS_KEY_ID` | `${{Bucket.ACCESS_KEY_ID}}` |
+| `S3_SECRET_ACCESS_KEY` | `${{Bucket.SECRET_ACCESS_KEY}}` |
+| `S3_BUCKET` | `${{Bucket.BUCKET}}` (check the name in the bucket's Variables tab) |
+| `S3_FORCE_PATH_STYLE` | `false` (new Railway buckets use virtual-hosted style; the wrong style answers `AccessDenied`) |
+
+- Photos already on the volume keep loading from it (each file remembers its service), so leave the volume
+  mounted until you have moved them. New uploads go to the bucket.
+- The app streams photos itself (`ACTIVE_STORAGE_DELIVERY=proxy`, the default), so image URLs stay on your own
+  domain. The "before / after" share card needs that: a browser will not export a canvas that holds an image
+  from another origin. With `ACTIVE_STORAGE_DELIVERY=redirect` the bucket needs CORS for your domain.
+- Check: send a photo, then look in the bucket's *Objects* tab and open the photo in the app.
+
 ## Backups
 
 The database is the part you cannot recreate (accounts, reports, scores). `bin/rails db:backup` makes a compressed `pg_dump` and uploads it to a bucket, keeping the newest 14.
@@ -115,7 +136,8 @@ The app asks people to accept the Terms of Use and Privacy Policy when they crea
 | `PG::ConnectionBad` / adapter errors | `DATABASE_URL` missing or not referencing the database service. |
 | Healthcheck fails | Check the deploy logs: migrations or the seed raised. The health check waits up to 5 minutes. |
 | Map is empty | `SEED_DEMO_DATA` not set, or the map is not near `DEMO_CENTER`. Check `/api/v1/status` for counts. |
-| Photos broken after redeploy | No volume on `/app/api/storage`. |
+| Photos broken after redeploy | No volume on `/app/api/storage`, and `ACTIVE_STORAGE_SERVICE` is not `s3`. |
+| `Aws::S3::Errors::AccessDenied` on upload | Wrong addressing style: set `S3_FORCE_PATH_STYLE=false` (or `true` for an older bucket), then redeploy. |
 | Uploads stay `needs_review` | `DEMO_MODE` is not `true` and no providers are configured. |
 
 
