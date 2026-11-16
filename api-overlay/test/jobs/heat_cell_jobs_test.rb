@@ -56,4 +56,20 @@ class HeatCellJobsTest < ActiveSupport::TestCase
 
     assert_equal 0, HeatCell.find_by!(h3_index: trash.h3_index).score
   end
+
+  test "RecomputeHeatCellsJob makes the cell of a published report whose own job was lost" do
+    trash = create_published_trash(severity: 70)
+    assert_nil HeatCell.find_by(h3_index: trash.h3_index)
+
+    assert_difference("HeatCell.count", 1) { RecomputeHeatCellsJob.perform_now }
+
+    assert_in_delta 70.0, HeatCell.find_by!(h3_index: trash.h3_index).score, 2
+  end
+
+  test "RecomputeHeatCellsJob does not make cells for reports that are not on the map" do
+    create_draft_trash
+    create_published_trash.hide!
+
+    assert_no_difference("HeatCell.count") { RecomputeHeatCellsJob.perform_now }
+  end
 end
