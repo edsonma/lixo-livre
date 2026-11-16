@@ -180,7 +180,7 @@ export function boot() {
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (state.reporting) closeReport(); else if ($("editprofile").style.display === "flex") show("editprofile", false); else if ($("twofa").style.display === "flex") show("twofa", false); else if ($("legal").style.display === "flex") show("legal", false); else if ($("settings").style.display === "flex") show("settings", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
+    if ($("viewer").style.display === "flex") show("viewer", false); else if (state.reporting) closeReport(); else if ($("editprofile").style.display === "flex") show("editprofile", false); else if ($("twofa").style.display === "flex") show("twofa", false); else if ($("legal").style.display === "flex") show("legal", false); else if ($("settings").style.display === "flex") show("settings", false); else if ($("alerts").style.display === "flex") show("alerts", false); else if ($("myphoto").style.display === "flex") show("myphoto", false); else if ($("review").style.display === "flex") show("review", false); else if ($("detail").style.display === "flex") closePlace();
   });
 
   // Never keep the camera on in the background; bring it back when the person returns to the photo step.

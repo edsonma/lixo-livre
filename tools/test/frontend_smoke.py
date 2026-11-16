@@ -176,7 +176,7 @@ class Handler(BaseHTTPRequestHandler):
     do_GET = do_POST = do_DELETE = do_PUT = do_PATCH = _handle
 
 
-SCREENS = ["place", "camera", "settings", "editprofile", "auth", "legal", "myphoto", "twofa", "alerts", "review", "detail", "analysis", "report"]
+SCREENS = ["place", "camera", "settings", "editprofile", "viewer", "auth", "legal", "myphoto", "twofa", "alerts", "review", "detail", "analysis", "report"]
 TEXTS = ["pf-name", "pf-email", "acct-initial", "bell-count", "nav-alerts-count", "toast", "au-title", "au-error", "place-title",
          "ex-where", "st-total", "pf-review-count", "set-2fa-state", "pf-about", "pf-site", "ep-error", "an-title", "an-score", "an-level", "dt-title", "lg-title"]
 SNAP_JS = """([screens, texts]) => {
@@ -277,6 +277,10 @@ def run(headed=False):
         step("edit: remove the picture and clear the bio", lambda: (page.click("#pf-edit"), page.wait_for_timeout(300), page.click("#ep-remove"), page.fill("#ep-bio", ""),
                                                                    page.fill("#ep-name", "Ana Souza"), page.fill("#ep-website", ""), page.select_option("#ep-gender", ""),
                                                                    page.click("#ep-save")), wait=900)
+        step("tap a photo to see all of it", lambda: (page.evaluate("var i = document.getElementById('dt-photo'); i.src = '/fake/photo.png'; document.getElementById('detail').style.display = 'flex'"), page.click("#dt-photo")), wait=300)
+        step("Escape closes the full photo, not the screen under it", lambda: page.keyboard.press("Escape"), wait=300)
+        step("tap the full photo to close it", lambda: (page.click("#dt-photo"), page.wait_for_timeout(200), page.click("#vw-img")), wait=300)
+        step("leave the detail screen", lambda: page.evaluate("document.getElementById('detail').style.display = 'none'"), wait=200)
         step("back to the map tab", click("#nav-map"), wait=1800)
         step("sign out", lambda: (page.click("#nav-profile"), page.wait_for_timeout(500), page.click("#pf-menu"), page.wait_for_timeout(300), page.click("#pf-logout")), wait=900)
         browser.close()

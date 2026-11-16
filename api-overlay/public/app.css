@@ -356,3 +356,9 @@
   /* Notificações keeps the bottom bar on screen */
   body:has(#alerts[style*="flex"]) #nav { z-index: 25; position: fixed; }
   #alerts .cam { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* Full-size photo: the whole picture, never cropped, on black. Above every screen. */
+  #viewer { position: fixed; inset: 0; z-index: 1000; background: #000; display: none; align-items: center; justify-content: center; }
+  #viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  #vw-close { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; line-height: 1; }
+  .screen .an-photo { cursor: zoom-in; }
