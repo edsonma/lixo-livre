@@ -103,17 +103,19 @@ class SerializersTest < ActiveSupport::TestCase
   end
 
   test "a person is sent without any secret" do
-    user = Struct.new(:id, :name, :email, :role, :provider, :passkeys) do
+    user = Struct.new(:id, :name, :email, :role, :provider, :passkeys, :bio, :website, :gender) do
+      def avatar = Struct.new(:attached?).new(false)
       def admin? = false
       def privileged? = false
       def terms_current? = true
       def email_verified? = true
       def otp_enabled? = false
-    end.new(1, "Ana", "ana@example.com", "user", "google", [1, 2])
+    end.new(1, "Ana", "ana@example.com", "user", "google", [1, 2], "Oi", "https://a.example.com", "female")
 
     json = UserSerializer.call(user)
 
     assert_equal [2, true], json.values_at(:passkeys, :google)
+    assert_equal ["Oi", "https://a.example.com", "female", nil], json.values_at(:bio, :website, :gender, :avatar_url)
     assert_empty json.keys & %i[encrypted_password otp_secret otp_recovery_codes]
   end
 end

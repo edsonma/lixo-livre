@@ -17,6 +17,11 @@ class Rack::Attack
     req.ip if req.post? && req.path == "/api/v1/users"
   end
 
+  # Profile edits upload a picture each time.
+  throttle("profile/ip", limit: 20, period: 10.minutes) do |req|
+    req.ip if req.patch? && req.path == "/api/v1/profile"
+  end
+
   # Flags: a person (or a script) should not be able to bury the moderators.
   throttle("flags/device", limit: 30, period: 1.hour) do |req|
     (req.get_header("HTTP_X_DEVICE_TOKEN").presence || req.ip) if req.post? && req.path.match?(%r{\A/api/v1/trashes/\d+/flags\z})

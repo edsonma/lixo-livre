@@ -8,7 +8,7 @@ HTTP request
   controllers/api/v1/*        parse params, call ONE object, choose the status code and JSON
     controllers/concerns/     cross-cutting rules: auth guards, error mapping, CSRF-style origin check
     serializers/              turn records into JSON (no queries, no business rules)
-  use_cases/                  one business action each (login, register, submit a report, review a report)
+  use_cases/                  one business action each (login, register, submit a report, review a report, update a profile)
   queries/                    read-side questions that are more than a scope (the moderation queues)
   models/                     data, validations, and behaviour that belongs to one record
     models/user/, trash/      the model's cohesive concerns (Publishing, Moderation, TwoFactor, ...)
@@ -73,7 +73,7 @@ The page is plain ES modules with no build step: `index.html` loads `js/main.js`
 | `main.js` | Calls each module's `boot()` in the order the page has always wired itself |
 | `core.js`, `map.js`, `map_filters.js`, `search.js` | Start-up and server status; the map, heat layer and pins; period/type filters; address search |
 | `navigation.js`, `explore.js`, `place.js`, `my_photos.js`, `settings.js` | The three pages (Explorar, Mapa, Perfil), the place screen, the profile grid |
-| `auth.js`, `passkeys.js`, `email_links.js`, `two_factor.js`, `terms.js`, `account_deletion.js` | Everything about accounts |
+| `auth.js`, `passkeys.js`, `email_links.js`, `two_factor.js`, `terms.js`, `account_deletion.js`, `edit_profile.js` (+ `avatar.js`, the round picture) | Everything about accounts |
 | `notifications.js`, `moderation.js` | Following places and alerts; the moderator queues |
 | `report.js`, `camera.js`, `report_flow.js`, `analysis.js`, `analysis_types.js` | Reporting a photo: place, camera, upload, AI result |
 | `dom.js`, `api.js`, `state.js`, `back_button.js` | Small DOM helpers, JSON requests and the device token, shared state, the phone's back button |
@@ -106,3 +106,12 @@ python3 tools/test/frontend_smoke.py --check tools/test/frontend_smoke.expected.
 It prints `frontend trace identical` or a diff. When you change behaviour on purpose, regenerate the expected
 file (`python3 tools/test/frontend_smoke.py > tools/test/frontend_smoke.expected.json`) and review the diff.
 Run it before and after any refactor of `public/js`.
+
+## Profile editing
+
+`PATCH /api/v1/profile` (`ProfilesController` -> `UpdateProfile`) lets a signed-in person change only their full name,
+bio (160 characters), website, gender and picture. The email is the login and is never read from the request, nor is the
+role. Rules for the text live in `ProfileText` (plain functions) and are enforced by `User::Profile`; the website must
+be an http(s) address. The picture goes through `Photos::Avatar`: centred 512 px square JPEG, EXIF orientation applied,
+all metadata stripped. Gender is private: it is sent only to its owner. The picture is delivered by path like report
+photos (`ACTIVE_STORAGE_DELIVERY`). Run `bin/rails db:migrate` for the three new columns.

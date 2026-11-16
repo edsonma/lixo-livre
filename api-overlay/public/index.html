@@ -52,8 +52,9 @@
         <span>Enviamos um link para <span id="pf-verify-email"></span>. Sem confirmar, não dá para reportar.</span>
         <button id="pf-verify-resend" class="btn plain" type="button">Reenviar e-mail</button>
       </div>
-      <div class="ig-bio"><b id="pf-fullname"></b><div id="pf-bio"></div></div>
+      <div class="ig-bio"><b id="pf-fullname"></b><div id="pf-about"></div><a id="pf-site" target="_blank" rel="noopener noreferrer nofollow ugc" style="display:none"></a><div id="pf-bio"></div></div>
       <div class="ig-actions">
+        <button id="pf-edit" class="btn plain" type="button">Editar perfil</button>
         <button id="pf-report" class="btn plain" type="button">Reportar lixo</button>
         <button id="pf-mine" class="btn plain" type="button">Meus locais no mapa</button>
       </div>
@@ -191,6 +192,7 @@
     <div class="set-body">
       <div class="set-who"><div id="set-avatar" class="avatar" aria-hidden="true"></div><div><b id="set-name"></b><small id="pf-email"></small></div></div>
       <h3>Sua conta</h3>
+      <button id="set-edit" class="set-row" type="button"><span class="ico">✏️</span><span>Editar perfil</span></button>
       <button id="pf-review" class="set-row" type="button" style="display:none"><span class="ico">🛡️</span><span>Moderação</span><span id="pf-review-count" class="count-badge"></span></button>
       <button id="pf-passkey" class="set-row" type="button" style="display:none"><span class="ico">🔐</span><span>Ativar biometria neste aparelho</span></button>
       <div id="pf-passkey-info" class="pf-info"></div>
@@ -292,6 +294,46 @@
       <button id="mp-secondary" class="outline" type="button" style="display:none"></button>
     </div>
     <div id="mp-error" class="error" role="alert"></div>
+  </div>
+</div>
+
+<div id="editprofile" class="screen" role="dialog" aria-label="Editar perfil">
+  <div class="cam">
+    <div class="cam-head">
+      <button id="ep-back" class="icon-btn" type="button" aria-label="Voltar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </button>
+      <h2>Editar perfil</h2>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </div>
+    <div class="set-body">
+      <form id="ep-form" novalidate>
+        <div class="ep-photo">
+          <div id="ep-avatar" class="avatar" aria-hidden="true"></div>
+          <div>
+            <button id="ep-pick" class="btn plain" type="button">Trocar foto</button>
+            <button id="ep-remove" class="btn plain" type="button">Remover foto</button>
+          </div>
+          <input id="ep-file" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" hidden>
+        </div>
+        <label>Nome completo<input id="ep-name" type="text" maxlength="100" autocomplete="name"></label>
+        <label>E-mail (usado para entrar, não pode ser alterado)<input id="ep-email" type="email" disabled></label>
+        <label>Bio <span id="ep-bio-count" class="ep-count"></span><textarea id="ep-bio" rows="3" maxlength="160"></textarea></label>
+        <label>Site<input id="ep-website" type="text" inputmode="url" maxlength="200" placeholder="seusite.com.br" autocomplete="url"></label>
+        <label>Gênero (só você vê)
+          <select id="ep-gender">
+            <option value="">Não informar</option>
+            <option value="female">Feminino</option>
+            <option value="male">Masculino</option>
+            <option value="non_binary">Não binário</option>
+            <option value="other">Outro</option>
+            <option value="prefer_not_to_say">Prefiro não dizer</option>
+          </select>
+        </label>
+        <div id="ep-error" class="error" role="alert"></div>
+        <button id="ep-save" class="btn primary" type="submit">Salvar</button>
+      </form>
+    </div>
   </div>
 </div>
 

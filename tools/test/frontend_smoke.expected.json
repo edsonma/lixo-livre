@@ -507,8 +507,7 @@
     "pf-review-count": "1",
     "place-title": "Onde está o lixo?",
     "set-2fa-state": "Desativada",
-    "st-total": "2",
-    "toast": "Olá, Ana!"
+    "st-total": "2"
    }
   }
  },
@@ -1431,6 +1430,477 @@
     "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/me/feed"
+  ],
+  "errors": [],
+  "step": "open edit profile from the profile page",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "editprofile"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "the email field is read-only",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "editprofile"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "edit: empty name is refused before sending",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "editprofile"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ep-error": "Nome: o nome não pode ficar vazio.",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "PATCH /api/v1/profile"
+  ],
+  "errors": [
+   "console.error: Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+  ],
+  "step": "edit: server refuses a script link",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "editprofile"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ep-error": "Site: digite um endereço válido, como seusite.com.br.",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "edit: a too-large picture is refused",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [
+    "editprofile"
+   ],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ep-error": "Foto: não consegui usar esse arquivo. Escolha uma foto JPG, ",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/admin/reviews",
+   "GET /api/v1/heatmap",
+   "GET /api/v1/me/feed",
+   "GET /api/v1/notifications",
+   "PATCH /api/v1/profile"
+  ],
+  "errors": [],
+  "step": "edit: save everything with a picture",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "avatar_img": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-about": "Cuido da minha quadra",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Maria Souza",
+    "pf-review-count": "1",
+    "pf-site": "ana.example.com",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Perfil atualizado"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "the profile shows the new details",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "avatar_img": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-about": "Cuido da minha quadra",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Maria Souza",
+    "pf-review-count": "1",
+    "pf-site": "ana.example.com",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Perfil atualizado"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "edit from settings, then Escape closes it",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "avatar_img": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-about": "Cuido da minha quadra",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Maria Souza",
+    "pf-review-count": "1",
+    "pf-site": "ana.example.com",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Perfil atualizado"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/admin/reviews",
+   "GET /api/v1/me/feed",
+   "GET /api/v1/notifications",
+   "PATCH /api/v1/profile"
+  ],
+  "errors": [],
+  "step": "edit: remove the picture and clear the bio",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-profile"
+   ],
+   "open": [],
+   "page": "profile",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
+    "pf-email": "ana@example.com",
+    "pf-name": "Ana Souza",
+    "pf-review-count": "1",
+    "place-title": "Onde está o lixo?",
+    "set-2fa-state": "Desativada",
+    "st-total": "2",
+    "toast": "Perfil atualizado"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "back to the map tab",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 1,
+    "feed": 2,
+    "places": 0,
+    "regions": 1,
+    "review": 2,
+    "worst": 1
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "acct-initial": "A",
+    "an-level": "Sujo",
+    "an-score": "Sujo60/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "bell-count": "1",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "nav-alerts-count": "1",
     "pf-email": "ana@example.com",
     "pf-name": "Ana Souza",
     "pf-review-count": "1",

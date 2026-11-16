@@ -6,6 +6,13 @@ export async function api(path, method, body) {
   return { ok: res.ok, status: res.status, data: data };
 }
 
+// Like api(), but sends a form (so a picture can go along). The browser sets the multipart header itself.
+export async function apiForm(path, method, form) {
+  var res = await fetch(path, { method: method, body: form });
+  var data = await res.json().catch(function () { return {}; });
+  return { ok: res.ok, status: res.status, data: data };
+}
+
 var memoryToken = null;
 
 function storedToken() { try { return localStorage.getItem("lixo-device-token"); } catch (e) { return memoryToken; } }
