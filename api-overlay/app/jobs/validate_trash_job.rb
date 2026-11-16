@@ -28,7 +28,10 @@ class ValidateTrashJob < ApplicationJob
     result = TrashVision.analyze(trash.photo)
 
     if !result.is_trash
+      # No trash in it: the picture is thrown away now, and the report leaves the author's lists (Trash.listed).
+      # The row stays a day, only so the screen that is waiting for the answer can still read it.
       trash.update!(ai_status: :rejected, ai_payload: result.raw)
+      trash.photo.purge_later
     elsif result.confidence < CONFIDENCE_THRESHOLD
       trash.update!(ai_status: :needs_review, ai_confidence: result.confidence, ai_payload: result.raw)
     else

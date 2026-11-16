@@ -49,6 +49,18 @@ class ValidateTrashJobTest < ActiveSupport::TestCase
     assert_not_includes Trash.for_heatmap.pluck(:id), trash.id
   end
 
+  test "a photo with no trash in it is thrown away and leaves the author's lists" do
+    @vision_answer = vision_result(is_trash: false, severity: nil, types: [], confidence: 0.99)
+    trash = sanitized_trash
+
+    perform_enqueued_jobs { ValidateTrashJob.perform_now(trash.id) }
+
+    assert_predicate trash.reload, :rejected?
+    assert_not_predicate trash.photo, :attached?
+    assert_includes Trash.no_trash_found.pluck(:id), trash.id
+    assert_not_includes Trash.listed.pluck(:id), trash.id
+  end
+
   test "validating re-scores the heat cell" do
     trash = sanitized_trash
 

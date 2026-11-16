@@ -50,6 +50,15 @@ class Trash < ApplicationRecord
   scope :for_heatmap, -> { validated.visible.published.where.not(sanitized_at: nil) }
   # Scored but never published: the author saw the result and has not decided yet.
   scope :drafts, -> { validated.where(published_at: nil) }
+  # Rejected because the AI found no trash in the photo. Not a cleanup turned down (it says why), not a file
+  # that could not be read, and not a rejection a person made in review. Such a photo is thrown away.
+  NOT_AI_NO_TRASH_REASONS = (ReportStage::CLEANUP_REJECTIONS + %w[unreadable_image]).freeze
+  scope :no_trash_found, -> {
+    rejected.where("COALESCE(ai_payload ->> 'reason', '') NOT IN (?)", NOT_AI_NO_TRASH_REASONS)
+            .where("ai_payload ->> 'reviewed' IS NULL")
+  }
+  # What the author sees in their own lists: everything except the photos the AI found no trash in.
+  scope :listed, -> { where.not(id: no_trash_found.select(:id)) }
   scope :near, ->(lng, lat, meters) {
     where(
       "ST_DWithin(lonlat, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)",

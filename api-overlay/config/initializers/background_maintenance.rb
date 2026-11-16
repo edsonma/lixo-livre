@@ -18,6 +18,7 @@ if Rails.env.production? && ENV["BACKGROUND_MAINTENANCE"] != "false"
         Rails.application.executor.wrap do
           requeued = Ops::PipelineRecovery.requeue_stuck
           purged = Ops::PipelineRecovery.purge_stale_drafts
+          Ops::PipelineRecovery.purge_no_trash
           RecomputeHeatCellsJob.perform_later
           Rails.logger.info("[maintenance] requeued #{requeued.inspect}, purged #{purged} stale drafts, recomputing heat cells")
         end

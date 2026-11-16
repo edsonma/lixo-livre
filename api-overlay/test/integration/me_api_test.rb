@@ -12,6 +12,20 @@ class MeApiTest < ActionDispatch::IntegrationTest
     response.parsed_body
   end
 
+  test "a photo the AI found no trash in is not listed, but can still be read by the screen waiting for it" do
+    kept = create_trash(device: @device, user: @user)
+    none = create_trash(device: @device, user: @user).tap { |t| t.update_columns(ai_status: "rejected") }
+
+    assert_equal [kept.id], feed.map { |t| t["id"] }
+
+    get "/api/v1/me/feed"
+    assert_equal [kept.id], response.parsed_body.map { |t| t["id"] }
+
+    get "/api/v1/me/trashes/#{none.id}", headers: { "X-Device-Token" => @device.token }
+    assert_response :success
+    assert_equal "not_trash", response.parsed_body["stage"]
+  end
+
   test "needs a device token" do
     get "/api/v1/me/trashes"
     assert_response :unauthorized
