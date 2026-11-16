@@ -25,6 +25,35 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
     assert_in_delta(-15.79, feature["geometry"]["coordinates"][1], 1e-6)
   end
 
+  test "a published report whose cell was never made is still drawn" do
+    trash = create_published_trash(severity: 70, taken_at: Time.current)
+    assert_equal 0, HeatCell.count
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    features = response.parsed_body["features"]
+    assert_equal [trash.h3_index], features.map { |f| f["properties"]["h3"] }
+    assert_in_delta 70, features.first["properties"]["score"], 3
+  end
+
+  test "a report that already has its cell is drawn once, from the stored cell" do
+    trash = create_published_trash(severity: 70, taken_at: Time.current)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    assert_equal [trash.h3_index], response.parsed_body["features"].map { |f| f["properties"]["h3"] }
+  end
+
+  test "drafts and hidden reports are not drawn when they have no cell" do
+    create_draft_trash(severity: 80)
+    create_published_trash(severity: 80).hide!
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    assert_empty response.parsed_body["features"]
+  end
+
   test "leaves out cells outside the box" do
     cell(lng: -46.63, lat: -23.55, score: 9) # Sao Paulo
 

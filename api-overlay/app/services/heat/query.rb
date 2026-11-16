@@ -66,6 +66,18 @@ class Heat::Query
     cells_from(group(filter(scope, days, type, now)), now: now)
   end
 
+  # Cells of published reports that have no stored HeatCell yet: the job that makes the cell has not run, or
+  # failed. The map draws these from the reports themselves, so a report is on the map the moment it is published.
+  def self.unstored_in_bbox(west, south, east, north, now: Time.now)
+    scope = Trash.for_heatmap.where.not(h3_index: nil).where(
+      "ST_Intersects(lonlat, ST_MakeEnvelope(?, ?, ?, ?, 4326)::geography)", west.to_f, south.to_f, east.to_f, north.to_f
+    ).where(
+      "NOT EXISTS (SELECT 1 FROM heat_cells WHERE heat_cells.h3_index = trashes.h3_index AND heat_cells.resolution = ?)",
+      Trash::H3_RESOLUTION
+    )
+    cells_from(group(scope), now: now)
+  end
+
   # Cells within radius_m meters of a point (all of their history: the ranking wants the trend).
   def self.near(lat, lng, radius_m, now: Time.now)
     scope = Trash.for_heatmap.where("ST_DWithin(lonlat, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)",
