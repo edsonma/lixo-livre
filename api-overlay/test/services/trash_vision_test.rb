@@ -149,6 +149,11 @@ class TrashVisionTest < ActiveSupport::TestCase
 
   test "the prompt scores waste inside containers low, by what is outside them" do
     assert_includes TrashVision::PROMPT, "inside a container"
+    # containers lower the score; they never make a photo "not trash"
+    assert_includes TrashVision::PROMPT, "it lowers the severity, never this answer"
+    assert_includes TrashVision::PROMPT, "is_trash stays true"
+    assert_includes TrashVision::PROMPT, "false only when there is no waste at all"
+    assert_not_includes TrashVision::PROMPT, "normal collected waste"
     assert_includes TrashVision::PROMPT, "OUTSIDE the containers"
     assert_includes TrashVision::PROMPT, "about 15 to 25"
     # the more bags, boxes and loose items outside the containers, the higher the score

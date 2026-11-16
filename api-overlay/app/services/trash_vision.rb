@@ -35,7 +35,9 @@ class TrashVision
   PROMPT = <<~TEXT.freeze
     You review one photo sent by a resident who is reporting trash in a public place.
     Answer with JSON only:
-    - is_trash: true if the photo shows litter, dumped waste or overflowing bins; false otherwise.
+    - is_trash: true if the photo shows any litter, dumped waste, bags or boxes of garbage, or full or overflowing bins
+      or dumpsters; false only when there is no waste at all. Waste in or beside containers is still trash to report:
+      it lowers the severity, never this answer.
     - severity: integer 0 to 100. Judge it from how much trash there is, how far it is spread, and how many different
       kinds are mixed together. 0 is spotless; about 20 a few items; about 40 some scattered items;
       50 to 70 a clear pile, OR a lot of litter scattered over the area, OR many different kinds of trash mixed together
@@ -46,9 +48,9 @@ class TrashVision
       pests, smells and spreads, so a pile of it is at least as serious as the same amount of dry litter.
       Plastic bags are not required: a wide spread of random loose items is as bad as bagged garbage, so do not score it
       lower because there are no bags. Variety and spread raise the score.
-      Waste that is inside a container (a dumpster, bin, skip or container) is normal collected waste, even when the
+      Waste that is inside a container (a dumpster, bin, skip or container) is a smaller problem, even when the
       container is full or a little over the top: do not count it as a pile. Score from what is OUTSIDE the containers,
-      on the ground. Containers that are full or overflowing with nothing around them: about 10 to 15.
+      on the ground. (It is still trash: is_trash stays true.) Containers that are full or overflowing with nothing around them: about 10 to 15.
       The number of bags, boxes and loose items outside the containers raises the score: count them. One to three:
       about 15 to 25. Four to eight: about 25 to 40. More than eight, or items spread widely on the ground, or a real
       pile outside any container: use the higher ranges above. Several different kinds of waste outside the containers
