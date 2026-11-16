@@ -14,6 +14,8 @@ Needs: pip install playwright (and a Chromium it can find, e.g. `playwright inst
 import argparse, difflib, json, os, re, sys, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+from email.parser import BytesParser
+from email.policy import default
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "api-overlay", "public")
 MIME = {".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
@@ -22,7 +24,8 @@ PIXEL = __import__("base64").b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAf
 
 CENTER = {"lat": -15.7942, "lng": -47.8825}
 USER = {"id": 1, "name": "Ana Souza", "email": "ana@example.com", "role": "user", "admin": False, "moderator": True,
-        "passkeys": 0, "google": False, "terms_ok": True, "email_verified": True, "two_factor": False}
+        "passkeys": 0, "google": False, "terms_ok": True, "email_verified": True, "two_factor": False,
+        "bio": None, "website": None, "gender": None, "avatar_url": None}
 
 
 def report(id, stage="published", **kw):
@@ -63,6 +66,27 @@ def api(method, path, query, body):
         if method == "DELETE":
             STATE.user = None
             return 200, {}
+    if p == "/profile" and method == "PATCH":
+        if not STATE.user:
+            return 401, {"error": "unauthorized"}
+        errors = {}
+        if not (body.get("name") or "").strip():
+            errors["name"] = ["can't be blank"]
+        site = (body.get("website") or "").strip()
+        if site and not re.match(r"(?i)https?://[^\s/]+\.[^\s/]+", site if re.match(r"(?i)https?://", site) else "https://" + site):
+            errors["website"] = ["is not a valid web address"]
+        if errors:
+            return 422, {"errors": errors}
+        STATE.user["name"] = body["name"].strip()
+        STATE.user["bio"] = (body.get("bio") or "").strip() or None
+        STATE.user["website"] = (site if re.match(r"(?i)https?://", site) else "https://" + site) if site else None
+        STATE.user["gender"] = body.get("gender") or None
+        if body.get("avatar"):
+            STATE.user["avatar_url"] = "/fake/photo.png"
+        elif body.get("remove_avatar") == "true":
+            STATE.user["avatar_url"] = None
+        STATE.profile_fields = sorted(k for k in body if k in ("name", "bio", "website", "gender", "avatar", "remove_avatar"))
+        return 200, {"user": STATE.user}
     if p == "/users" and method == "POST":
         STATE.user = dict(USER, name=body.get("name") or "Nova Pessoa", email=body.get("email", "n@example.com"))
         return 201, {"user": STATE.user}
@@ -127,10 +151,16 @@ class Handler(BaseHTTPRequestHandler):
         if u.path.startswith("/api/v1/"):
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b""
-            try:
-                body = json.loads(raw) if raw else {}
-            except ValueError:
-                body = {}
+            ctype = self.headers.get("Content-Type") or ""
+            if ctype.startswith("multipart/form-data"):  # a form with a picture: text fields as strings, files as True
+                msg = BytesParser(policy=default).parsebytes(b"Content-Type: " + ctype.encode() + b"\r\n\r\n" + raw)
+                body = {part.get_param("name", header="content-disposition"): (True if part.get_filename() else part.get_content().strip())
+                        for part in msg.iter_parts()}
+            else:
+                try:
+                    body = json.loads(raw) if raw else {}
+                except ValueError:
+                    body = {}
             STATE.requests.append(f"{self.command} {u.path}")
             status, data = api(self.command, u.path, parse_qs(u.query), body)
             return self._send(status, json.dumps(data).encode(), "application/json")
@@ -146,9 +176,9 @@ class Handler(BaseHTTPRequestHandler):
     do_GET = do_POST = do_DELETE = do_PUT = do_PATCH = _handle
 
 
-SCREENS = ["place", "camera", "settings", "auth", "legal", "myphoto", "twofa", "alerts", "review", "detail", "analysis", "report"]
+SCREENS = ["place", "camera", "settings", "editprofile", "auth", "legal", "myphoto", "twofa", "alerts", "review", "detail", "analysis", "report"]
 TEXTS = ["pf-name", "pf-email", "acct-initial", "bell-count", "nav-alerts-count", "toast", "au-title", "au-error", "place-title",
-         "ex-where", "st-total", "pf-review-count", "set-2fa-state", "an-title", "an-score", "an-level", "dt-title", "lg-title"]
+         "ex-where", "st-total", "pf-review-count", "set-2fa-state", "pf-about", "pf-site", "ep-error", "an-title", "an-score", "an-level", "dt-title", "lg-title"]
 SNAP_JS = """([screens, texts]) => {
   const vis = e => !!e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
   const out = { page: document.body.dataset.page,
@@ -158,6 +188,7 @@ SNAP_JS = """([screens, texts]) => {
   texts.forEach(id => { const e = document.getElementById(id); if (e && vis(e) && e.textContent.trim()) out.text[id] = e.textContent.trim().slice(0, 60); });
   for (const [k, sel] of Object.entries({ feed: '#feed-grid > *', worst: '#ex-worst > *', regions: '#ex-regions > *', alerts: '#al-body > *', review: '#rv-body > *', places: '#places-list > *' }))
     out.counts[k] = document.querySelectorAll(sel).length;
+  const av = document.querySelectorAll('#pf-avatar img').length; if (av) out.counts.avatar_img = av;
   out.map_layers = window.__lixo && window.__lixo.map ? ['heat', 'pins'].filter(l => window.__lixo.map.getLayer(l)) : null;
   out.map_features = window.__lixo && window.__lixo.map && window.__lixo.map.getSource('heat') && window.__lixo.map.getSource('heat')._data ? (window.__lixo.map.getSource('heat')._data.features || []).length : null;
   return out;
@@ -210,7 +241,7 @@ def run(headed=False):
         step("switch to sign in", click("#au-tab-in"))
         step("wrong password", lambda: (page.fill("#au-email", "ana@example.com"), page.fill("#au-pass", "wrong-password"), page.click("#au-submit")), wait=500)
         step("sign in", lambda: (page.fill("#au-pass", "password123"), page.click("#au-submit")), wait=900)
-        step("tab Perfil (signed in)", click("#nav-profile"), wait=1000)
+        step("tab Perfil (signed in)", click("#nav-profile"), wait=1600)  # long enough for the sign-in toast (2.2 s) to be gone every time
         step("open settings", click("#pf-menu"))
         step("open two-factor", click("#set-2fa"), wait=500)
         step("close two-factor", click("#tf-back"))
@@ -233,6 +264,20 @@ def run(headed=False):
         step("send the photo", click("#send"), wait=2500)
         step("publish the result", click("#an-publish"), wait=1200)
         step("close report screen", click("#done"), wait=700)
+        step("open edit profile from the profile page", lambda: (page.click("#nav-profile"), page.wait_for_timeout(500), page.click("#pf-edit")), wait=400)
+        step("the email field is read-only", lambda: page.evaluate("if (!document.getElementById('ep-email').disabled) throw new Error('email is editable')"))
+        step("edit: empty name is refused before sending", lambda: (page.fill("#ep-name", ""), page.click("#ep-save")), wait=300)
+        step("edit: server refuses a script link", lambda: (page.fill("#ep-name", "Ana Maria Souza"), page.fill("#ep-website", "javascript:alert(1)"), page.click("#ep-save")), wait=600)
+        step("edit: a too-large picture is refused", lambda: page.set_input_files("#ep-file", {"name": "big.jpg", "mimeType": "image/jpeg", "buffer": b"x" * (8 * 1024 * 1024 + 1)}), wait=300)
+        step("edit: save everything with a picture", lambda: (page.fill("#ep-website", "ana.example.com"), page.fill("#ep-bio", "Cuido da minha quadra"),
+                                                              page.select_option("#ep-gender", "female"), page.set_input_files("#ep-file", {"name": "me.png", "mimeType": "image/png", "buffer": PIXEL}),
+                                                              page.click("#ep-save")), wait=900)
+        step("the profile shows the new details", None)
+        step("edit from settings, then Escape closes it", lambda: (page.click("#pf-menu"), page.wait_for_timeout(300), page.click("#set-edit"), page.wait_for_timeout(300), page.keyboard.press("Escape")), wait=300)
+        step("edit: remove the picture and clear the bio", lambda: (page.click("#pf-edit"), page.wait_for_timeout(300), page.click("#ep-remove"), page.fill("#ep-bio", ""),
+                                                                   page.fill("#ep-name", "Ana Souza"), page.fill("#ep-website", ""), page.select_option("#ep-gender", ""),
+                                                                   page.click("#ep-save")), wait=900)
+        step("back to the map tab", click("#nav-map"), wait=1800)
         step("sign out", lambda: (page.click("#nav-profile"), page.wait_for_timeout(500), page.click("#pf-menu"), page.wait_for_timeout(300), page.click("#pf-logout")), wait=900)
         browser.close()
     server.shutdown()
