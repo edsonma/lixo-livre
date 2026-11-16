@@ -190,6 +190,15 @@ function loadImg(url) {
   });
 }
 
+// The first of these photos that can be loaded (a photo whose file is gone, such as one stored before S3 was
+// turned on, is skipped). Returns { report, img }, or null when none of them loads.
+async function firstLoadable(reports) {
+  for (var i = 0; i < reports.length; i++) {
+    try { return { report: reports[i], img: await loadImg(photoPath(reports[i].photo_url)) }; } catch (e) { /* try the next one */ }
+  }
+  return null;
+}
+
 function drawCover(g, img, x, y, w, h) {
   var k = Math.max(w / img.naturalWidth, h / img.naturalHeight), iw = w / k, ih = h / k;
   g.drawImage(img, (img.naturalWidth - iw) / 2, (img.naturalHeight - ih) / 2, iw, ih, x, y, w, h);
@@ -233,8 +242,9 @@ export function boot() {
     var button = this; button.disabled = true; myError("");
     try {
       var g1 = groupPlaces(state.feed.filter(function (x) { return x.h3_index === myPhoto.h3_index && x.published && x.photo_url; }))[0];
-      var before = g1.first, after = g1.last;
-      var imgs = await Promise.all([loadImg(photoPath(before.photo_url)), loadImg(photoPath(after.photo_url))]);
+      var oldest = await firstLoadable(g1.reports), newest = await firstLoadable(g1.reports.slice().reverse());
+      if (!oldest || !newest || oldest.report.id === newest.report.id) { myError("Este local ainda não tem duas fotos disponíveis para comparar."); button.disabled = false; return; }
+      var before = oldest.report, after = newest.report, imgs = [oldest.img, newest.img];
       var W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
       var g = c.getContext("2d");
       g.fillStyle = "#14231a"; g.fillRect(0, 0, W, H);
