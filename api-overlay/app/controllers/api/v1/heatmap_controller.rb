@@ -24,7 +24,10 @@ module Api
                         .where("score > ? OR cleaned_at > ?", MIN_SCORE, CLEANED_SHOWN_DAYS.days.ago)
                         .limit(5_000)
 
-        render json: { type: "FeatureCollection", features: cells.map(&:to_feature) }
+        # A published report whose cell was not made (yet) is still drawn, scored from the report itself.
+        unstored = Heat::Query.unstored_in_bbox(west, south, east, north).select { |c| c.score > MIN_SCORE || c.cleaned? }
+
+        render json: { type: "FeatureCollection", features: cells.map(&:to_feature) + unstored.map(&:to_feature) }
       end
 
       private
