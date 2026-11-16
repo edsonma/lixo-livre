@@ -147,6 +147,17 @@ class TrashVisionTest < ActiveSupport::TestCase
     assert_includes TrashVision::PROMPT, "Organic waste"
   end
 
+  test "the prompt scores waste inside containers low, by what is outside them" do
+    assert_includes TrashVision::PROMPT, "inside a container"
+    assert_includes TrashVision::PROMPT, "OUTSIDE the containers"
+    assert_includes TrashVision::PROMPT, "about 15 to 25"
+    # the more bags, boxes and loose items outside the containers, the higher the score
+    assert_includes TrashVision::PROMPT, "The number of bags, boxes and loose items outside the containers raises the score"
+    assert_includes TrashVision::PROMPT, "Four to eight: about 25 to 40"
+    # ... without giving up the rule that loose, spread-out litter scores high
+    assert_includes TrashVision::PROMPT, "do not score it"
+  end
+
   # --- defaults ---
 
   test "the development default passes its own validation and is confident enough to publish" do
