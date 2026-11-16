@@ -1,7 +1,7 @@
 # A person with an account. What they can do is split by concern, each in app/models/user/:
 #   Credentials   passwords, and taking them back          TwoFactor     TOTP and recovery codes
 #   EmailTokens   verification and reset links             TermsConsent  accepting the Terms
-#   AdminRole     who becomes an admin
+#   AdminRole     who becomes an admin            Profile       picture, bio, website, gender
 class User < ApplicationRecord
   # Login is email + password (Devise), Google, or a passkey (fingerprint / face). Sessions are
   # cookies handled by Warden; the controllers under Api::V1 do the signing in (see SessionsController).
@@ -20,6 +20,7 @@ class User < ApplicationRecord
   include AdminRole
   include Credentials
   include EmailTokens
+  include Profile
   include TermsConsent
   include TwoFactor
 

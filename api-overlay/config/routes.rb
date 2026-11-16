@@ -46,6 +46,7 @@ Rails.application.routes.draw do
       post "two_factor/enable", to: "two_factors#enable"
       post "two_factor/disable", to: "two_factors#disable"
       delete "account", to: "accounts#destroy"
+      patch "profile", to: "profiles#update"
       post "session/google", to: "google_sessions#create"
       post "users", to: "registrations#create"
       get "passkeys", to: "passkeys#index"
