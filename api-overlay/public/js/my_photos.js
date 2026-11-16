@@ -26,13 +26,23 @@ var STATUS_LINE = {
   analyzing: "Analisando…", protecting_photo: "Protegendo a privacidade da foto…"
 };
 
-export async function loadFeed() {
+var zoomWanted = false; // the profile was just opened: when the feed is here, take the map to the latest published report
+
+// The newest report of mine that is on the map: the map moves there (zoom 17), ready for when the Mapa tab is opened.
+function showLatestOnMap() {
+  var latest = state.feed.find(function (r) { return r.published && isFinite(r.lat) && isFinite(r.lng) && r.lat !== null && r.lng !== null; });
+  if (latest) map.jumpTo({ center: [latest.lng, latest.lat], zoom: 17 });
+}
+
+export async function loadFeed(zoomToLatest) {
+  if (zoomToLatest) zoomWanted = true;
   if (!state.me || feedLoading) return;
   feedLoading = true;
   var res = await api("/api/v1/me/feed").catch(function () { return null; });
   feedLoading = false;
-  if (!res || !res.ok) return;
+  if (!res || !res.ok) { zoomWanted = false; return; }
   state.feed = res.data; renderFeed();
+  if (zoomWanted) { zoomWanted = false; showLatestOnMap(); }
 }
 
 var feedTab = "all";

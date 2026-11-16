@@ -18,7 +18,7 @@ function syncPage() {
   if (PAGES[i] === currentPage) return;
   currentPage = PAGES[i];
   document.body.dataset.page = currentPage;
-  if (currentPage === "profile") loadFeed(); // fresh grid every time the profile is opened
+  if (currentPage === "profile") loadFeed(true); // fresh grid every time the profile is opened, and the map goes to my latest published report
   if (currentPage === "explore") loadRankings();
   markNav();
 }
