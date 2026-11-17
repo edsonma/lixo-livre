@@ -231,6 +231,7 @@ def run(headed=False):
 
         step("boot as guest", lambda: page.goto(base + "/"), wait=1800)
         step("map pins render", lambda: page.wait_for_function("window.__lixo && __lixo.map.loaded() && __lixo.map.getSource('heat')._data.features.length > 0", timeout=8000))
+        step("opening the app took the map to my location", lambda: page.wait_for_function("__lixo.map.getZoom() > 15", timeout=6000), wait=300)
         step("tab Explorar", click("#nav-explore"), wait=900)
         step("tab Perfil (guest)", click("#nav-profile"), wait=900)
         step("tab Mapa", click("#nav-map"), wait=900)
