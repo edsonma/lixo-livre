@@ -84,7 +84,15 @@ export function boot() {
 
   map.addControl(geolocate, "bottom-right");
 
-  geolocate.on("error", function () { toast("Não foi possível obter sua localização. Verifique a permissão de GPS."); });
+  // The app asks for the position by itself when it opens, so the map starts where the person is. If that
+  // automatic attempt fails (permission refused, no signal) it stays quiet: the message is for taps on the button.
+  var automatic = true;
+  geolocate.on("geolocate", function () { automatic = false; });
+  geolocate.on("error", function () {
+    if (automatic) { automatic = false; return; }
+    toast("Não foi possível obter sua localização. Verifique a permissão de GPS.");
+  });
+  map.once("load", function () { geolocate.trigger(); });
 
   window.__lixo = { map: map }; // a handle for the browser tests
 
