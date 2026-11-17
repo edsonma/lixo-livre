@@ -115,6 +115,16 @@ class TrashTest < ActiveSupport::TestCase
     assert_equal [draft.id], Trash.drafts.pluck(:id)
   end
 
+  test "withdrawing or hiding a published report queues taking back its alerts, an unpublished one does not" do
+    published = create_published_trash
+    assert_enqueued_with(job: RetractAlertsJob, args: [published.h3_index, published.published_at.iso8601(6)]) { published.hide! }
+
+    other = create_published_trash
+    assert_enqueued_with(job: RetractAlertsJob, args: [other.h3_index, other.published_at.iso8601(6)]) { other.destroy! }
+
+    assert_no_enqueued_jobs(only: RetractAlertsJob) { create_draft_trash.destroy! }
+  end
+
   test "publish! sets published_at, re-scores the heat cell, and works only once" do
     trash = create_draft_trash
 

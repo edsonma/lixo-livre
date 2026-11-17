@@ -42,6 +42,9 @@ class Trash < ApplicationRecord
   after_create_commit { SanitizePhotoJob.perform_later(id) }
   after_commit :refresh_heat_cell, if: :affects_heatmap?
   after_destroy_commit :refresh_heat_cell, if: -> { published_at.present? && h3_index.present? } # a withdrawn report leaves the map
+  # ... and the alerts it caused go with it (a "this place got worse" about a picture that is gone)
+  after_commit :retract_alerts, if: -> { saved_change_to_hidden_at? && hidden_at.present? && published_at.present? && h3_index.present? }
+  after_destroy_commit :retract_alerts, if: -> { published_at.present? && h3_index.present? }
 
   scope :visible, -> { where(hidden_at: nil) }
   scope :published, -> { where.not(published_at: nil) }
@@ -118,5 +121,9 @@ class Trash < ApplicationRecord
 
   def refresh_heat_cell
     RefreshHeatCellJob.perform_later(h3_index)
+  end
+
+  def retract_alerts
+    RetractAlertsJob.perform_later(h3_index, published_at.iso8601(6))
   end
 end
