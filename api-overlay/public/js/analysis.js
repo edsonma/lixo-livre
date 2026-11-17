@@ -1,10 +1,11 @@
-// Analysis screen: the AI's result, then "Publicar no Lixo Livre" or "Voltar".
+// Analysis screen: the AI's result. Already on the map: "Ver no mapa" or "Fechar". Not yet: "Publicar no Lixo Livre" or "Descartar foto".
 
 import { state } from "./state.js";
 import { TYPE_INFO } from "./analysis_types.js";
 import { deviceToken } from "./api.js";
 import { $, el, show } from "./dom.js";
 import { levelOf, loadHeat, loadHeatSoon, map } from "./map.js";
+import { goPage } from "./navigation.js";
 import { closeReport, setStatus } from "./report_flow.js";
 
 function anMessage(msg) { $("an-error").textContent = msg || ""; }
@@ -48,7 +49,7 @@ export function showAnalysis(r) {
   $("an-note").textContent = done ? (cleanup ? "Obrigado! Este local aparece como limpo no mapa." : "Já está no mapa. Obrigado por ajudar!") : "";
   show("an-note", done, "block");
   $("an-publish").textContent = done ? "Ver no mapa" : "Publicar no Lixo Livre";
-  $("an-discard").textContent = done ? "Concluir" : "Voltar";
+  $("an-discard").textContent = done ? "Fechar" : "Descartar foto"; // nothing is left to finish once it is on the map; before that, this button deletes the report
   anMessage(""); $("an-publish").disabled = false; $("an-discard").disabled = false;
   show("report", false); show("analysis", true, "flex");
   addressOf(r.lat, r.lng).then(function (text) { if (text && state.draft === r) $("an-address").textContent = text; });
@@ -64,6 +65,7 @@ export function boot() {
     if (!state.draft) return;
     if (state.draft.published || state.draft.stage === "published") { // already on the map: just go and look at it
       var at = [state.draft.lng, state.draft.lat]; state.draft = null; closeReport(); loadHeat();
+      goPage("map"); // whichever page the report was started from (Perfil, say), the person ends up looking at the map
       map.jumpTo({ center: at, zoom: 17 }); loadHeatSoon();
       return;
     }
@@ -83,7 +85,7 @@ export function boot() {
     }
   };
 
-  // "Voltar": the report was never published, so it is deleted and the person is back on the map.
+  // "Descartar foto" (or the back arrow): the report was never published, so it is deleted. "Fechar": it stays on the map.
   $("an-discard").onclick = $("an-back").onclick = async function () {
     if (!state.draft) return closeReport();
     if (state.draft.published || state.draft.stage === "published") { state.draft = null; closeReport(); loadHeat(); return; } // it stays on the map
