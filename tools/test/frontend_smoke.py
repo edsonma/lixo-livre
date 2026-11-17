@@ -242,6 +242,10 @@ def run(headed=False):
         step("wrong password", lambda: (page.fill("#au-email", "ana@example.com"), page.fill("#au-pass", "wrong-password"), page.click("#au-submit")), wait=500)
         step("sign in", lambda: (page.fill("#au-pass", "password123"), page.click("#au-submit")), wait=900)
         step("tab Perfil (signed in)", click("#nav-profile"), wait=1600)  # long enough for the sign-in toast (2.2 s) to be gone every time
+        step("opening the profile took the map to my latest published report", lambda: page.evaluate("""() => {
+            var c = __lixo.map.getCenter(), z = __lixo.map.getZoom();
+            if (Math.abs(c.lat - %s) > 0.0005 || Math.abs(c.lng - %s) > 0.0005 || Math.abs(z - 17) > 0.05) throw new Error('map at ' + c.lat + ',' + c.lng + ' z' + z);
+        }""" % (CENTER["lat"], CENTER["lng"])), wait=300)
         step("open settings", click("#pf-menu"))
         step("open two-factor", click("#set-2fa"), wait=500)
         step("close two-factor", click("#tf-back"))
