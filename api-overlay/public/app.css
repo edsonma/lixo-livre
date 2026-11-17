@@ -297,7 +297,7 @@
   .ig-stats b { display: block; font-size: 19px; }
   .ig-stats span { font-size: 13.5px; color: var(--ink); }
   .ig-bio { font-size: 14.5px; line-height: 1.4; }
-  .ig-bio b { font-size: 15px; }
+  .ig-bio b { display: block; font-size: 15px; }
   .ig-bio div:empty { display: none; }
   .ig-bio #pf-about { white-space: pre-line; overflow-wrap: anywhere; }
   .ig-bio #pf-site { color: #0b6b8a; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
