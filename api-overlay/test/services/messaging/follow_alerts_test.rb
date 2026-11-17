@@ -48,4 +48,47 @@ class FollowAlertsTest < ActiveSupport::TestCase
 
     assert_equal ["cleaned"], follower.notifications.pluck(:kind)
   end
+
+  test "retract takes back the alert of a report that was removed, and keeps the ones other reports still justify" do
+    trash = create_published_trash(severity: 10)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+    follower = create_user
+    Follow.start(follower, trash.h3_index)
+    big = create_published_trash(severity: 90)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+    assert_equal 1, follower.notifications.where(kind: "worse").count
+
+    big.destroy!
+    RetractAlertsJob.perform_now(trash.h3_index, big.published_at.iso8601(6))
+
+    assert_equal 0, follower.notifications.where(kind: "worse").count
+  end
+
+  test "retract leaves an alert alone when the place is still that bad" do
+    trash = create_published_trash(severity: 10)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+    follower = create_user
+    Follow.start(follower, trash.h3_index)
+    create_published_trash(severity: 90)
+    create_published_trash(severity: 85)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+
+    cell = HeatCell.find_by!(h3_index: trash.h3_index)
+    assert_equal 0, Messaging::FollowAlerts.retract(cell, since: 1.hour.ago)
+    assert_equal 1, follower.notifications.where(kind: "worse").count
+  end
+
+  test "retract only looks at alerts made after the removed report was published" do
+    trash = create_published_trash(severity: 10)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+    follower = create_user
+    Follow.start(follower, trash.h3_index)
+    create_published_trash(severity: 90)
+    RefreshHeatCellJob.perform_now(trash.h3_index)
+    cell = HeatCell.find_by!(h3_index: trash.h3_index)
+    cell.update_columns(score: 0)
+
+    assert_equal 0, Messaging::FollowAlerts.retract(cell, since: 1.hour.from_now)
+    assert_equal 1, follower.notifications.count
+  end
 end

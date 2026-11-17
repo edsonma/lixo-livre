@@ -22,4 +22,16 @@ class Messaging::FollowAlerts
       follow.update!(last_score: cell.score, last_cleaned_at: cell.cleaned_at || follow.last_cleaned_at)
     end
   end
+
+  # A published report was withdrawn or hidden: take back the alerts it could have caused, so the list does not
+  # say "this place got worse" about a picture that is gone. `since` is when that report was published; only
+  # alerts made after it are looked at. A "worse" alert goes when the cell now scores clearly below what the
+  # alert announced (so a place still held up by other reports keeps it); a "cleaned" alert goes when the cell
+  # no longer has a cleanup. Returns how many were removed.
+  def self.retract(cell, since:)
+    worse = Notification.where(h3_index: cell.h3_index, kind: "worse").where("created_at >= ?", since)
+                        .where("score > ?", cell.score.to_f + WORSE_STEP)
+    cleaned = cell.cleaned_at ? Notification.none : Notification.where(h3_index: cell.h3_index, kind: "cleaned").where("created_at >= ?", since)
+    worse.delete_all + cleaned.delete_all
+  end
 end
