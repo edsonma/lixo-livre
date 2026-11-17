@@ -35,7 +35,7 @@ export function applyAuth() {
   $("pf-name").textContent = state.me.name; $("pf-fullname").textContent = state.me.name; $("set-name").textContent = state.me.name; $("pf-email").textContent = state.me.email;
   $("pf-about").textContent = state.me.bio || "";
   var site = safeWebAddress(state.me.website);
-  $("pf-site").style.display = site ? "inline-block" : "none";
+  $("pf-site").style.display = site ? "block" : "none";
   $("pf-site").textContent = site.replace(/^https?:\/\//i, "").replace(/\/$/, ""); $("pf-site").href = site || "#";
   $("pf-role").style.display = state.me.admin ? "inline-block" : "none";
   show("pf-verify", !!(status.mail && status.mail.enabled && !state.me.email_verified), "flex");
