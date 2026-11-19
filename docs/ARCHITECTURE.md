@@ -71,7 +71,7 @@ The page is plain ES modules with no build step: `index.html` loads `js/main.js`
 | Module | Holds |
 |---|---|
 | `main.js` | Calls each module's `boot()` in the order the page has always wired itself |
-| `core.js`, `map.js`, `map_filters.js`, `search.js` | Start-up and server status; the map, heat layer and pins; period/type filters; address search |
+| `core.js`, `map.js`, `map_filters.js`, `search.js` | Start-up and server status; the map, heat layer, hexagon pins and (from zoom 14) one pin per photo; period/type filters; address search |
 | `navigation.js`, `explore.js`, `place.js`, `my_photos.js`, `settings.js` | The three pages (Explorar, Mapa, Perfil), the place screen, the profile grid |
 | `auth.js`, `passkeys.js`, `email_links.js`, `two_factor.js`, `terms.js`, `account_deletion.js`, `edit_profile.js` (+ `avatar.js`, the round picture) | Everything about accounts |
 | `notifications.js`, `moderation.js` | Following places and alerts; the moderator queues |

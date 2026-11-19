@@ -30,6 +30,30 @@ module Api
         render json: { type: "FeatureCollection", features: cells.map(&:to_feature) + unstored.map(&:to_feature) }
       end
 
+      PHOTO_PINS_LIMIT = 300
+
+      # GET /api/v1/heatmap/reports?bbox=west,south,east,north   (+ days, type like the heatmap)
+      # The published reports in view, one point each, for the small photo pins shown when the map is zoomed in.
+      # Only what the place screen already shows to everybody: where, how bad, when. No photo, no name.
+      def reports
+        west, south, east, north = parse_bbox
+        return render(json: { error: "invalid_params", message: "bbox must be west,south,east,north" }, status: :unprocessable_entity) unless west
+
+        days = params[:days].presence&.to_i
+        type = params[:type].presence
+        scope = Trash.for_heatmap.where.not(h3_index: nil).where(
+          "ST_Intersects(lonlat, ST_MakeEnvelope(?, ?, ?, ?, 4326)::geography)", west, south, east, north
+        )
+        scope = Heat::Query.filter(scope, Heat::Query::PERIODS.include?(days) ? days : nil, Trash::TYPES.include?(type) ? type : nil, Time.now)
+
+        features = scope.order(taken_at: :desc).limit(PHOTO_PINS_LIMIT).map do |t|
+          { type: "Feature",
+            properties: { id: t.id, h3: t.h3_index, severity: t.severity, kind: t.kind, taken_at: t.taken_at },
+            geometry: { type: "Point", coordinates: [t.lonlat.x, t.lonlat.y] } }
+        end
+        render json: { type: "FeatureCollection", features: features }
+      end
+
       private
 
       # [west, south, east, north] as numbers, or nil. A map zoomed far out can report longitudes beyond

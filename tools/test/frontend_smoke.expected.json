@@ -78,6 +78,157 @@
   }
  },
  {
+  "api": [],
+  "errors": [],
+  "step": "opening the app took the map to my location",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
+  ],
+  "errors": [],
+  "step": "zoomed in, each photo has its own pin",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Carregando…",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [
+   "GET /api/v1/places/89a8100c0d3ffff"
+  ],
+  "errors": [],
+  "step": "tapping a photo pin opens its place",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [
+    "detail"
+   ],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
+  "api": [],
+  "errors": [],
+  "step": "leave the place screen",
+  "step_error": null,
+  "ui": {
+   "counts": {
+    "alerts": 0,
+    "feed": 0,
+    "places": 0,
+    "regions": 0,
+    "review": 0,
+    "worst": 0
+   },
+   "map_features": 2,
+   "map_layers": [
+    "heat",
+    "pins"
+   ],
+   "nav_on": [
+    "nav-map"
+   ],
+   "open": [],
+   "page": "map",
+   "text": {
+    "an-score": "/100",
+    "an-title": "Análise da imagem",
+    "au-title": "Entrar",
+    "dt-title": "Local no mapa",
+    "ex-where": "Perto de você",
+    "lg-title": "Termos de Uso",
+    "place-title": "Onde está o lixo?",
+    "st-total": "0"
+   }
+  }
+ },
+ {
   "api": [
    "GET /api/v1/rankings"
   ],
@@ -107,7 +258,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -143,7 +294,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -179,7 +330,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -217,7 +368,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -253,7 +404,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -291,7 +442,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -329,7 +480,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Criar conta",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -367,7 +518,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -410,7 +561,7 @@
     "an-title": "Análise da imagem",
     "au-error": "E-mail ou senha incorretos.",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "place-title": "Onde está o lixo?",
@@ -452,7 +603,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -469,6 +620,7 @@
  {
   "api": [
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "GET /api/v1/me/feed"
   ],
   "errors": [],
@@ -499,7 +651,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -542,7 +694,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -587,7 +739,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -633,7 +785,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -678,7 +830,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -721,7 +873,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -766,7 +918,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -809,7 +961,7 @@
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "nav-alerts-count": "1",
@@ -856,7 +1008,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "pf-email": "ana@example.com",
@@ -897,7 +1049,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "pf-email": "ana@example.com",
@@ -913,6 +1065,7 @@
   "api": [
    "GET /api/v1/admin/reviews",
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "GET /api/v1/me/feed"
   ],
   "errors": [],
@@ -945,7 +1098,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "pf-email": "ana@example.com",
@@ -986,7 +1139,7 @@
     "an-score": "/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
-    "dt-title": "Carregando…",
+    "dt-title": "Local no mapa",
     "ex-where": "Perto de você",
     "lg-title": "Termos de Uso",
     "pf-email": "ana@example.com",
@@ -1127,7 +1280,8 @@
  },
  {
   "api": [
-   "GET /api/v1/heatmap"
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
   ],
   "errors": [],
   "step": "report button -> confirm place",
@@ -1172,7 +1326,8 @@
  },
  {
   "api": [
-   "GET /api/v1/heatmap"
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
   ],
   "errors": [],
   "step": "cancel place",
@@ -1215,7 +1370,8 @@
  },
  {
   "api": [
-   "GET /api/v1/heatmap"
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
   ],
   "errors": [],
   "step": "report button again -> confirm",
@@ -1347,6 +1503,7 @@
  {
   "api": [
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "GET /api/v1/me/trashes/9",
    "POST /api/v1/devices",
    "POST /api/v1/trashes"
@@ -1396,6 +1553,7 @@
  {
   "api": [
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "POST /api/v1/me/trashes/9/publish"
   ],
   "errors": [],
@@ -1442,7 +1600,8 @@
  },
  {
   "api": [
-   "GET /api/v1/heatmap"
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
   ],
   "errors": [],
   "step": "close report screen",
@@ -1487,6 +1646,7 @@
  {
   "api": [
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "GET /api/v1/me/feed"
   ],
   "errors": [],
@@ -1670,7 +1830,10 @@
   }
  },
  {
-  "api": [],
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
+  ],
   "errors": [],
   "step": "edit: a too-large picture is refused",
   "step_error": null,
@@ -1717,7 +1880,6 @@
  {
   "api": [
    "GET /api/v1/admin/reviews",
-   "GET /api/v1/heatmap",
    "GET /api/v1/me/feed",
    "GET /api/v1/notifications",
    "PATCH /api/v1/profile"
@@ -2099,7 +2261,8 @@
  },
  {
   "api": [
-   "GET /api/v1/heatmap"
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
   ],
   "errors": [],
   "step": "back to the map tab",
@@ -2147,6 +2310,7 @@
   "api": [
    "DELETE /api/v1/session",
    "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports",
    "GET /api/v1/me/feed"
   ],
   "errors": [],

@@ -26,7 +26,7 @@ export function photoPath(url) { try { return new URL(url, location.href).pathna
 // The closest cell of the map to a tap, within ~44px (works at any zoom, also where pins are not drawn).
 function cellNear(point) {
   var best = null, bestDistance = 44;
-  map.querySourceFeatures("heat").forEach(function (f) {
+  map.querySourceFeatures("heat").concat(map.querySourceFeatures("photos")).forEach(function (f) { // a photo pin opens its place too
     var p = map.project(f.geometry.coordinates), d = Math.hypot(p.x - point.x, p.y - point.y);
     if (d < bestDistance) { best = f; bestDistance = d; }
   });
