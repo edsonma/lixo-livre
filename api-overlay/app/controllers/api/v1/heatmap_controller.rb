@@ -6,7 +6,7 @@ module Api
 
       # GET /api/v1/heatmap?bbox=west,south,east,north  ->  GeoJSON FeatureCollection of cell centers
       # Optional: days=7|30|90 (only recent reports) and type=plastic (only that kind of trash).
-      # With either, cells are scored live from the reports (Heat::Query); without, from the stored scores.
+      # Cells are scored live from the reports (Heat::Query); stored cells only add places with no reports to score.
       def index
         west, south, east, north = parse_bbox
         return render(json: { error: "invalid_params", message: "bbox must be west,south,east,north" }, status: :unprocessable_entity) unless west
@@ -15,19 +15,20 @@ module Api
         type = params[:type].presence
         days = nil unless Heat::Query::PERIODS.include?(days)
         type = nil unless Trash::TYPES.include?(type)
-        if days || type
-          cells = Heat::Query.in_bbox(west, south, east, north, days: days, type: type)
-          return render json: { type: "FeatureCollection", features: cells.select { |c| c.score > MIN_SCORE || c.cleaned? }.map(&:to_feature) }
+        # Cells are scored from the published reports themselves, so a stored cell that is missing, late or stale
+        # can never hide a pin. Stored cells only add places that have no report left to score (e.g. demo data).
+        scored = Heat::Query.in_bbox(west, south, east, north, days: days, type: type)
+        features = scored.select { |c| c.score > MIN_SCORE || c.cleaned? }.map(&:to_feature)
+
+        unless days || type
+          drawn = scored.map(&:h3) # a cell the reports say has cooled is not brought back by an old stored score
+          stored = HeatCell.in_bbox(west, south, east, north)
+                           .where("score > ? OR cleaned_at > ?", MIN_SCORE, CLEANED_SHOWN_DAYS.days.ago)
+                           .where.not(h3_index: drawn).limit(5_000)
+          features += stored.map(&:to_feature)
         end
 
-        cells = HeatCell.in_bbox(west, south, east, north)
-                        .where("score > ? OR cleaned_at > ?", MIN_SCORE, CLEANED_SHOWN_DAYS.days.ago)
-                        .limit(5_000)
-
-        # A published report whose cell was not made (yet) is still drawn, scored from the report itself.
-        unstored = Heat::Query.unstored_in_bbox(west, south, east, north).select { |c| c.score > MIN_SCORE || c.cleaned? }
-
-        render json: { type: "FeatureCollection", features: cells.map(&:to_feature) + unstored.map(&:to_feature) }
+        render json: { type: "FeatureCollection", features: features }
       end
 
       PHOTO_PINS_LIMIT = 300
