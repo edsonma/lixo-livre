@@ -90,6 +90,11 @@ def api(method, path, query, body):
     if p == "/users" and method == "POST":
         STATE.user = dict(USER, name=body.get("name") or "Nova Pessoa", email=body.get("email", "n@example.com"))
         return 201, {"user": STATE.user}
+    if p == "/heatmap/reports":  # two photos in the same place: they share the hexagon pin but get their own photo pins when zoomed in
+        pts = [(CENTER["lng"], CENTER["lat"]), (CENTER["lng"] + 0.0003, CENTER["lat"] + 0.0002)]
+        return 200, {"type": "FeatureCollection", "features": [
+            {"type": "Feature", "geometry": {"type": "Point", "coordinates": list(pt)},
+             "properties": {"id": 900 + i, "h3": "89a8100c0d3ffff", "severity": 70 - 30 * i, "kind": "dirty", "taken_at": "2026-11-16T12:00:00Z"}} for i, pt in enumerate(pts)]}
     if p == "/heatmap":
         feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [CENTER["lng"], CENTER["lat"]]},
                   "properties": {"h3": "89a8100c0d3ffff", "score": 80.0, "count": 3, "trend": "up", "cleaned": False}},
@@ -232,6 +237,11 @@ def run(headed=False):
         step("boot as guest", lambda: page.goto(base + "/"), wait=1800)
         step("map pins render", lambda: page.wait_for_function("window.__lixo && __lixo.map.loaded() && __lixo.map.getSource('heat')._data.features.length > 0", timeout=8000))
         step("opening the app took the map to my location", lambda: page.wait_for_function("__lixo.map.getZoom() > 15", timeout=6000), wait=300)
+        step("zoomed in, each photo has its own pin", lambda: page.wait_for_function("__lixo.map.querySourceFeatures('photos').length === 2", timeout=6000), wait=300)
+        step("tapping a photo pin opens its place", lambda: (page.wait_for_timeout(600), page.mouse.click(*[sum(v) for v in zip(
+            (lambda b: (b["x"], b["y"]))(page.locator("#map canvas").bounding_box()),
+            page.evaluate("(() => { var p = __lixo.map.project([%s, %s]); return [p.x, p.y]; })()" % (CENTER["lng"] + 0.0003, CENTER["lat"] + 0.0002)))])), wait=1000)
+        step("leave the place screen", click("#dt-back"), wait=400)
         step("tab Explorar", click("#nav-explore"), wait=900)
         step("tab Perfil (guest)", click("#nav-profile"), wait=900)
         step("tab Mapa", click("#nav-map"), wait=900)

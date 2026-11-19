@@ -37,6 +37,7 @@ function pinImage(color) {
 }
 
 var filterKey = "todos";
+var PHOTO_ZOOM = 14; // from here on every photo gets its own small pin (the hexagon pin is shown below this zoom)
 
 export function applyFilter() {
   if (!map.getLayer("heat")) return;
@@ -44,7 +45,7 @@ export function applyFilter() {
   if (filterKey !== "todos") parts.push(["==", ["get", "level"], filterKey]);
   if (typeof mineOnly !== "undefined" && mineOnly) parts.push(["in", ["get", "h3"], ["literal", myCells().concat(["-"])]]);
   var expr = parts.length ? ["all"].concat(parts) : null;
-  map.setFilter("heat", expr); map.setFilter("pins", expr);
+  map.setFilter("heat", expr); map.setFilter("pins", expr); map.setFilter("photo-pins", expr);
 }
 
 // A new report is scored in the background: look again a few times so the pin appears without a manual refresh.
@@ -58,6 +59,24 @@ export async function loadHeat() {
     var data = await (await fetch("/api/v1/heatmap?bbox=" + bbox + extra)).json();
     data.features.forEach(function (f) { f.properties.level = levelOf(f.properties.score).key; });
     map.getSource("heat").setData(data);
+    loadPhotos(data, extra);
+  } catch (e) {}
+}
+
+// Zoomed in close: a small pin for each photo, at the exact spot, so a new photo in a place that already has a
+// pin is still seen. Only photos of cells that are drawn (the same rules and filters as the hexagon pins).
+async function loadPhotos(heat, extra) {
+  var source = map.getSource("photos");
+  if (!source) return;
+  if (map.getZoom() < PHOTO_ZOOM) { source.setData(EMPTY); return; }
+  var b = map.getBounds();
+  var bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
+  try {
+    var data = await (await fetch("/api/v1/heatmap/reports?bbox=" + bbox + extra)).json();
+    var drawn = {}; heat.features.forEach(function (f) { drawn[f.properties.h3] = true; });
+    data.features = data.features.filter(function (f) { return drawn[f.properties.h3]; });
+    data.features.forEach(function (f) { f.properties.level = f.properties.kind === "cleanup" ? "limpo" : levelOf(f.properties.severity).key; });
+    source.setData(data);
   } catch (e) {}
 }
 
@@ -110,10 +129,19 @@ export function boot() {
       }
     });
     map.addLayer({
-      id: "pins", type: "symbol", source: "heat", minzoom: 11,
+      id: "pins", type: "symbol", source: "heat", minzoom: 11, maxzoom: PHOTO_ZOOM,
       layout: {
         "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true,
         "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 16, 0.85]
+      }
+    });
+    map.addSource("photos", { type: "geojson", data: EMPTY });
+    map.addLayer({
+      id: "photo-pins", type: "circle", source: "photos", minzoom: PHOTO_ZOOM,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 7, 19, 10],
+        "circle-color": ["match", ["get", "level"], "limpo", "#2e9e4f", "moderado", "#f2a900", "sujo", "#e8452c", "#b3261e"],
+        "circle-stroke-width": 2.5, "circle-stroke-color": "#fff"
       }
     });
     map.on("mouseenter", "pins", function () { map.getCanvas().style.cursor = "pointer"; });

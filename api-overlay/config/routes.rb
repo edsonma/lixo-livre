@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       get "status", to: "status#show"
       resources :devices, only: :create
       get "heatmap", to: "heatmap#index"
+      get "heatmap/reports", to: "heatmap#reports"
       get "places/:h3_index", to: "places#show"
       get "rankings", to: "rankings#index"
       get "follows", to: "follows#index"

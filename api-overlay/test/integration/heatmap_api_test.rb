@@ -54,6 +54,27 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
     assert_empty response.parsed_body["features"]
   end
 
+  test "reports: one point per published report in view, with no photo and no name" do
+    a = create_published_trash(severity: 40)
+    b = create_published_trash(severity: 60)
+    create_draft_trash(severity: 80)
+    create_published_trash(severity: 80).hide!
+
+    get "/api/v1/heatmap/reports", params: { bbox: BBOX }
+
+    assert_response :success
+    features = response.parsed_body["features"]
+    assert_equal [a.id, b.id].sort, features.map { |f| f["properties"]["id"] }.sort
+    assert_equal %w[h3 id kind severity taken_at], features.first["properties"].keys.sort
+    assert_equal 2, features.first["geometry"]["coordinates"].size
+  end
+
+  test "reports: a bad bbox is refused" do
+    get "/api/v1/heatmap/reports", params: { bbox: "nope" }
+
+    assert_response :unprocessable_entity
+  end
+
   test "leaves out cells outside the box" do
     cell(lng: -46.63, lat: -23.55, score: 9) # Sao Paulo
 
