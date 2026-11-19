@@ -93,10 +93,11 @@ export function boot() {
 
   map.addControl(new maplibregl.NavigationControl(), "bottom-right");
 
-  // "Go to my location": centers the map on the GPS position, shows a blue dot and follows while the person moves.
+  // "Go to my location": centers the map on the GPS position once and shows a blue dot. It does not keep following:
+  // a following map pulls itself back to the GPS while the person drags the pin to another place to report.
   geolocate = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true, timeout: 10000 },
-    trackUserLocation: true, showAccuracyCircle: true, fitBoundsOptions: { maxZoom: 16 }
+    trackUserLocation: false, showAccuracyCircle: true, fitBoundsOptions: { maxZoom: 16 }
   });
 
   map.addControl(geolocate, "bottom-right");
