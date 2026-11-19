@@ -59,13 +59,13 @@ export async function loadHeat() {
     var data = await (await fetch("/api/v1/heatmap?bbox=" + bbox + extra)).json();
     data.features.forEach(function (f) { f.properties.level = levelOf(f.properties.score).key; });
     map.getSource("heat").setData(data);
-    loadPhotos(data, extra);
+    loadPhotos(extra);
   } catch (e) {}
 }
 
 // Zoomed in close: a small pin for each photo, at the exact spot, so a new photo in a place that already has a
-// pin is still seen. Only photos of cells that are drawn (the same rules and filters as the hexagon pins).
-async function loadPhotos(heat, extra) {
+// pin is still seen. Every published photo in view is drawn, even when its hexagon is too cool to get a pin.
+async function loadPhotos(extra) {
   var source = map.getSource("photos");
   if (!source) return;
   if (map.getZoom() < PHOTO_ZOOM) { source.setData(EMPTY); return; }
@@ -73,8 +73,6 @@ async function loadPhotos(heat, extra) {
   var bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
   try {
     var data = await (await fetch("/api/v1/heatmap/reports?bbox=" + bbox + extra)).json();
-    var drawn = {}; heat.features.forEach(function (f) { drawn[f.properties.h3] = true; });
-    data.features = data.features.filter(function (f) { return drawn[f.properties.h3]; });
     data.features.forEach(function (f) { f.properties.level = f.properties.kind === "cleanup" ? "limpo" : levelOf(f.properties.severity).key; });
     source.setData(data);
   } catch (e) {}
