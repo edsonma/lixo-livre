@@ -78,7 +78,10 @@
   }
  },
  {
-  "api": [],
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
+  ],
   "errors": [],
   "step": "opening the app took the map to my location",
   "step_error": null,
@@ -114,10 +117,7 @@
   }
  },
  {
-  "api": [
-   "GET /api/v1/heatmap",
-   "GET /api/v1/heatmap/reports"
-  ],
+  "api": [],
   "errors": [],
   "step": "zoomed in, each photo has its own pin",
   "step_error": null,
