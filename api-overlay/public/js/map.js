@@ -136,16 +136,15 @@ export function boot() {
       }
     });
     map.addSource("photos", { type: "geojson", data: EMPTY });
-    // Zoomed in: the smoke is drawn around each photo itself (not around the hexagon centre), and the pin is the
-    // same small trash-can icon as the hexagon pin.
+    // Zoomed in: the smoke is drawn around each photo itself (not around the hexagon centre), in the colour of
+    // its severity, and the pin is the same small trash-can icon as the hexagon pin.
     map.addLayer({
-      id: "photo-heat", type: "heatmap", source: "photos", minzoom: PHOTO_ZOOM,
+      id: "photo-heat", type: "circle", source: "photos", minzoom: PHOTO_ZOOM,
       paint: {
-        "heatmap-weight": ["interpolate", ["linear"], ["get", "severity"], 0, 0.1, 100, 1],
-        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 14, 25, 19, 70],
-        "heatmap-opacity": 0.8,
-        "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
-          0, "rgba(46,158,79,0)", 0.2, "#2e9e4f", 0.5, "#f2d43d", 1, "#d92b2b"]
+        // a soft glow in the colour of the pin's level (green / amber / red / dark red); bigger for dirtier spots
+        "circle-color": ["match", ["get", "level"], "limpo", "#2e9e4f", "moderado", "#f2a900", "sujo", "#e8452c", "#b3261e"],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, ["+", 10, ["*", 0.25, ["get", "severity"]]], 19, ["+", 30, ["*", 0.9, ["get", "severity"]]]],
+        "circle-blur": 1, "circle-opacity": 0.55
       }
     }, "pins");
     map.addLayer({
