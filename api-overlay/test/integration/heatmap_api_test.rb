@@ -36,7 +36,18 @@ class HeatmapApiTest < ActionDispatch::IntegrationTest
     assert_in_delta 70, features.first["properties"]["score"], 3
   end
 
-  test "a report that already has its cell is drawn once, from the stored cell" do
+  test "a stale stored cell does not hide a fresh report: the reports decide" do
+    trash = create_published_trash(severity: 70, taken_at: Time.current)
+    HeatCell.create!(h3_index: trash.h3_index, resolution: 9, lonlat: trash.lonlat, score: 0, reports_count: 0)
+
+    get "/api/v1/heatmap", params: { bbox: BBOX }
+
+    features = response.parsed_body["features"]
+    assert_equal [trash.h3_index], features.map { |f| f["properties"]["h3"] }
+    assert_in_delta 70, features.first["properties"]["score"], 3
+  end
+
+  test "a report that already has its cell is drawn once" do
     trash = create_published_trash(severity: 70, taken_at: Time.current)
     RefreshHeatCellJob.perform_now(trash.h3_index)
 
