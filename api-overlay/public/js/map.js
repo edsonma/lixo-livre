@@ -45,7 +45,8 @@ export function applyFilter() {
   if (filterKey !== "todos") parts.push(["==", ["get", "level"], filterKey]);
   if (typeof mineOnly !== "undefined" && mineOnly) parts.push(["in", ["get", "h3"], ["literal", myCells().concat(["-"])]]);
   var expr = parts.length ? ["all"].concat(parts) : null;
-  map.setFilter("heat", expr); map.setFilter("pins", expr); map.setFilter("photo-pins", expr);
+  map.setFilter("heat", expr); map.setFilter("pins", expr);
+  map.setFilter("photo-pins", expr); map.setFilter("photo-heat", expr);
 }
 
 // A new report is scored in the background: look again a few times so the pin appears without a manual refresh.
@@ -118,7 +119,7 @@ export function boot() {
     LEVELS.forEach(function (l) { map.addImage("pin-" + l.key, pinImage(l.color), { pixelRatio: 2 }); });
     map.addSource("heat", { type: "geojson", data: EMPTY });
     map.addLayer({
-      id: "heat", type: "heatmap", source: "heat",
+      id: "heat", type: "heatmap", source: "heat", maxzoom: PHOTO_ZOOM,
       paint: {
         "heatmap-weight": ["interpolate", ["linear"], ["get", "score"], 0, 0, 100, 1],
         "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 8, 15, 14, 45],
@@ -135,14 +136,27 @@ export function boot() {
       }
     });
     map.addSource("photos", { type: "geojson", data: EMPTY });
+    // Zoomed in: the smoke is drawn around each photo itself (not around the hexagon centre), and the pin is the
+    // same small trash-can icon as the hexagon pin.
     map.addLayer({
-      id: "photo-pins", type: "circle", source: "photos", minzoom: PHOTO_ZOOM,
+      id: "photo-heat", type: "heatmap", source: "photos", minzoom: PHOTO_ZOOM,
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 7, 19, 10],
-        "circle-color": ["match", ["get", "level"], "limpo", "#2e9e4f", "moderado", "#f2a900", "sujo", "#e8452c", "#b3261e"],
-        "circle-stroke-width": 2.5, "circle-stroke-color": "#fff"
+        "heatmap-weight": ["interpolate", ["linear"], ["get", "severity"], 0, 0.1, 100, 1],
+        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 14, 25, 19, 70],
+        "heatmap-opacity": 0.8,
+        "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
+          0, "rgba(46,158,79,0)", 0.2, "#2e9e4f", 0.5, "#f2d43d", 1, "#d92b2b"]
+      }
+    }, "pins");
+    map.addLayer({
+      id: "photo-pins", type: "symbol", source: "photos", minzoom: PHOTO_ZOOM,
+      layout: {
+        "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true,
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.38, 19, 0.6]
       }
     });
+    map.on("mouseenter", "photo-pins", function () { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "photo-pins", function () { map.getCanvas().style.cursor = ""; });
     map.on("mouseenter", "pins", function () { map.getCanvas().style.cursor = "pointer"; });
     map.on("mouseleave", "pins", function () { map.getCanvas().style.cursor = ""; });
     map.on("moveend", loadHeat);
