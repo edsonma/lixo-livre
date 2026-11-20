@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="preload" href="vendor/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <title>Lixo Livre</title>
 <link rel="stylesheet" href="vendor/maplibre-gl-4.7.1/maplibre-gl.css">
 <link rel="stylesheet" href="app.css">
@@ -82,7 +85,7 @@
       <span id="acct-initial" class="acct-initial" style="display:none"></span>
     </button>
     <div class="brand">
-      <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 38s13-11.4 13-21A13 13 0 0 0 7 17c0 9.6 13 21 13 21z" fill="#1b7f3b"/><circle cx="20" cy="17" r="8.5" fill="#fff"/><path d="M15.5 13.5h9M18 12h4M16.2 14.5l1 8h5.6l1-8z" fill="none" stroke="#1b7f3b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 38s13-11.4 13-21A13 13 0 0 0 7 17c0 9.6 13 21 13 21z" fill="#4CAF50"/><circle cx="20" cy="17" r="8.5" fill="#fff"/><path d="M15.5 13.5h9M18 12h4M16.2 14.5l1 8h5.6l1-8z" fill="none" stroke="#1B5E20" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
       Lixo Livre
       <span id="demo" class="demo-tag" title="Modo demonstração: dados fictícios" style="display:none">DEMO</span>
     </div>
@@ -109,10 +112,11 @@
 </div>
 <div id="chips" role="group" aria-label="Filtrar por nível de sujeira">
   <button class="chip" data-level="todos" aria-pressed="true" type="button"><span class="dot"></span>Todos</button>
-  <button class="chip" data-level="limpo" aria-pressed="false" type="button" style="--c:#2e9e4f"><span class="dot"></span>Limpo</button>
-  <button class="chip" data-level="moderado" aria-pressed="false" type="button" style="--c:#f2a900"><span class="dot"></span>Moderado</button>
-  <button class="chip" data-level="sujo" aria-pressed="false" type="button" style="--c:#e8452c"><span class="dot"></span>Sujo</button>
-  <button class="chip" data-level="muito-sujo" aria-pressed="false" type="button" style="--c:#b3261e"><span class="dot"></span>Muito sujo</button>
+  <button class="chip" data-level="limpo" aria-pressed="false" type="button" style="--c:var(--color-clean)"><span class="dot"></span>Limpo</button>
+  <button class="chip" data-level="moderado" aria-pressed="false" type="button" style="--c:var(--color-moderate)"><span class="dot"></span>Moderado</button>
+  <button class="chip" data-level="sujo" aria-pressed="false" type="button" style="--c:var(--color-dirty)"><span class="dot"></span>Sujo</button>
+  <button class="chip" data-level="muito-sujo" aria-pressed="false" type="button" style="--c:var(--color-very-dirty)"><span class="dot"></span>Muito sujo</button>
+  <button class="chip" data-level="critico" aria-pressed="false" type="button" style="--c:var(--color-critical)"><span class="dot"></span>Crítico</button>
 </div>
 
 <nav id="nav" aria-label="Navegação">

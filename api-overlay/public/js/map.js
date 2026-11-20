@@ -11,29 +11,42 @@ var geolocate;
 
 var EMPTY = { type: "FeatureCollection", features: [] };
 
-// Levels of a spot, from the decayed score of its cell. The chips filter on these.
+// Levels of a spot, from the decayed score of its cell. The chips filter on these. Colours are the brand guide's
+// severity tokens (also in app.css). `ink` is a darker shade for text on white; `on` is the text colour on the fill.
 var LEVELS = [
-  { key: "limpo", label: "Limpo", max: 25, color: "#2e9e4f" },
-  { key: "moderado", label: "Moderado", max: 50, color: "#f2a900" },
-  { key: "sujo", label: "Sujo", max: 75, color: "#e8452c" },
-  { key: "muito-sujo", label: "Muito sujo", max: Infinity, color: "#b3261e" }
+  { key: "limpo", label: "Limpo", max: 20, color: "#4CAF50", ink: "#1B5E20", on: "#fff" },
+  { key: "moderado", label: "Moderado", max: 40, color: "#FFC107", ink: "#7A5A00", on: "#1F2937" },
+  { key: "sujo", label: "Sujo", max: 60, color: "#FF9800", ink: "#A34E00", on: "#1F2937" },
+  { key: "muito-sujo", label: "Muito sujo", max: 80, color: "#F44336", ink: "#C62828", on: "#fff" },
+  { key: "critico", label: "Crítico", max: Infinity, color: "#B71C1C", ink: "#B71C1C", on: "#fff" }
 ];
+
+// Puts a level's colours on an element as CSS variables (--lvl fill, --lvl-ink text, --lvl-on text on the fill).
+export function paintLevel(element, level) {
+  element.style.setProperty("--lvl", level ? level.color : "#9AA3AE");
+  element.style.setProperty("--lvl-ink", level ? level.ink : "#6B7280");
+  element.style.setProperty("--lvl-on", level ? level.on : "#fff");
+}
 
 export function levelOf(score) { return LEVELS.find(function (l) { return score < l.max; }); }
 
-// Round pin with a trash can, one image per level, drawn here so there is nothing to download.
+// The brand pin (a drop with a trash can in a white circle), one image per level, drawn here so there is
+// nothing to download. Its tip is the bottom of the image: the layers anchor it there.
 function pinImage(color) {
-  var size = 72, c = document.createElement("canvas"); c.width = c.height = size;
+  var w = 72, h = 92, c = document.createElement("canvas"); c.width = w; c.height = h;
   var g = c.getContext("2d");
-  g.beginPath(); g.arc(36, 36, 30, 0, Math.PI * 2);
-  g.fillStyle = color; g.fill(); g.lineWidth = 5; g.strokeStyle = "#fff"; g.stroke();
-  g.fillStyle = "#fff";
-  g.fillRect(23, 24, 26, 4);                       // lid
-  g.fillRect(32, 20, 8, 5);                        // handle
-  g.beginPath(); g.moveTo(25, 31); g.lineTo(47, 31); g.lineTo(44.5, 51); g.lineTo(27.5, 51); g.closePath(); g.fill(); // body
+  g.shadowColor = "rgba(31,41,55,.35)"; g.shadowBlur = 4; g.shadowOffsetY = 2;
+  g.beginPath(); g.arc(36, 34, 30, Math.PI * 0.80, Math.PI * 0.20); g.lineTo(36, 88); g.closePath();
+  g.fillStyle = color; g.fill();
+  g.shadowColor = "transparent"; g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
+  g.beginPath(); g.arc(36, 34, 19, 0, Math.PI * 2); g.fillStyle = "#fff"; g.fill();
   g.fillStyle = color;
-  [31, 36, 41].forEach(function (x) { g.fillRect(x - 0.9, 34, 1.8, 14); });                                          // slats
-  return g.getImageData(0, 0, size, size);
+  g.fillRect(25, 23, 22, 3.5);                     // lid
+  g.fillRect(32, 19.5, 8, 4);                      // handle
+  g.beginPath(); g.moveTo(27, 28.5); g.lineTo(45, 28.5); g.lineTo(43, 46); g.lineTo(29, 46); g.closePath(); g.fill(); // body
+  g.fillStyle = "#fff";
+  [32, 36, 40].forEach(function (x) { g.fillRect(x - 0.8, 31.5, 1.6, 11.5); });                                    // slats
+  return g.getImageData(0, 0, w, h);
 }
 
 var filterKey = "todos";
@@ -88,7 +101,8 @@ export function boot() {
       version: 8,
       sources: { osm: { type: "raster", tileSize: 256, attribution: "© OpenStreetMap contributors",
         tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"] } },
-      layers: [{ id: "osm", type: "raster", source: "osm" }]
+      layers: [{ id: "osm", type: "raster", source: "osm",
+        paint: { "raster-saturation": -0.6, "raster-contrast": -0.15, "raster-brightness-min": 0.08 } }]
     }
   });
 
@@ -123,16 +137,16 @@ export function boot() {
       paint: {
         "heatmap-weight": ["interpolate", ["linear"], ["get", "score"], 0, 0, 100, 1],
         "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 8, 15, 14, 45],
-        "heatmap-opacity": 0.8,
+        "heatmap-opacity": 0.5,
         "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
-          0, "rgba(46,158,79,0)", 0.2, "#2e9e4f", 0.5, "#f2d43d", 1, "#d92b2b"]
+          0, "rgba(76,175,80,0)", 0.2, "#4CAF50", 0.4, "#FFC107", 0.6, "#FF9800", 0.8, "#F44336", 1, "#B71C1C"]
       }
     });
     map.addLayer({
       id: "pins", type: "symbol", source: "heat", minzoom: 11, maxzoom: PHOTO_ZOOM,
       layout: {
-        "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true,
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 16, 0.85]
+        "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true, "icon-anchor": "bottom",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.7, 16, 1]
       }
     });
     map.addSource("photos", { type: "geojson", data: EMPTY });
@@ -142,16 +156,16 @@ export function boot() {
       id: "photo-heat", type: "circle", source: "photos", minzoom: PHOTO_ZOOM,
       paint: {
         // a soft glow in the colour of the pin's level (green / amber / red / dark red); bigger for dirtier spots
-        "circle-color": ["match", ["get", "level"], "limpo", "#2e9e4f", "moderado", "#f2a900", "sujo", "#e8452c", "#b3261e"],
+        "circle-color": ["match", ["get", "level"], "limpo", "#4CAF50", "moderado", "#FFC107", "sujo", "#FF9800", "muito-sujo", "#F44336", "#B71C1C"],
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, ["+", 10, ["*", 0.25, ["get", "severity"]]], 19, ["+", 30, ["*", 0.9, ["get", "severity"]]]],
-        "circle-blur": 1, "circle-opacity": 0.55
+        "circle-blur": 1, "circle-opacity": 0.45
       }
     }, "pins");
     map.addLayer({
       id: "photo-pins", type: "symbol", source: "photos", minzoom: PHOTO_ZOOM,
       layout: {
-        "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true,
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.38, 19, 0.6]
+        "icon-image": ["concat", "pin-", ["get", "level"]], "icon-allow-overlap": true, "icon-anchor": "bottom",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.75, 19, 1]
       }
     });
     map.on("mouseenter", "photo-pins", function () { map.getCanvas().style.cursor = "pointer"; });

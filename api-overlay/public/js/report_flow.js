@@ -27,7 +27,7 @@ function goToPhoto() {
   state.step = "photo";
   state.placed = map.getCenter();
   var pin = document.createElement("div");
-  pin.className = "placed-pin"; pin.textContent = "📍";
+  pin.className = "placed-pin";
   state.marker = new maplibregl.Marker({ element: pin, anchor: "bottom" }).setLngLat(state.placed).addTo(map);
   show("pin", false); show("place", false); show("report", false);
   show("camera", true, "flex");

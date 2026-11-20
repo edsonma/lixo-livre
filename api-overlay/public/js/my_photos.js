@@ -5,7 +5,7 @@ import { addressOf, addressParts } from "./analysis.js";
 import { TYPE_INFO } from "./analysis_types.js";
 import { api, deviceToken } from "./api.js";
 import { $, el, show, toast } from "./dom.js";
-import { applyFilter, levelOf, loadHeat, map } from "./map.js";
+import { applyFilter, levelOf, loadHeat, map, paintLevel } from "./map.js";
 import { goPage } from "./navigation.js";
 import { openPlace, photoPath, shortDate } from "./place.js";
 import { openReport } from "./report_flow.js";
@@ -130,7 +130,7 @@ function renderFeed() {
     } else {
       cell.appendChild(el("span", "⏳", "wait"));
     }
-    if (r.severity != null) { var sc = el("i", String(r.severity), "feed-score"); sc.style.background = levelOf(r.severity).color; cell.appendChild(sc); }
+    if (r.severity != null) { var sc = el("i", String(r.severity), "feed-score"); sc.style.background = levelOf(r.severity).color; sc.style.color = levelOf(r.severity).on; cell.appendChild(sc); }
     if (STATE_TEXT[r.stage] && r.stage !== "published") cell.appendChild(el("span", STATE_TEXT[r.stage], "feed-state"));
     cell.onclick = function () { openMyPhoto(r); };
     grid.appendChild(cell);
@@ -150,7 +150,7 @@ function renderPlaces() {
     txt.appendChild(title); txt.appendChild(el("small", "Última em " + shortDate(g.last.taken_at)));
     row.appendChild(txt);
     var lvl = el("span", g.last.severity != null ? levelOf(g.last.severity).label + " · " + g.last.severity : "", "lvl");
-    if (g.last.severity != null) lvl.style.color = levelOf(g.last.severity).color;
+    if (g.last.severity != null) lvl.style.color = levelOf(g.last.severity).ink;
     row.appendChild(lvl);
     row.onclick = function () { openPlace(g.h3); };
     box.appendChild(row);
@@ -165,7 +165,7 @@ function myError(msg) { $("mp-error").textContent = msg || ""; }
 function openMyPhoto(r) {
   myPhoto = r; myError("");
   var level = r.severity != null ? levelOf(r.severity) : null;
-  $("myphoto").style.setProperty("--lvl", level ? level.color : "#8a948d");
+  paintLevel($("myphoto"), level);
   $("mp-photo").src = r.photo_url ? photoPath(r.photo_url) : "";
   show("mp-badge", !!level, "flex");
   if (level) $("mp-badge").textContent = "🗑 " + level.label + " · " + r.severity;
@@ -264,9 +264,9 @@ export function boot() {
         var px = 60, py = 190 + idx * 550, w = 960, h = 500, lv = x[0].severity != null ? levelOf(x[0].severity) : null;
         drawCover(g, x[1], px, py, w, h);
         g.fillStyle = lv ? lv.color : "#555"; g.fillRect(px, py, 330, 70);
-        g.fillStyle = "#fff"; g.font = "700 34px system-ui, sans-serif";
+        g.fillStyle = lv ? lv.on : "#fff"; g.font = "700 34px system-ui, sans-serif";
         g.fillText(x[2] + (x[0].severity != null ? " · " + x[0].severity + "/100" : ""), px + 18, py + 47);
-        g.font = "400 26px system-ui, sans-serif"; g.fillText(shortDate(x[0].taken_at), px + w - 190, py + h - 20);
+        g.fillStyle = "#fff"; g.font = "400 26px system-ui, sans-serif"; g.fillText(shortDate(x[0].taken_at), px + w - 190, py + h - 20);
       });
       var blob = await new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.9); });
       if (!blob) throw new Error("blob");

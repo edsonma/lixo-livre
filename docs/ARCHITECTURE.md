@@ -78,6 +78,14 @@ The page is plain ES modules with no build step: `index.html` loads `js/main.js`
 | `report.js`, `camera.js`, `report_flow.js`, `analysis.js`, `analysis_types.js` | Reporting a photo: place, camera, upload, AI result |
 | `dom.js`, `api.js`, `state.js`, `back_button.js` | Small DOM helpers, JSON requests and the device token, shared state, the phone's back button |
 
+**Design system.** Colours, radii and the font are tokens at the top of `public/app.css` (`--color-brand`,
+`--color-clean` … `--color-critical`, `--color-text`, `--radius-card`, …), following the brand guide: green for the
+brand, white for the interface, traffic-light colours only for severity. The five levels (Limpo < 20, Moderado < 40,
+Sujo < 60, Muito sujo < 80, Crítico) live in `map.js` `LEVELS`, each with its fill, a darker `ink` for text and an `on`
+colour for text on the fill; `paintLevel()` puts them on a screen as `--lvl`, `--lvl-ink`, `--lvl-on`. The font is Inter,
+served from `public/vendor/inter` (SIL Open Font License), so no request goes to a font service. The page is light only
+(`color-scheme: only light`), which stops phone browsers from forcing a dark version.
+
 How it fits together:
 
 - A module that needs something from another one `import`s it by name. A variable only its own module writes

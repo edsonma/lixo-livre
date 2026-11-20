@@ -2,7 +2,7 @@
 
 import { api } from "./api.js";
 import { $, el, show, toast } from "./dom.js";
-import { levelOf, loadHeat, map } from "./map.js";
+import { levelOf, loadHeat, map, paintLevel } from "./map.js";
 import { goPage } from "./navigation.js";
 import { photoPath, shortDate } from "./place.js";
 
@@ -48,7 +48,7 @@ function reviewCard(r) {
     var box = el("div", null, "rv-sev");
     var label = el("label"); label.appendChild(el("span", "Nível de sujeira")); var value = el("b"); label.appendChild(value);
     slider = document.createElement("input"); slider.type = "range"; slider.min = 0; slider.max = 100; slider.value = r.severity != null ? r.severity : 50;
-    var paint = function () { var l = levelOf(+slider.value); value.textContent = l.label + " · " + slider.value; box.style.setProperty("--lvl", l.color); };
+    var paint = function () { var l = levelOf(+slider.value); value.textContent = l.label + " · " + slider.value; paintLevel(box, l); };
     slider.oninput = paint; paint();
     box.appendChild(label); box.appendChild(slider); card.appendChild(box);
   }

@@ -42,7 +42,7 @@ export async function loadRankings() {
     txt.appendChild(title); txt.appendChild(el("small", w.count + (w.count > 1 ? " registros" : " registro")));
     row.appendChild(txt);
     var meta = el("div", null, "meta"), lvl = el("span", levelOf(w.score).label + " · " + Math.round(w.score), "lvl");
-    lvl.style.color = levelOf(w.score).color; meta.appendChild(lvl);
+    lvl.style.color = levelOf(w.score).ink; meta.appendChild(lvl);
     var tb = trendBadge(w.trend); if (tb) meta.appendChild(tb);
     row.appendChild(meta);
     row.onclick = function () { openPlace(w.h3); };
@@ -57,7 +57,7 @@ export async function loadRankings() {
     txt.appendChild(title); txt.appendChild(el("small", r.cells + (r.cells > 1 ? " locais sujos" : " local sujo")));
     row.appendChild(txt);
     var meta = el("div", null, "meta"), lvl = el("span", "média " + Math.round(r.score), "lvl");
-    lvl.style.color = levelOf(r.score).color; meta.appendChild(lvl);
+    lvl.style.color = levelOf(r.score).ink; meta.appendChild(lvl);
     var tb = trendBadge(r.trend); if (tb) meta.appendChild(tb);
     row.appendChild(meta);
     row.onclick = function () { goPage("map"); map.flyTo({ center: [r.lng, r.lat], zoom: 14 }); };
