@@ -4,7 +4,7 @@ import { state } from "./state.js";
 import { TYPE_INFO } from "./analysis_types.js";
 import { deviceToken } from "./api.js";
 import { $, el, show } from "./dom.js";
-import { levelOf, loadHeat, loadHeatSoon, map } from "./map.js";
+import { levelOf, loadHeat, loadHeatSoon, map, paintLevel } from "./map.js";
 import { goPage } from "./navigation.js";
 import { closeReport, setStatus } from "./report_flow.js";
 
@@ -30,7 +30,7 @@ export async function addressOf(lat, lng) {
 export function showAnalysis(r) {
   state.draft = r; state.step = "analysis";
   var level = levelOf(r.severity);
-  $("analysis").style.setProperty("--lvl", level.color);
+  paintLevel($("analysis"), level);
   $("an-level").textContent = level.label;
   $("an-num").textContent = r.severity;
   try { $("an-photo").src = new URL(r.photo_url, location.href).pathname; } catch (e) {}

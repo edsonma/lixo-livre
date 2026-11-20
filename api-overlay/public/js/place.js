@@ -4,7 +4,7 @@ import { state } from "./state.js";
 import { addressParts } from "./analysis.js";
 import { TYPE_INFO } from "./analysis_types.js";
 import { $, el, show, toast } from "./dom.js";
-import { levelOf, map } from "./map.js";
+import { levelOf, map, paintLevel } from "./map.js";
 import { trendBadge } from "./map_filters.js";
 import { goPage } from "./navigation.js";
 import { setFollowButton } from "./notifications.js";
@@ -63,7 +63,7 @@ function chartSvg(points) {
 
 function selectPhoto(report) {
   var level = levelOf(report.severity);
-  $("detail").style.setProperty("--lvl", level.color);
+  paintLevel($("detail"), level);
   $("dt-photo").src = photoPath(report.photo_url);
   $("dt-badge").textContent = "🗑 " + level.label + " · " + report.severity;
   $("dt-date").textContent = shortDate(report.taken_at);

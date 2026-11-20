@@ -78,10 +78,7 @@
   }
  },
  {
-  "api": [
-   "GET /api/v1/heatmap",
-   "GET /api/v1/heatmap/reports"
-  ],
+  "api": [],
   "errors": [],
   "step": "opening the app took the map to my location",
   "step_error": null,
@@ -117,7 +114,10 @@
   }
  },
  {
-  "api": [],
+  "api": [
+   "GET /api/v1/heatmap",
+   "GET /api/v1/heatmap/reports"
+  ],
   "errors": [],
   "step": "zoomed in, each photo has its own pin",
   "step_error": null,
@@ -1534,8 +1534,8 @@
    "page": "map",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1582,8 +1582,8 @@
    "page": "map",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1627,8 +1627,8 @@
    "page": "map",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1675,8 +1675,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1719,8 +1719,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1763,8 +1763,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1812,8 +1812,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1860,8 +1860,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
@@ -1908,8 +1908,8 @@
    "open": [],
    "page": "profile",
    "text": {
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -1955,8 +1955,8 @@
    "open": [],
    "page": "profile",
    "text": {
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2002,8 +2002,8 @@
    "open": [],
    "page": "profile",
    "text": {
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2054,8 +2054,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2102,8 +2102,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2149,8 +2149,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2196,8 +2196,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2241,8 +2241,8 @@
    "page": "profile",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2288,8 +2288,8 @@
    "page": "map",
    "text": {
     "acct-initial": "A",
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "bell-count": "1",
@@ -2336,8 +2336,8 @@
    "open": [],
    "page": "map",
    "text": {
-    "an-level": "Sujo",
-    "an-score": "Sujo60/100",
+    "an-level": "Muito sujo",
+    "an-score": "Muito sujo60/100",
     "an-title": "Análise da imagem",
     "au-title": "Entrar",
     "dt-title": "Local no mapa",
